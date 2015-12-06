@@ -1,0 +1,170 @@
+* RV32I Base Instruction Set
+
+[[file:img/base-code-map.png]]
+
+操作码（major opcode）的低 3 位或是更多位预留给指令长度大于 32 位的。 *reserved* ：避免用作自定义（custom）的指令集扩展，因为可能用作将来的标准扩展。 *custom-0* 和 *custom-1* 用作基本 32 位指令格式的自定义指令集扩展。 *custom-2/rv128* 和 *custom-3/rv128* 预留给将来 RV128 的使用，或是给自定义指令集扩展预留。
+
+[[file:img/riscv_imms.png]]
+
+[[file:img/riscv_instr_formats_var.png]]
+
+** 算术逻辑运算
+
+- ~ADDI rd,rs1,imm~ (I-type)
+  | I-imm[11:0] | rs1 | funct3 | rd |  opcode |
+  | imm[11:0]   | rs1 |    000 | rd | 0010011 |
+ 
+- ~SLTI rd,rs1,imm~ (I-type)
+  | I-imm[11:0] | rs1 | funct3 | rd |  opcode |
+  | imm[11:0]   | rs1 |    010 | rd | 0010011 |
+
+- ~SLTIU rd,rs1,imm~ (I-type)
+  | I-imm[11:0] | rs1 | funct3 | rd |  opcode |
+  | imm[11:0]   | rs1 |    011 | rd | 0010011 |
+
+- ~XORI rd,rs1,imm~ (I-type)
+  | I-imm[11:0] | rs1 | funct3 | rd |  opcode |
+  | imm[11:0]   | rs1 |    100 | rd | 0010011 |
+
+- ~ORI rd,rs1,imm~ (I-type)
+  | I-imm[11:0] | rs1 | funct3 | rd |  opcode |
+  | imm[11:0]   | rs1 |    110 | rd | 0010011 |
+
+- ~ANDI rd,rs1,imm~ (I-type)
+  | I-imm[11:0] | rs1 | funct3 | rd |  opcode |
+  | imm[11:0]   | rs1 |    111 | rd | 0010011 |
+
+- ~SLLI rd,rs1,shamt~ (R-type)
+  |  funct7 | rs2   | rs1 | 111 | rd |  opcode |
+  | 0000000 | shamt | rs1 | 001 | rd | 0010011 |
+
+- ~SRLI rd,rs1,shamt~ (R-type)
+  |  funct7 | rs2   | rs1 | 111 | rd |  opcode |
+  | 0000000 | shamt | rs1 | 101 | rd | 0010011 |
+
+- ~SRAI rd,rs1,shamt~ (R-type)
+  |  funct7 | rs2   | rs1 | 111 | rd |  opcode |
+  | 0100000 | shamt | rs1 | 101 | rd | 0010011 |
+
+- ~ADD rd,rs1,rs2~ (R-type)
+  |  funct7 | rs2 | rs1 | 111 | rd |  opcode |
+  | 0000000 | rs2 | rs1 | 000 | rd | 0110011 |
+
+- ~SUB rd,rs1,rs2~ (R-type)
+  |  funct7 | rs2 | rs1 | 111 | rd |  opcode |
+  | 0100000 | rs2 | rs1 | 000 | rd | 0110011 |
+
+- ~SLL rd,rs1,rs2~ (R-type)
+  |  funct7 | rs2 | rs1 | 111 | rd |  opcode |
+  | 0000000 | rs2 | rs1 | 001 | rd | 0110011 |
+
+- ~SLT rd,rs1,rs2~ (R-type)
+  |  funct7 | rs2 | rs1 | 111 | rd |  opcode |
+  | 0000000 | rs2 | rs1 | 010 | rd | 0110011 |
+
+- ~SLTU rd,rs1,rs2~ (R-type)
+  |  funct7 | rs2 | rs1 | 111 | rd |  opcode |
+  | 0000000 | rs2 | rs1 | 011 | rd | 0110011 |
+
+- ~XOR rd,rs1,rs2~ (R-type)
+  |  funct7 | rs2 | rs1 | 111 | rd |  opcode |
+  | 0000000 | rs2 | rs1 | 100 | rd | 0110011 |
+
+- ~SRL rd,rs1,rs2~ (R-type)
+  |  funct7 | rs2 | rs1 | 111 | rd |  opcode |
+  | 0000000 | rs2 | rs1 | 101 | rd | 0110011 |
+
+- ~SRA rd,rs1,rs2~ (R-type)
+  |  funct7 | rs2 | rs1 | 111 | rd |  opcode |
+  | 0100000 | rs2 | rs1 | 101 | rd | 0110011 |
+
+- ~OR rd,rs1,rs2~ (R-type)
+  |  funct7 | rs2 | rs1 | 111 | rd |  opcode |
+  | 0000000 | rs2 | rs1 | 110 | rd | 0110011 |
+
+- ~AND rd,rs1,rs2~ (R-type)
+  |  funct7 | rs2 | rs1 | 111 | rd |  opcode |
+  | 0000000 | rs2 | rs1 | 111 | rd | 0110011 |
+
+** 立即数操作
+
+- ~LUI rd, imm~ (U-type)
+  | U-imm[31:12] | rd |  opcode |
+  | imm[31:12]   | rd | 0110111 |
+
+- ~AUIPC rd,imm~ (U-type)
+  | U-imm[31:12] | rd |  opcode |
+  | imm[31:12] | rd | 0010111 |
+  
+** 分支
+
+- ~BEQ rs1,rs2,imm~ (SB-type)
+  | imm[12,10:5] | rs2 | rs1 | funct3 | imm[4:1,11] | opcode |
+  | imm[12,10:5] | rs2 | rs1 | 000 | imm[4:1,11] | 1100011 |
+
+- ~BNE rs1,rs2,imm~ (SB-type)
+  | imm[12,10:5] | rs2 | rs1 | funct3 | imm[4:1,11] | opcode |
+  | imm[12,10:5] | rs2 | rs1 | 001 | imm[4:1,11] | 1100011 |
+
+- ~BLT rs1,rs2,imm~ (SB-type)
+  | imm[12,10:5] | rs2 | rs1 | funct3 | imm[4:1,11] | opcode |
+  | imm[12,10:5] | rs2 | rs1 | 100 | imm[4:1,11] | 1100011 |
+
+- ~BGE rs1,rs2,imm~ (SB-type)
+  | imm[12,10:5] | rs2 | rs1 | funct3 | imm[4:1,11] | opcode |
+  | imm[12,10:5] | rs2 | rs1 | 101 | imm[4:1,11] | 1100011 |
+
+- ~BLTU rs1,rs2,imm~ (SB-type)
+  | imm[12,10:5] | rs2 | rs1 | funct3 | imm[4:1,11] | opcode |
+  | imm[12,10:5] | rs2 | rs1 | 110 | imm[4:1,11] | 1100011 |
+
+- ~BGEU rs1,rs2,imm~ (SB-type)
+  | imm[12,10:5] | rs2 | rs1 | funct3 | imm[4:1,11] | opcode |
+  | imm[12,10:5] | rs2 | rs1 |    111 | imm[4:1,11] | 1100011 |
+
+** 跳转
+
+- ~JAL rd,imm~ (UJ-type)
+  | j-imm[20,10:1,11,19:12] | rd |  opcode |
+  | imm[20,10:1,11,19:12]   | rd | 1101111 |
+
+- ~JALR rd,rs1,imm~ (R-type)
+  | imm[11:0] | rs1 | funct3 | rd |  opcode |
+  | imm[11:0] | rs1 |    000 | rd | 1100111 |
+
+** 取数
+
+- ~LB rd,rs1,imm~ (I-type)
+  | imm[11:0] | rs1 | funct3 | rd |  opcode |
+  | imm[11:0] | rs1 |    000 | rd | 0000011 |
+
+- ~LH rd,rs1,imm~ (I-type)
+  | imm[11:0] | rs1 | funct3 | rd |  opcode |
+  | imm[11:0] | rs1 |    001 | rd | 0000011 |
+
+- ~LW rd,rs1,imm~ (I-type)
+  | imm[11:0] | rs1 | funct3 | rd |  opcode |
+  | imm[11:0] | rs1 |    010 | rd | 0000011 |
+
+- ~LBU rd,rs1,imm~ (I-type)
+  | imm[11:0] | rs1 | funct3 | rd |  opcode |
+  | imm[11:0] | rs1 |    100 | rd | 0000011 |
+
+- ~LHU rd,rs1,imm~ (I-type)
+  | imm[11:0] | rs1 | funct3 | rd |  opcode |
+  | imm[11:0] | rs1 |    101 | rd | 0000011 |
+  
+** 存数
+
+- ~SB rs1,rs2,imm~ (S-type)
+  | imm[11:5] | rs2 | rs1 | funct3 | imm[4:0] |  opcode |
+  | imm[11:5] | rs2 | rs1 |    000 | imm[4:0] | 0100011 |
+
+- ~SH rs1,rs2,imm~ (S-type)
+  | imm[11:5] | rs2 | rs1 | funct3 | imm[4:0] |  opcode |
+  | imm[11:5] | rs2 | rs1 |    001 | imm[4:0] | 0100011 |
+
+- ~SW rs1,rs2,imm~ (S-type)
+  | imm[11:5] | rs2 | rs1 | funct3 | imm[4:0] |  opcode |
+  | imm[11:5] | rs2 | rs1 |    010 | imm[4:0] | 0100011 |
+
