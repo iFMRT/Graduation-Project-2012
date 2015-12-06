@@ -1,0 +1,56 @@
+* TODO 实现　RV32I 基本指令
+** TODO 算术逻辑运算 [0%]
+
+- [ ] ADD
+- [ ] SUB
+- [ ] SLL
+- [ ] SLT
+- [ ] SLTU
+- [ ] XOR
+- [ ] SRL
+- [ ] SRA
+- [ ] OR
+- [ ] AND
+
+- [ ] ADDI
+- [ ] SLTI
+- [ ] SLTIU
+- [ ] XORI
+- [ ] ORI
+- [ ] ANDI
+- [ ] SLLI
+- [ ] SRLI
+- [ ] SRAI
+
+** TODO 取数 [0%]
+
+- [ ] LB
+- [ ] LH
+- [ ] LW
+- [ ] LBU
+- [ ] LHU
+
+** TODO 存数 [0%]
+
+- [ ] SB
+- [ ] SH
+- [ ] SW
+
+** TODO 立即数操作 [0%]
+
+- [ ] LUI
+- [ ] AUIPC
+
+** TODO 分支 [%]
+
+- [ ] BEQ
+- [ ] BNE
+- [ ] BLT
+- [ ] BGE
+- [ ] BLTU
+- [ ] BGEU
+
+** TODO 跳转 [0%]
+
+- [ ] JAL
+- [ ] JALR
