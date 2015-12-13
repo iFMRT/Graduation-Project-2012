@@ -1,0 +1,166 @@
+* Memory（MEM）阶段
+
+MEM 阶段主要负责内存。MEM 阶段由内存访问控制模块、流水线寄存器、以及总线接口构成。
+
+#+CAPTION: MEM 阶段模块一览
+| 模块名    | 文件名      | 说明                 |
+| mem_stage | mem_stage.v | MEM 阶段顶层模块     |
+| mem_ctrl  | mem_ctrl.v  | 内存访问控制模块     |
+| mem_reg   | mem_reg.v   | MEM 阶段流水线寄存器 |
+| bus_if    | bus_if.v    | 总线接口             |
+
+#+BEGIN_SRC 
+
+mem_stage
+    |-----mem_ctrl
+    |-----mem_reg
+    |-----bus_if
+
+#+END_SRC
+
+** 内存访问控制模块
+
+*** 内存访问控制模块输入输出端口
+
+#+CAPTION: 内存访问控制模块端口连接图
+[[file:img/mem_ctrl.png]]
+
+#+CAPTION: EX/MEM 流水线寄存器（mem_ctrl.v）
+| 信号名         | 信号类型 | 数据类型 | 位宽 | 含义                                                 |
+| ex_mem_op      | 输入端口 | wire     |    2 | MEM_OP_NOP/MEM_OP_LDW（字读取）/MEM_OP_STW（字写入） |
+| ex_mem_wr_data | 输入端口 | wire     |   32 | 内存写入数据                                         |
+| ex_out         | 输入端口 | wire     |   32 | EX 阶段处理结果                                      |
+
+#+CAPTION: EX/MEM 内存访问接口（mem_ctrl.v）
+| 信号名  | 信号类型 | 数据类型 | 位宽 | 含义       |
+| rd_data | 输入端口 | wire     |   32 | 读取的数据 |
+| addr    | 输出端口 | wire     |   30 | 地址       |
+| as_     | 输出端口 | reg      |    1 | 地址选通   |
+| rw      | 输出端口 | reg      |    1 | 读/写      |
+| wr_data | 输出端口 | wire     |   32 | 写入的数据 |
+
+#+CAPTION: EX/MEM 内存访问结果（mem_ctrl.v）
+| 信号名     | 信号类型 | 数据类型 | 位宽 | 含义         |
+| out        | 输出端口 | reg      |   32 | 内存访问结果 |
+| miss_align | 输出端口 | reg      |    1 | 未对齐       |
+| offset     | 内部信号 | wire     |    2 | 字节偏移     |
+
+*** 内存访问控制模块代码详解
+
+#+CAPTION: 内存访问控制模块（mem_ctrl.v）
+#+BEGIN_SRC verilog
+
+/******** 1. 输出的赋值 ********/
+assign wr_data = ex_mem_wr_data;          // EX 阶段的写入数据（ex_mem_wr_data）赋值给写入数据（wr_data）
+assign addr    = ex_out[`WordAddrLoc];    // EX 阶段处理结果（ex_out）的高 30 位作为内存访问地址（addr）
+assign offset  = ex_out[`ByteOffsetLoc];  // EX 阶段处理结果（ex_out）的低 2 位作为字节偏移（offset）
+
+/******** 内存访问的控制 ********/
+always @(*) begin
+    /* 2. 默认值 */
+    miss_align = `DISABLE;
+    out        = `WORD_DATA_W'h0;　　　　 // 输出信号默认为 0
+    as_        = `DISABLE_;               // 地址选通信号默认为无效
+    rw         = `READ;                   // 读/写信号默认为读取 
+    /* 内存访问 */
+    case (ex_mem_op)
+        `MEM_OP_lDW: begin　　　　　　　　　　　　 // 3. 字读取
+            /* 字节偏移的检测 */
+            if (offset == `BTYE_OFFSET_WORD) begin // 对齐（字节偏移为 0
+                out        = rd_data;　　　　　　　//　将读取数据赋值到输出
+                as_        = `ENABLE_;　　　　　　　
+            end else begin                         // 未对齐
+                miss_align = `ENABLE;             
+            end
+        end
+        `MEM_OP_STW: begin                         // 4. 字写入
+            if (offset == `BTYE_OFFSET_WORD) begin // 对齐（字节偏移为 0
+                rw         = `WRITE;　　　　　　　  
+                as_        = `ENABLE_;
+            end else begin                         // 未对齐
+                miss_align = `ENABLE;
+            end
+        end
+        default    : begin                         // 5. 无内存访问
+            out            = ex_out;               // 将 EX 阶段的输出赋值给输出
+        end
+    endcase
+end
+                
+#+END_SRC
+
+*** Testbench
+
+**** 字读取（对齐）
+假设读取的地址是 0x154，该地址的值是 0x24。
+#+CAPTION: 输入信号
+| ex_mem_op   | ex_mem_wr_data    | ex_out | rd_data |
+| `MEM_OP_LDW | 32'bx(don't care) |  0x154 |    0x24 |
+
+#+CAPTION: 输出信号
+| addr | as_      | rw    | wr_data |  out | miss_align |
+| 0x55 | `ENABLE_ | `READ | 32'bx   | 0x24 | `DISABLE   |
+
+**** 字读取（未对齐）
+假设读取的地址是 0x59，该地址的值是 0x24。
+#+CAPTION: 输入信号
+| ex_mem_op   | ex_mem_wr_data              | ex_out | rd_data |
+| `MEM_OP_LDW | `WORD_DATA_W'bx(don't care) |   0x59 |    0x24 |
+
+#+CAPTION: 输出信号
+| addr | as_       | rw    | wr_data         | out             | miss_align |
+| 0x59 | `DISABLE_ | `READ | `WORD_DATA_W'bx | `WORD_DATA_W'h0 | `ENABLE    |
+
+
+**** 字写入（对齐）
+假设写入的地址是 0x154，地址的值是 0x24，写入的数据是 0x13。
+#+CAPTION: 输入信号
+| ex_mem_op   | ex_mem_wr_data | ex_out | rd_data |
+| `MEM_OP_STW |           0x13 |  0x154 |    0x24 |
+
+#+CAPTION: 输出信号
+| addr | as_      | rw     | wr_data | out             | miss_align |
+| 0x55 | `ENABLE_ | `WRITE |    0x13 | `WORD_DATA_W'h0 | `DISABLE   |
+
+**** 字写入（未对齐）
+假设读取的地址是 0x59，该地址的值是 0x24，写入的数据是 0x13。
+#+CAPTION: 输入信号
+| ex_mem_op   | ex_mem_wr_data | ex_out | rd_data |
+| `MEM_OP_STW |           0x13 |   0x59 |    0x24 |
+
+#+CAPTION: 输出信号
+| addr | as_       | rw    | wr_data | out             | miss_align |
+| 0x59 | `DISABLE_ | `READ |    0x13 | `WORD_DATA_W'h0 | `ENABLE    |
+
+**** 无内存访问
+假设 EX 阶段运算的结果是 0x59，当被视作地址时，该地址的值是 0x24。
+#+CAPTION: 输入信号
+| ex_mem_op   | ex_mem_wr_data  | ex_out | rd_data |
+| `MEM_OP_NOP | `WORD_DATA_W'bx |   0x59 |    0x24 |
+
+#+CAPTION: 输出信号
+| addr | as_       | rw    | wr_data         |  out | miss_align |
+| 0x59 | `DISABLE_ | `READ | `WORD_DATA_W'bx | 0x59 | `DISENABLE |
+ 
+** MEM 阶段流水线寄存器
+
+#+CAPTION: 时钟和复位（mem_reg.v）
+| 信号名 | 信号类型 | 数据类型 | 位宽 | 含义     |
+| clk    | 输入端口 | wire     | 1  | 时钟     |
+| reset  | 输入端口 | wire     | 1    | 异步复位 |
+
+#+CAPTION: 内存访问结果（mem_reg.v）
+| 信号名     | 信号类型 | 数据类型 | 位宽 | 含义   |
+| out        | 输入端口 | wire     |   32 | 结果   |
+| miss_align | 输入端口 | wire     |    1 | 未对齐 |
+
+#+CAPTION: EX/MEM 流水线寄存器（mem_reg.v）
+| 信号名          | 信号类型 | 数据类型 | 位宽 | 含义               |
+| ex_dst_address_ | 输入端口 | wire     |    5 | 通用寄存器写入地址 |
+| ex_gpr_we_      | 输入端口 | wire     |    1 | 通用寄存器写入有效 |
+
+#+CAPTION: MEM/WB 流水线寄存器（mem_reg.v）
+| 信号名       | 信号类型 | 数据类型 | 位宽 | 含义               |
+| mem_dst_addr | 输出端口 | reg      |    5 | 通用寄存器写入地址 |
+| mem_gpr_we_  | 输出端口 | reg      |    1 | 通用寄存器写入有效 |
+| mem_out      | 输出端口 | reg      |   32 | 处理结果           |
