@@ -9,14 +9,14 @@ MEM 阶段主要负责内存。MEM 阶段由内存访问控制模块、流水线
 | mem_reg   | mem_reg.v   | MEM 阶段流水线寄存器 |
 | bus_if    | bus_if.v    | 总线接口             |
 
-#+BEGIN_QUOTE
+#+BEGIN_SRC
 
 mem_stage
     |-----mem_ctrl
     |-----mem_reg
     |-----bus_if
 
-#+END_QUOTE
+#+END_SRC
 
 ** 内存访问控制模块
 
@@ -59,15 +59,15 @@ assign offset  = ex_out[`ByteOffsetLoc];  // EX 阶段处理结果（ex_out）�
 always @(*) begin
     /* 2. 默认值 */
     miss_align = `DISABLE;
-    out        = `WORD_DATA_W'h0;　　　　 // 输出信号默认为 0
+    out        = `WORD_DATA_W'h0;         // 输出信号默认为 0
     as_        = `DISABLE_;               // 地址选通信号默认为无效
     rw         = `READ;                   // 读/写信号默认为读取 
     /* 内存访问 */
     case (ex_mem_op)
-        `MEM_OP_lDW: begin　　　　　　　　　　　　 // 3. 字读取
+        `MEM_OP_lDW: begin                         // 3. 字读取
             /* 字节偏移的检测 */
             if (offset == `BTYE_OFFSET_WORD) begin // 对齐（字节偏移为 0
-                out        = rd_data;　　　　　　　//　将读取数据赋值到输出
+                out        = rd_data;              // 将读取数据赋值到输出
                 as_        = `ENABLE_;　　　　　　　
             end else begin                         // 未对齐
                 miss_align = `ENABLE;             
@@ -95,21 +95,21 @@ end
 假设读取的地址是 0x154，该地址的值是 0x24。
 - 输入信号
 | ex_mem_op   | ex_mem_wr_data    | ex_out | rd_data |
-| `MEM_OP_LDW | 32'bx(don't care) |  0x154 |    0x24 |
+| `MEM_OP_LDW | `WORD_DATA_W'hx(don't care) |  0x154 |    0x24 |
 
 - 输出信号
 | addr | as_      | rw    | wr_data |  out | miss_align |
-| 0x55 | `ENABLE_ | `READ | 32'bx   | 0x24 | `DISABLE   |
+| 0x55 | `ENABLE_ | `READ | `WORD_DATA_W'hx   | 0x24 | `DISABLE   |
 
 **** 字读取（未对齐）
 假设读取的地址是 0x59，该地址的值是 0x24。
 - 输入信号
 | ex_mem_op   | ex_mem_wr_data              | ex_out | rd_data |
-| `MEM_OP_LDW | `WORD_DATA_W'bx(don't care) |   0x59 |    0x24 |
+| `MEM_OP_LDW | `WORD_DATA_W'hx(don't care) |   0x59 |    0x24 |
 
 - 输出信号
 | addr | as_       | rw    | wr_data         | out             | miss_align |
-| 0x59 | `DISABLE_ | `READ | `WORD_DATA_W'bx | `WORD_DATA_W'h0 | `ENABLE    |
+| 0x59 | `DISABLE_ | `READ | `WORD_DATA_W'hx | `WORD_DATA_W'h0 | `ENABLE    |
 
 
 **** 字写入（对齐）
@@ -136,18 +136,23 @@ end
 假设 EX 阶段运算的结果是 0x59，当被视作地址时，该地址的值是 0x24。
 - 输入信号
 | ex_mem_op   | ex_mem_wr_data  | ex_out | rd_data |
-| `MEM_OP_NOP | `WORD_DATA_W'bx |   0x59 |    0x24 |
+| `MEM_OP_NOP | `WORD_DATA_W'hx |   0x59 |    0x24 |
 
 - 输出信号
 | addr | as_       | rw    | wr_data         |  out | miss_align |
-| 0x59 | `DISABLE_ | `READ | `WORD_DATA_W'bx | 0x59 | `DISENABLE |
+| 0x59 | `DISABLE_ | `READ | `WORD_DATA_W'hx | 0x59 | `DISENABLE |
  
 ** MEM 阶段流水线寄存器
 
+*** MEM 阶段流水线寄存器输入输出端口
+
+- MEM 阶段流水线寄存器端口连接图
+[[file:img/mem_reg.png]]
+
 - 时钟和复位（mem_reg.v）
 | 信号名 | 信号类型 | 数据类型 | 位宽 | 含义     |
-| clk    | 输入端口 | wire     | 1  | 时钟     |
-| reset  | 输入端口 | wire     | 1    | 异步复位 |
+| clk    | 输入端口 | wire     |    1 | 时钟     |
+| reset  | 输入端口 | wire     |    1 | 异步复位 |
 
 - 内存访问结果（mem_reg.v）
 | 信号名     | 信号类型 | 数据类型 | 位宽 | 含义   |
@@ -164,3 +169,42 @@ end
 | mem_dst_addr | 输出端口 | reg      |    5 | 通用寄存器写入地址 |
 | mem_gpr_we_  | 输出端口 | reg      |    1 | 通用寄存器写入有效 |
 | mem_out      | 输出端口 | reg      |   32 | 处理结果           |
+
+*** MEM 阶段流水线寄存器代码详解
+
+- MEM 阶段流水线寄存器（mem_reg.v）
+#+BEGIN_SRC verilog
+
+/******** 流水线寄存器 ********/
+always @(posedge clk or `RESET_EDGE reset) begin
+    if (reset == `RESET_ENABLE) begin
+        /* 1. 异步复位：全部控制信号设置为无效，数据信号设为 0*/
+        mem_dst_addr <= #1 `REG_ADDR_W'h0;
+        mem_gpr_we_  <= #1 `DISABLE;
+        mem_out      <= #1 `WORD_DATA_W'h0;
+    end else begin
+        if (miss_align == `ENABLE) begin            // 2. 未对齐异常的检测：中止正在进行的操作
+            mem_dst_addr <= #1 `REG_ADDR_W'h0;      // 通用寄存器写入地址设置为 0
+            mem_gpr_we_  <= #1 `DISABLE;            // 通用寄存器写入有效信号设为无效
+            mem_out      <= #1 `WORD_DATA_W'h0;     // 处理结果设置为 0
+        end else begin                              // 3. 更新流水线到下一个数据：内存操作的结果在此处被存储到流水线寄存器
+            mem_dst_addr <= #1 ex_dst_addr;
+            mem_gpr_we_  <= #1 ex_gpr_we_;
+            mem_out      <= #1 out;
+        end 
+    end
+end
+
+#+END_SRC
+
+*** Testbench
+
+** MEM  阶段顶层模块
+
+MEM 阶段顶层模块用来连内存访问控制模块、MEM 阶段流水线寄存器、与总线接口。
+
+*** MEM 阶段顶层模块输入输出端口 
+
+*** MEM 阶段顶层模块代码详解
+
+*** Testbench
