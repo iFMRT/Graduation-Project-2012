@@ -33,7 +33,7 @@ IF 阶段的流水线寄存器（if_reg）的信号线一览如表 1-2 所示。
 
 故 IF 阶段的顶层模块的连接图如图 1-2 所示。
 
-![Figure 1-2](/image/if_stage.png)
+![Figure 1-2](img/if_stage.png)
 
 IF 阶段的流水线寄存器（if_reg）的程序如下所示。
 ```python
