@@ -83,38 +83,38 @@ always @(posedge clk)
 ####流水线刷新
 **输入信号**
 
-|insn	| stall   	| flush 	| new_pc | br_taken 	| br_addr|if_en		|
-| :----	| :---- 	| :----  	| :----  | :----  	| :----  | :----  	|
-|0x124	| DISABLE	| ENABLE	|  0x154 |DISABLE 	|0x100	 |DISABLE	|
+|insn	| stall   	| flush 	| new_pc | br_taken 	| br_addr|
+| :----	| :---- 	| :----  	| :----  | :----  	| :----  |
+|0x124	| DISABLE	| ENABLE	|  0x154 |DISABLE 	|0x100	 |
 **输出信号**
 
-| if_pc  | if_insn    | 
-| :----	 | :----     |
-| 0x154  | ISA_NOP    |
+| if_pc  | if_insn    |if_en	| 
+| :----	 | :----      |:----  	|
+| 0x154  | ISA_NOP    |DISABLE	|
 
 ####分支成立
 **输入信号**
 
-|insn	| stall   	| flush 	| new_pc | br_taken 	| br_addr|if_en		|
-| :----	| :---- 	| :----  	| :----  | :----  	| :----  | :----  	|
-|0x124	| DISABLE 	| DISABL	|0x154 	 | ENABLE   	|0x100   |DISABLE 	|
+|insn	| stall   	| flush 	| new_pc | br_taken 	| br_addr|
+| :----	| :---- 	| :----  	| :----  | :----  	| :----  |
+|0x124	| DISABLE 	| DISABL	|0x154 	 | ENABLE   	|0x100   |
 **输出信号**
 
-| if_pc  | if_insn  | 
-| :----  | :----    |
-| 0x100  | ISA_NOP  |
+| if_pc  | if_insn  |if_en	| 
+| :----  | :----    | :----  	|
+| 0x100  | ISA_NOP  |DISABLE 	|
 
 ####下一条地址
 **输入信号**
 
-|insn  | stall   | flush    | new_pc | br_taken | br_addr|if_en   |
-| :----| :----   | :----    | :----  | :----    | :----  | :----  |
-|0x124 | DISABLE | DISABLE  |  0x154 | DISABLE  |0x100   |DISABLE |
+|insn  | stall   | flush    | new_pc | br_taken | br_addr|
+| :----| :----   | :----    | :----  | :----    | :----  |
+|0x124 | DISABLE | DISABLE  |  0x154 | DISABLE  |0x100   |
 **输出信号**
 
-| if_pc  | if_insn  | 
-| :----  | :----    |
-| 0x1 	 | insn     |
+| if_pc  | if_insn  |if_en   | 
+| :----  | :----    | :----  |
+| 0x1 	 | insn     |DISABLE |
 
 ##**IF 阶段的顶层模块**
 
