@@ -39,13 +39,6 @@ IF 阶段的流水线寄存器（if_reg）的信号线一览如表 1-2 所示。
 
 IF 阶段的流水线寄存器（if_reg）的程序如下所示。
 ```python
-module if_reg(input  reset,clk,stall,flush,
-	          input  [29:0] new_pc,br_taken,
-	          input  [31:0] insn,
-	          output [29:0] if_pc,
-	          output [31:0] if_insn,
-	          output if_en);
-
 always @(posedge clk)
     begin
           if (reset == 1)
@@ -84,45 +77,44 @@ always @(posedge clk)
 	                end
 	    end
     end
-endmodule
 ```
 ###**Testbench**
 
 ####流水线刷新
 **输入信号**
 
-|insn	| stall   	| flush 	| new_pc | br_taken 	| br_addr|if_en		|
-| :----	| :---- 	| :----  	| :----  | :----  	| :----  | :----  	|
-|0x124	| DISABLE	| ENABLE	|  0x154 |DISABLE 	|0x100	 |DISABLE	|
+|insn	| stall   	| flush 	| new_pc | br_taken 	| br_addr|
+| :----	| :---- 	| :----  	| :----  | :----  	| :----  |
+|0x124	| DISABLE	| ENABLE	|  0x154 |DISABLE 	|0x100	 |
 **输出信号**
 
-| if_pc  | if_insn    | 
-| :----	 | :----     |
-| 0x154  | ISA_NOP    |
+| if_pc  | if_insn    |if_en	| 
+| :----	 | :----      |:----  	|
+| 0x154  | ISA_NOP    |DISABLE	|
 
 ####分支成立
 **输入信号**
 
-|insn	| stall   	| flush 	| new_pc | br_taken 	| br_addr|if_en		|
-| :----	| :---- 	| :----  	| :----  | :----  	| :----  | :----  	|
-|0x124	| DISABLE 	| DISABL	|0x154 	 | ENABLE   	|0x100   |DISABLE 	|
+|insn	| stall   	| flush 	| new_pc | br_taken 	| br_addr|
+| :----	| :---- 	| :----  	| :----  | :----  	| :----  |
+|0x124	| DISABLE 	| DISABL	|0x154 	 | ENABLE   	|0x100   |
 **输出信号**
 
-| if_pc  | if_insn  | 
-| :----  | :----    |
-| 0x100  | ISA_NOP  |
+| if_pc  | if_insn  |if_en	| 
+| :----  | :----    | :----  	|
+| 0x100  | ISA_NOP  |DISABLE 	|
 
 ####下一条地址
 **输入信号**
 
-|insn  | stall   | flush    | new_pc | br_taken | br_addr|if_en   |
-| :----| :----   | :----    | :----  | :----    | :----  | :----  |
-|0x124 | DISABLE | DISABLE  |  0x154 | DISABLE  |0x100   |DISABLE |
+|insn  | stall   | flush    | new_pc | br_taken | br_addr|
+| :----| :----   | :----    | :----  | :----    | :----  |
+|0x124 | DISABLE | DISABLE  |  0x154 | DISABLE  |0x100   |
 **输出信号**
 
-| if_pc  | if_insn  | 
-| :----  | :----    |
-| 0x1 	 | insn     |
+| if_pc  | if_insn  |if_en   | 
+| :----  | :----    | :----  |
+| 0x1 	 | insn     |DISABLE |
 
 ##**IF 阶段的顶层模块**
 
