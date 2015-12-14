@@ -37,11 +37,11 @@ IF 阶段的流水线寄存器（if_reg）的信号线一览如表 1-2 所示。
 
 IF 阶段的流水线寄存器（if_reg）的程序如下所示。
 ```python
-module if_reg(input reset,clk,stall,flush,
-	          input  [290] new_pc,br_taken,
-	          input  [310] insn,
-	          output [290] if_pc,
-	          output [310] if_insn,
+module if_reg(input  reset,clk,stall,flush,
+	          input  [29:0] new_pc,br_taken,
+	          input  [31:0] insn,
+	          output [29:0] if_pc,
+	          output [31:0] if_insn,
 	          output if_en);
 
 always @(posedge clk)
