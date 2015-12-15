@@ -21,7 +21,6 @@
 	/******** 操作码字段的定义 ********/
 	// 定义位数
 	`define ISA_OP_W		    7	         // 操作码位数
-	`define IsaOpLoc		    6:0          // 操作码在指令中的位置
         // 定义操作码内容
 	// I 格式
 	`define ISA_OP_LD                   7'b0000011   // LoaD  
@@ -42,7 +41,6 @@
         /******** 功能码3字段的定义 ********/
         // 定义位数
 	`define ISA_Funct3_W	            3	         // Funct3 位数
-	`define IsaFunct3Loc		    14:12        // Funct3 在指令中的位置
         // 定义功能码3字段内容
         // ISA_OP_LD	
         `define ISA_OP_LD_LB	      	    3'b000	 // 读取有符号的字节
@@ -83,7 +81,6 @@
 	/******** 功能码7字段的定义 ********/
         // 定义位数
 	`define ISA_Funct7_W	            7	         // Funct7 位数
-	`define IsaFunct7Loc		    31:25        // Funct7 在指令中的位置
         // 定义功能码7字段内容
         // ISA_OP_ALSI_SRI
         `define ISA_OP_ALSI_SRI_SRLI	    7'b0000000	 // 寄存器与常数间的逻辑右移
