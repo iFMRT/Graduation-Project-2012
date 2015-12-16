@@ -20,7 +20,7 @@
 	`define DISABLE_			1'b1	 // 无效
 	`define ENABLE_				1'b0	 // 有效
 	/********** 读/写  *********/
-	`define READ				1'b0	 // 读取信号
-	`define WRITE				1'b1	 // 写入信号
+	`define READ				1'b1	 // 读取信号
+	`define WRITE				1'b0	 // 写入信号
 
 `endif
