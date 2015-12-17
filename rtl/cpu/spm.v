@@ -47,21 +47,4 @@ module spm (
 		        web = `DISABLE;       // 写入无效
 	      end
 	  end
-
-	  /********** Xilinx FPGA Block RAM :->altera_dpram **********/
-	  altera_dpram x_s3e_dpram (
-        /********** 端口A : IF阶段 **********/
-		    .clock_a   (clk),             // 时钟
-		    .address_a (if_spm_addr),     // 地址
-		    .data_a    (if_spm_wr_data),  // 写入的数据（未连接）
-		    .wren_a    (wea),             // 写入有效（无效）
-		    .q_a       (if_spm_rd_data),  // 读取的数据
-		    /********** 端口B : MEM 阶段 **********/
-		    .clock_b   (clk),             // 时钟
-		    .address_b (mem_spm_addr),	  // 地址
-		    .data_b    (mem_spm_wr_data), //　写入的数据
-		    .wren_b    (web),             // 写入有效
-		    .q_b       (mem_spm_rd_data)  // 读取的数据
-	  );
-
 endmodule
