@@ -63,16 +63,16 @@ SPM（Scratch Pad Memory）是 CPU 可以不经过总线直接访问的专用内
 	  /********** 存储器的实例化 FPGA Block RAM: -> altera_dpram **********/
 	  altera_dpram x_s3e_dpram (
         /********** 端口 A : IF 阶段 **********/
-		    .clock_a   (clk),			        // 时钟
+		    .clock_a   (clk),             // 时钟
 		    .address_a (if_spm_addr),     // 地址
 		    .data_a    (if_spm_wr_data),  // 写入的数据（未连接）
-		    .wren_a    (wea),			        // 写入有效（无效）
+		    .wren_a    (wea),             // 写入有效（无效）
 		    .q_a       (if_spm_rd_data),  // 读取的数据
 		    /********** 端口 B : MEM 阶段 **********/
-		    .clock_b   (clk),			        // 时钟
+		    .clock_b   (clk),             // 时钟
 		    .address_b (mem_spm_addr),	  // 地址
 		    .data_b    (mem_spm_wr_data), //　写入的数据
-		    .wren_b    (web),			        // 写入有效
+		    .wren_b    (web),             // 写入有效
 		    .q_b       (mem_spm_rd_data)  // 读取的数据
 	  );
 
