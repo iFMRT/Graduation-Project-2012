@@ -15,7 +15,7 @@ module if_reg(input  reset,clk,stall,flush,br_taken
 
 always @(posedge clk)
     begin
-          if (reset == 1)
+          if (reset == `ENABLE_)
               begin
     /********************异步复位********************/
                   if_pc = #1 30'b0;                    // 初始化PC为全零
