@@ -15,12 +15,12 @@ module if_reg(input  reset,clk,stall,flush,br_taken
 
 always @(posedge clk)
     begin
-          if (reset == 1)
+          if (reset == `ENABLE_)
               begin
     /********************异步复位********************/
-                  if_pc = #1 30'b0;     // 初始化PC为全零
-                  if_insn = #1 `ISA_NOP;   // 初始化指令为空
-                  if_en = #1 `DISABLE;         //  初始化取指使能位为无效
+                  if_pc = #1 30'b0;                    // 初始化PC为全零
+                  if_insn = #1 `ISA_NOP;               // 初始化指令为空
+                  if_en = #1 `DISABLE;                 // 初始化取指使能位为无效
               end
           else
             begin
@@ -30,23 +30,23 @@ always @(posedge clk)
                       if (flush == `ENABLE)                
                       //刷新
                           begin
-                              if_pc = #1 new_pc;      // 更新 PC 为新程序计数器值
-                              if_insn = #1 `ISA_NOP;  // 设置指令为空
-                              if_en = #1 `DISABLE;    //  初始化取指使能位为无效
+                              if_pc = #1 new_pc;       // 更新 PC 为新程序计数器值
+                              if_insn = #1 `ISA_NOP;   // 设置读取的指令为空
+                              if_en = #1 `DISABLE;     // 设置取指使能位为无效
                           end 
                       else if (br_taken == `ENABLE)
                           //分支成立
                           begin 
-                              if_pc = #1 br_addr;    // 更新 PC 为分支目标地址
-                              if_insn = #1 insn;     // 设置指令为读取的指令
-                              if_en = #1 `ENABLE;    //   初始化取指使能位为有效
+                              if_pc = #1 br_addr;      // 更新 PC 为分支目标地址
+                              if_insn = #1 insn;       // 设置对应地址的指令为读取的指令
+                              if_en = #1 `ENABLE;      // 设置取指使能位为有效
                          end
                       else                                     
                           /*************下一条地址***************/
                           begin
                               if_pc = #1 if_pc + 1'd1; // 更新 PC 为下一条地址
-                              if_insn = #1 insn;    // 设置指令为读取的指令
-                              if_en = #1 `ENABLE;   //   初始化取指使能位为有效
+                              if_insn = #1 insn;       // 设置对应地址的指令为读取的指令
+                              if_en = #1 `ENABLE;      // 设置取指使能位为有效
                           end
                     end
         end

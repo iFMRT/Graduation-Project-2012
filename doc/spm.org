@@ -1,0 +1,79 @@
+* SPM
+
+SPM（Scratch Pad Memory）是 CPU 可以不经过总线直接访问的专用内存。SPM
+使用一个名为 spm 的模块构成。存储器使用 FPGA 的 Dual Port RAM 实现。
+
+
+- 宏一览（spm.h）
+| 宏名           |            值 | 含义       |
+| SPM_SIZE       | 16384（16KB） | SPM 的容量 |
+| SPM_DEPTH      |   4096（2^12) | SPM 的深度 |
+| SPM_ADDR_W     |            12 | 地址宽     |
+| SPM_ADDR_BUS_B |          11:0 | 地址总线   |
+| SPM_ADDR_LOC_B |          11:0 | 地址的位置 |
+
+- SPM 端口连接图
+[[file:img/spm.png]]
+
+- 信号线一览（spm.v）
+| 信号名 | 信号类型 | 数据类型 | 位宽 | 含义 |
+| clk    | 输入端口 | wire     |    1 | 时钟 |
+
+- A 端口（IF 阶段）（spm.v）
+| 信号名         | 信号类型 | 数据类型 | 位宽 | 含义       |
+| if_spm_addr    | 输入端口 | wire     |   12 | 地址       |
+| if_spm_as_     | 输入端口 | wire     |    1 | 地址选通   |
+| if_spm_rw      | 输入端口 | wire     |    1 | 读/写      |
+| if_spm_wr_data | 输入端口 | wire     |   32 | 写入的数据 |
+| if_spm_rd_data | 输出端口 | wire     |   32 | 读取的数据 |
+| wea            | 内部信号 | reg      |    1 | 写入有效   |
+
+- B 端口（MEM 阶段）（spm.v）
+| 信号名          | 信号类型 | 数据类型 | 位宽 | 含义       |
+| mem_spm_addr    | 输入端口 | wire     |   12 | 地址       |
+| mem_spm_as_     | 输入端口 | wire     |    1 | 地址选通   |
+| mem_spm_rw      | 输入端口 | wire     |    1 | 读/写      |
+| mem_spm_wr_data | 输入端口 | wire     |   32 | 写入的数据 |
+| mem_spm_rd_data | 输出端口 | wire     |   32 | 读取的数据 |
+| web             | 内部信号 | reg      |    1 | 写入有效   |
+
+- SPM 代码分析
+#+BEGIN_SRC verilog
+
+/********** 内部信号 **********/
+    reg           wea;	          // 端口 A 写入有效
+    reg           web;	          // 端口 B 写入有效
+
+    /********** 写入有效信号的生成 **********/
+    always @(*) begin
+	      /* 端口 A 写入有效信号的生成 */
+	      if ((if_spm_as_ == `ENABLE_) && (if_spm_rw == `WRITE)) begin
+		        wea = `ENABLE;	      // 写入有效
+	      end else begin
+		        wea = `DISABLE;       // 写入无效
+	      end
+	      /* 端口 B 写入有效信号的生成 */
+	      if ((mem_spm_as_ == `ENABLE_) && (mem_spm_rw == `WRITE)) begin
+		        web = `ENABLE;	      // 写入有效
+	      end else begin
+		        web = `DISABLE;       // 写入无效
+	      end
+	  end
+
+	  /********** 存储器的实例化 FPGA Block RAM: -> altera_dpram **********/
+	  altera_dpram x_s3e_dpram (
+        /********** 端口 A : IF 阶段 **********/
+		    .clock_a   (clk),             // 时钟
+		    .address_a (if_spm_addr),     // 地址
+		    .data_a    (if_spm_wr_data),  // 写入的数据（未连接）
+		    .wren_a    (wea),             // 写入有效（无效）
+		    .q_a       (if_spm_rd_data),  // 读取的数据
+		    /********** 端口 B : MEM 阶段 **********/
+		    .clock_b   (clk),             // 时钟
+		    .address_b (mem_spm_addr),	  // 地址
+		    .data_b    (mem_spm_wr_data), //　写入的数据
+		    .wren_b    (web),             // 写入有效
+		    .q_b       (mem_spm_rd_data)  // 读取的数据
+	  );
+
+#+END_SRC

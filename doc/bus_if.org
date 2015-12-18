@@ -1,0 +1,59 @@
+* 总线接口
+
+总线接口用来对总线的访问进行控制。CPU 在 IF 阶段和 MEM 阶段访问内存。总线接口接受来自 CPU 的内存访问请求，并控制其对总线的访问。
+
+因为 FMRT Mini Core 内置了 SPM（Scratch Pad Memory），总线接口要根据访问的地址选择总线和 SPM 的访问。因为 CPU 与 SPM 直接连接，CPU 对 SPM 进行读写只需要一个周期。访问总线时需要遵循总线协议进行访问控制。
+
+[[file:img/bus_if.png]]
+
+- 时钟复位信号
+| 信号名 | 信号类型 | 数据类型 | 位宽 | 含义     |
+| clk    | 输入端口 | wire     |    1 | 时钟     |
+| reset  | 输入端口 | wire     |    1 | 异步复位 |
+
+- CPU 接口
+| 信号名  | 信号类型 | 数据类型 | 位宽 | 含义            |
+| addr    | 输入端口 | wire     |   30 | CPU：地址       |
+| as_     | 输入端口 | wire     |    1 | CPU：地址有效   |
+| rw      | 输入端口 | wire     |    1 | CPU：读/写      |
+| wr_data | 输入端口 | wire     |   32 | CPU：写入的数据 |
+| rd_data | 输出端口 | reg      |   32 | CPU：读取的数据 |
+
+- SPM 接口
+| 信号名      | 信号类型 | 数据类型 | 位宽 | 含义            |
+| spm_rd_data | 输入端口 | wire     |   32 | SPM：读取的数据 |
+| spm_addr    | 输出端口 | wire     |   30 | SPM：地址　     |
+| spm_as_     | 输出端口 | reg      |    1 | SPM：地址选通　 |
+| spm_rw      | 输出端口 | wire     |    1 | SPM：读/写      |
+| spm_wr_data | 输出端口 | wire     |   32 | SPM：写入的数据 |
+
+- 内部信号 
+| 信号名  | 信号类型 | 数据类型 | 位宽 | 含义         |
+| rd_buf  | 内部信号 | reg      |   32 | 读取缓冲     |
+
+
+#+BEGIN_SRC verilog
+
+/******** 内部信号 ********/
+reg [31:0]           rd_buf;    // 读取的缓冲数据
+
+/******** 输出的赋值 ********/
+assign spm_addr    = addr;     // 将 CPU 输入的地址输出到 SPM
+assign spm_rw      = rw;       // 将 CPU 输入的读/写输出到 SPM
+assign spm_wr_data = wr_data;  // 将 CPU 要写入的数据输出到 SPM
+
+/******** 内存访问控制 ********/
+always @(*) begin
+    /* 默认值 */
+    rd_data = 32'h0;               // 读取的数据初始化为 0
+    spm_as_ = `DISABLE_;           // SPM 的地址选通信号设置为无效
+    /* 内存访问 */
+    if (as_ == `ENABLE_) begin     // 地址选通信号有效时， 
+        spm_as_ = `ENABLE_;        //     执行内存访问操作
+        if (rw == `READ) begin     // 读取访问时，
+            rd_data = spm_rd_data; //     将从 SPM 读取的数据输出到数据输出端口 
+        end
+    end
+end
+
+#+END_SRC
