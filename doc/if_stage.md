@@ -102,7 +102,7 @@ always @(posedge clk)
 
 | if_pc  | if_insn  |if_en	| 
 | :----  | :----    | :----  	|
-| 0x100  | ISA_NOP  |DISABLE 	|
+| 0x100  | ins	    |ENABLE 	|
 
 ####下一条地址
 **输入信号**
@@ -114,7 +114,7 @@ always @(posedge clk)
 
 | if_pc  | if_insn  |if_en   | 
 | :----  | :----    | :----  |
-| 0x1 	 | insn     |DISABLE |
+| 0x1 	 | insn     |ENABLE  |
 
 ##**IF 阶段的顶层模块**
 
