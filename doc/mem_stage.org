@@ -18,6 +18,153 @@ mem_stage
 
 #+END_SRC
 
+** MEM  阶段顶层模块
+
+MEM 阶段顶层模块用来连内存访问控制模块、MEM 阶段流水线寄存器、与总线接口。
+
+*** MEM 阶段顶层模块输入输出端口 
+
+- MEM 阶段顶层模块端口连接图
+[[file:img/if_stage.png]]
+
+- 时钟和复位
+| 信号名 | 信号类型 | 数据类型 | 位宽 | 含义     |
+| clk    | 输入端口 | wire     |    1 | 时钟     |
+| reset  | 输入端口 | wire     |    1 | 异步复位 |
+
+- EX/MEM 流水线寄存器
+| 信号名         | 信号类型 | 数据类型 | 位宽 | 含义                                                 |
+| ex_mem_op      | 输入端口 | wire     |    2 | MEM_OP_NOP/MEM_OP_LDW（字读取）/MEM_OP_STW（字写入） |
+| ex_mem_wr_data | 输入端口 | wire     |   32 | 内存写入数据                                         |
+| ex_out         | 输入端口 | wire     |   32 | EX 阶段处理结果                                      |
+| ex_dst_addr    | 输入端口 | wire     |    5 | 通用寄存器写入地址                                   |
+| ex_gpr_we_     | 输入端口 | wire     |    1 | 通用寄存器写入有效                                   |
+
+- MEM/WB 流水线寄存器
+| 信号名       | 信号类型 | 数据类型 | 位宽 | 含义               |
+| mem_dst_addr | 输出端口 | reg      |    5 | 通用寄存器写入地址 |
+| mem_gpr_we_  | 输出端口 | reg      |    1 | 通用寄存器写入有效 |
+| mem_out      | 输出端口 | reg      |   32 | 处理结果           |
+
+*** MEM 阶段顶层模块代码详解
+
+#+BEGIN_SRC verilog
+
+    /********** 内部信号 **********/
+    wire [`WordDataBus]        rd_data;         // 读取的数据
+    wire [`WordAddrBus]        addr;            // 地址
+    wire                       as_;             // 地址选通
+    wire                       rw;              // 读/写
+    wire [`WordDataBus]        wr_data;         // 写入的数据
+    wire [`WordDataBus]        out;             // 内存访问结果
+    wire                       miss_align;      // 未对齐
+
+
+    /********** 内存访问控制模块 **********/
+    mem_ctrl mem_ctrl (
+        /********** EX/MEM 流水线寄存器 **********/
+        .ex_mem_op        (ex_mem_op),       // 内存操作(空操作/字读取/字写入)
+        .ex_mem_wr_data   (ex_mem_wr_data),  // 内存写入数据
+        .ex_out           (ex_out),          // EX 阶段处理结果
+        /********** 内存访问接口 **********/
+        .rd_data          (rd_data),         // 读取的数据
+        .addr             (addr),            // 地址
+        .as_              (as_),             // 地址选通
+        .rw               (rw),              // 读/写
+        .wr_data          (wr_data),         // 写入的数据
+        /********** 内存访问结果 **********/
+        .out              (out),             // 内存访问结果
+        .miss_align       (miss_align)       // 未对齐
+    );
+
+    /********** 总线接口 **********/
+    bus_if bus_if (
+        /********** 时钟 & 复位 **********/
+        .clk              (clk),             // 时钟
+        .reset            (reset),           // 异步复位
+        /********** CPU 接口 **********/
+        .addr             (addr),            // CPU：地址
+        .as_              (as_),             // CPU：地址有效
+        .rw               (rw),              // CPU：读/写
+        .wr_data          (wr_data),         // CPU：写入的数据
+        .rd_data          (rd_data),         // CPU：读入的数据
+        /********** SPM 接口 **********/
+        .spm_rd_data      (spm_rd_data),     // SPM：读取的数据
+        .spm_addr         (spm_addr),        // SPM：地址
+        .spm_as_          (spm_as_),         // SPM：地址选通
+        .spm_rw           (spm_rw),          // SPM：读/写
+        .spm_wr_data      (spm_wr_data),     // SPM：写入的数据
+    );
+
+    /********** MEM 阶段流水线寄存器 **********/
+    mem_reg mem_reg (
+        /********** 时钟 & 复位 **********/
+        .clk              (clk),             // 时钟
+        .reset            (reset),           // 异步复位
+        /********** 内存访问结果 **********/
+        .out              (out),             // 结果
+        .miss_align       (miss_align),      // 未对齐
+        /********** EX/MEM 流水线寄存器 **********/
+        .ex_dst_addr      (ex_dst_addr),     // 通用寄存器写入地址
+        .ex_gpr_we_       (ex_gpr_we_),      // 通用寄存器写入有效
+        /********** MEM/WB 流水线寄存器 **********/
+        .mem_dst_addr     (mem_dst_addr),    // 通用寄存器写入地址
+        .mem_gpr_we_      (mem_gpr_we_),     // 通用寄存器写入有效
+        .mem_out          (mem_out)          // 处理结果
+    );
+
+#+END_SRC
+
+*** Testbench
+
+STEP 为一个周期的时间
+
+#+BEGIN_SRC verilog
+
+/******** 生成时钟 ********/
+always #(STEP / 2) begin
+    clk <= ~clk;
+end
+
+#+END_SRC
+
+**** 初始化信号 （# 0）
+- 输入信号
+| clk    | reset        | spm_rd_data | ex_mem_op | ex_mem_wr_data | ex_dst_addr | ex_gpr_we_ | ex_out |
+| `HIGHT | `REST_ENABLE | 32'b0       | 2'b0      | 32'b0          | 5'b0        | 1'b1       | 32'b0  |
+
+- 输出信号
+| spm_addr | spm_as_   | spm_rw | spm_wr_data | mem_dst_addr | mem_gpr_we_ | mem_out |
+| 30'b0    | `DISABLE_ | `READ  | 32'b0       | 5'b0         | `DISABLE_   | 32'b0   |
+
+**** 解除复位（# (STEP * 3 / 4)   #STEP）
+- 输入信号
+| reset           | spm_rd_data | ex_mem_op | ex_mem_wr_data | ex_dst_addr | ex_gpr_we_ | ex_out |
+| `REST_DISENABLE | 32'b0       | 2'b0      | 32'b0          | 5'b0        | 1'b1       | 32'b0  |
+
+- 输出信号
+| spm_addr | spm_as_   | spm_rw | spm_wr_data | mem_dst_addr | mem_gpr_we_ | mem_out |
+| 30'b0    | `DISABLE_ | `READ  | 32'b0       | 5'b0         | `DISABLE_   | 32'b0   |
+
+**** 字读取（对齐）
+- 输入信号
+| spm_rd_data | ex_mem_op   | ex_mem_wr_data                | ex_dst_addr | ex_gpr_we_ | ex_out |
+|        0x24 | `MEM_OP_LDW | `WORD_DATA_W'h999(don't care) | 5'hx        | 1'hx       |  0x154 |
+
+- 输出信号
+| spm_addr | spm_as_  | spm_rw | spm_wr_data       | mem_dst_addr | mem_gpr_we_ | mem_out |
+|     0x55 | `ENABLE_ | 'READ  | `WORD_DATA_W'h999 | 5'hx         | 1'hx        |    0x24 |
+
+**** 结束仿真（# STEP）
+
+#+BEGIN_SRC verilog
+
+# STEP begin
+    $finish; 
+end
+
+#+END_SRC
+
 ** 内存访问控制模块
 
 *** 内存访问控制模块输入输出端口
@@ -31,7 +178,7 @@ mem_stage
 | ex_mem_wr_data | 输入端口 | wire     |   32 | 内存写入数据                                         |
 | ex_out         | 输入端口 | wire     |   32 | EX 阶段处理结果                                      |
 
-- EX/MEM 内存访问接口（mem_ctrl.v）
+- 内存访问接口（mem_ctrl.v）
 | 信号名  | 信号类型 | 数据类型 | 位宽 | 含义       |
 | rd_data | 输入端口 | wire     |   32 | 读取的数据 |
 | addr    | 输出端口 | wire     |   30 | 地址       |
@@ -39,7 +186,7 @@ mem_stage
 | rw      | 输出端口 | reg      |    1 | 读/写      |
 | wr_data | 输出端口 | wire     |   32 | 写入的数据 |
 
-- EX/MEM 内存访问结果（mem_ctrl.v）
+- 内存访问结果（mem_ctrl.v）
 | 信号名     | 信号类型 | 数据类型 | 位宽 | 含义         |
 | out        | 输出端口 | reg      |   32 | 内存访问结果 |
 | miss_align | 输出端口 | reg      |    1 | 未对齐       |
@@ -94,22 +241,22 @@ end
 **** 字读取（对齐）
 假设读取的地址是 0x154，该地址的值是 0x24。
 - 输入信号
-| ex_mem_op   | ex_mem_wr_data    | ex_out | rd_data |
-| `MEM_OP_LDW | `WORD_DATA_W'hx(don't care) |  0x154 |    0x24 |
+| ex_mem_op   | ex_mem_wr_data                | ex_out | rd_data |
+| `MEM_OP_LDW | `WORD_DATA_W'h999(don't care) |  0x154 |    0x24 |
 
 - 输出信号
-| addr | as_      | rw    | wr_data |  out | miss_align |
-| 0x55 | `ENABLE_ | `READ | `WORD_DATA_W'hx   | 0x24 | `DISABLE   |
+| addr | as_      | rw    | wr_data           |  out | miss_align |
+| 0x55 | `ENABLE_ | `READ | `WORD_DATA_W'h999 | 0x24 | `DISABLE   |
 
 **** 字读取（未对齐）
 假设读取的地址是 0x59，该地址的值是 0x24。
 - 输入信号
-| ex_mem_op   | ex_mem_wr_data              | ex_out | rd_data |
-| `MEM_OP_LDW | `WORD_DATA_W'hx(don't care) |   0x59 |    0x24 |
+| ex_mem_op   | ex_mem_wr_data                | ex_out | rd_data |
+| `MEM_OP_LDW | `WORD_DATA_W'h999(don't care) |   0x59 |    0x24 |
 
 - 输出信号
-| addr | as_       | rw    | wr_data         | out             | miss_align |
-| 0x59 | `DISABLE_ | `READ | `WORD_DATA_W'hx | `WORD_DATA_W'h0 | `ENABLE    |
+| addr | as_       | rw    | wr_data           | out             | miss_align |
+| 0x16 | `DISABLE_ | `READ | `WORD_DATA_W'h999 | `WORD_DATA_W'h0 | `ENABLE    |
 
 
 **** 字写入（对齐）
@@ -130,17 +277,17 @@ end
 
 - 输出信号
 | addr | as_       | rw    | wr_data | out             | miss_align |
-| 0x59 | `DISABLE_ | `READ |    0x13 | `WORD_DATA_W'h0 | `ENABLE    |
+| 0x16 | `DISABLE_ | `READ |    0x13 | `WORD_DATA_W'h0 | `ENABLE    |
 
 **** 无内存访问
 假设 EX 阶段运算的结果是 0x59，当被视作地址时，该地址的值是 0x24。
 - 输入信号
-| ex_mem_op   | ex_mem_wr_data  | ex_out | rd_data |
-| `MEM_OP_NOP | `WORD_DATA_W'hx |   0x59 |    0x24 |
+| ex_mem_op   | ex_mem_wr_data                | ex_out | rd_data |
+| `MEM_OP_NOP | `WORD_DATA_W'h999(don't care) |   0x59 |    0x24 |
 
 - 输出信号
-| addr | as_       | rw    | wr_data         |  out | miss_align |
-| 0x59 | `DISABLE_ | `READ | `WORD_DATA_W'hx | 0x59 | `DISENABLE |
+| addr | as_       | rw    | wr_data           |  out | miss_align |
+| 0x16 | `DISABLE_ | `READ | `WORD_DATA_W'h999 | 0x59 | `DISENABLE |
  
 ** MEM 阶段流水线寄存器
 
@@ -160,9 +307,9 @@ end
 | miss_align | 输入端口 | wire     |    1 | 未对齐 |
 
 - EX/MEM 流水线寄存器（mem_reg.v）
-| 信号名          | 信号类型 | 数据类型 | 位宽 | 含义               |
-| ex_dst_address_ | 输入端口 | wire     |    5 | 通用寄存器写入地址 |
-| ex_gpr_we_      | 输入端口 | wire     |    1 | 通用寄存器写入有效 |
+| 信号名      | 信号类型 | 数据类型 | 位宽 | 含义               |
+| ex_dst_addr | 输入端口 | wire     |    5 | 通用寄存器写入地址 |
+| ex_gpr_we_  | 输入端口 | wire     |    1 | 通用寄存器写入有效 |
 
 - MEM/WB 流水线寄存器（mem_reg.v）
 | 信号名       | 信号类型 | 数据类型 | 位宽 | 含义               |
@@ -199,12 +346,19 @@ end
 
 *** Testbench
 
-** MEM  阶段顶层模块
+**** 初始化（复位，延迟 0 个时钟周期）
+假设读取的地址是 0x154，该地址的值是 0x24。
+- 输入信号
+| clk    | reset         | out    | miss_align | ex_dst_addr | ex_gpr_we_ |
+| `HIGHT | `RESET_ENABLE | 32'hx( |            |             |            |
 
-MEM 阶段顶层模块用来连内存访问控制模块、MEM 阶段流水线寄存器、与总线接口。
+- 输出信号
+| mem_dst_addr | mem_gpr_we_ | mem_out |
+|              |             |         |
 
-*** MEM 阶段顶层模块输入输出端口 
+**** 未对齐异常
 
-*** MEM 阶段顶层模块代码详解
+**** 更新流水线到下一个数据
 
-*** Testbench
+**  总线接口
+
