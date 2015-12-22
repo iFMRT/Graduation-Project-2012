@@ -61,16 +61,17 @@ module if_reg_test;
     initial
     begin
         /************* 刷新 ***************/
-        #0  begin
-            clk <= `ENABLE;
-            reset <= `ENABLE_;
-            insn <= `WORD_DATA_W'h124;
-            stall <= `DISABLE;
-            flush <= `ENABLE;
-            new_pc <= `WORD_DATA_W'h154;
-            br_taken <= `DISABLE;
-            br_addr <= `WORD_DATA_W'h100;
-            end
+        #0  
+        begin
+        clk <= `ENABLE;
+        reset <= `ENABLE_;
+        insn <= `WORD_DATA_W'h124;
+        stall <= `DISABLE;
+        flush <= `ENABLE;
+        new_pc <= `WORD_DATA_W'h154;
+        br_taken <= `DISABLE;
+        br_addr <= `WORD_DATA_W'h100;
+        end
         #(STEP * 3 / 4)
         #STEP 
         begin
@@ -115,12 +116,12 @@ module if_reg_test;
             stall <= `DISABLE;
             flush <= `DISABLE;
             new_pc <= `WORD_DATA_W'h154;
-            br_taken <= `ENABLE;
+            br_taken <= `DISABLE;
             br_addr <= `WORD_DATA_W'h100;
         end
         #STEP
         begin
-            if (if_pc === `WORD_DATA_W'h100 & if_insn === `WORD_DATA_W'h124 & if_en === `ENABLE) 
+            if (if_pc === `WORD_DATA_W'h104 & if_insn === `WORD_DATA_W'h124 & if_en === `ENABLE) 
                 begin
                     $display ("Simulation of next pc succeeded");        
                 end
