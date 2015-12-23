@@ -1,7 +1,10 @@
-# MEM_STAGE_OBJS specifies which files to compile as part of mem stage testbench
+# BUS_IF_OBJS specifies which files to compile as part of bus_if testbench
+BUS_IF_OBJS = bus_if_test.v ../cpu/bus_if.v
+
+# MEM_REG_OBJS specifies which files to compile as part of mem reg testbench
 MEM_REG_OBJS = mem_reg_test.v ../cpu/mem_reg.v
 
-# MEM_STAGE_OBJS specifies which files to compile as part of mem stage testbench
+# MEM_CTRL_OBJS specifies which files to compile as part of mem ctrl testbench
 MEM_CTRL_OBJS = mem_ctrl_test.v ../cpu/mem_ctrl.v
 
 # MEM_STAGE_OBJS specifies which files to compile as part of mem stage testbench
@@ -13,9 +16,14 @@ CC = iverilog
 # INCLUDE_PATHS specifies the additional include paths we'll need
 INCLUDE_PATHS = -I ../include
 
-MEM_REG_OBJ_NAME  = mem_reg.out
+BUS_IF_OBJ_NAME    = bus_if.out
+MEM_REG_OBJ_NAME   = mem_reg.out
 MEM_CTRL_OBJ_NAME  = mem_ctrl.out
 MEM_STAGE_OBJ_NAME = mem_stage.out
+
+bus_if : $(BUS_IF_OBJS)
+	$(CC) $(BUS_IF_OBJS) $(INCLUDE_PATHS) -o $(BUS_IF_OBJ_NAME) -s bus_if_test
+	vvp $(BUS_IF_OBJ_NAME)
 
 mem_reg : $(MEM_REG_OBJS)
 	$(CC) $(MEM_REG_OBJS) $(INCLUDE_PATHS) -o $(MEM_REG_OBJ_NAME) -s mem_reg_test
