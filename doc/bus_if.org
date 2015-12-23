@@ -4,12 +4,9 @@
 
 因为 FMRT Mini Core 内置了 SPM（Scratch Pad Memory），总线接口要根据访问的地址选择总线和 SPM 的访问。因为 CPU 与 SPM 直接连接，CPU 对 SPM 进行读写只需要一个周期。访问总线时需要遵循总线协议进行访问控制。
 
-[[file:img/bus_if.png]]
+** 总线接口输入输出端口 
 
-- 时钟复位信号
-| 信号名 | 信号类型 | 数据类型 | 位宽 | 含义     |
-| clk    | 输入端口 | wire     |    1 | 时钟     |
-| reset  | 输入端口 | wire     |    1 | 异步复位 |
+[[file:img/bus_if.png]]
 
 - CPU 接口
 | 信号名  | 信号类型 | 数据类型 | 位宽 | 含义            |
@@ -31,6 +28,7 @@
 | 信号名  | 信号类型 | 数据类型 | 位宽 | 含义         |
 | rd_buf  | 内部信号 | reg      |   32 | 读取缓冲     |
 
+** 总线接口代码详解
 
 #+BEGIN_SRC verilog
 
@@ -57,3 +55,34 @@ always @(*) begin
 end
 
 #+END_SRC
+
+** Testbench
+
+**** 读取数据
+假设读取的地址是 0x154，该地址的值是 0x24。
+- 输入信号
+| addr             | as_      | rw    | wr_data                       | spm_rd_data      |
+| `WORD_ADDR_W'h55 | `ENABLE_ | `READ | `WORD_DATA_W'h999(don't care) | `WORD_DATA_W'h24 |
+
+- 输出信号
+| rd_data          | spm_addr         | spm_as_  | spm_rw | spm_wr_data       |
+| `WORD_DATA_W'h24 | `WORD_ADDR_W'h55 | `ENABLE_ | `READ  | `WORD_DATA_W'h999 |
+
+**** 无内存访问
+- 输入信号
+| addr             | as_       | rw    | wr_data                       | spm_rd_data      |
+| `WORD_ADDR_W'h55 | `DISABLE_ | `READ | `WORD_DATA_W'h999(don't care) | `WORD_DATA_W'h24 |
+
+- 输出信号
+| rd_data         | spm_addr         | spm_as_   | spm_rw | spm_wr_data       |
+| `WORD_DATA_W'h0 | `WORD_ADDR_W'h55 | `DISABLE_ | `READ  | `WORD_DATA_W'h999 |
+
+**** 写入数据
+假设把值 0x59 写入的地址是 0x154，该地址存放的值是 0x24。
+- 输入信号
+| addr             | as_      | rw     | wr_data          | spm_rd_data      |
+| `WORD_ADDR_W'h55 | `ENABLE_ | `WRITE | `WORD_DATA_W'h59 | `WORD_DATA_W'h24 |
+
+- 输出信号
+| rd_data         | spm_addr         | spm_as_  | spm_rw | spm_wr_data      |
+| `WORD_DATA_W'h0 | `WORD_ADDR_W'h55 | `ENABLE_ | `WRITE | `WORD_DATA_W'h59 |
