@@ -1,62 +1,58 @@
-/******** Time scale ********/
 `timescale 1ns/1ps
 
-/******** 头文件 ********/
 `include "stddef.h"
 `include "cpu.h"
 
-/******** 测试模块 ********/
 module mem_stage_test;
-    /******** 输入输出端口信号 ********/
-    // 时钟 & 复位
-    reg clk;                              // 时钟
-    reg reset;                            // 异步复位
-    // SPM 接口
-    reg [`WORD_DATA_BUS] spm_rd_data;     // SPM：读取的数据
-    wire [`WORD_ADDR_BUS] spm_addr;       // SPM：地址
-    wire                  spm_as_;        // SPM：地址选通
-    wire                  spm_rw;         // SPM：读/写
-    wire [`WORD_DATA_BUS] spm_wr_data;    // SPM：写入的数据
-    /********** EX/MEM 流水线寄存器 **********/
-    reg [`MEM_OP_BUS]     ex_mem_op;      // 内存操作
-    reg [`WORD_DATA_BUS]  ex_mem_wr_data; // 内存写入数据
-    reg [`REG_ADDR_BUS]   ex_dst_addr;    // 通用寄存器写入地址
-    reg                   ex_gpr_we_;     // 通用寄存器写入有效
-    reg [`WORD_DATA_BUS]  ex_out;         // EX阶段处理结果
-    /********** MEM/WB 流水线寄存器 **********/
-    wire [`REG_ADDR_BUS]  mem_dst_addr;   // 通用寄存器写入地址
-    wire                  mem_gpr_we_;    // 通用寄存器写入有效
-    wire [`WORD_DATA_BUS] mem_out;        // 处理结果
+    /******** Clock & Reset ********/
+    reg clk;                              // Clock
+    reg reset;                            // Asynchronous reset
+    /******** SPM Interface ********/
+    reg [`WORD_DATA_BUS] spm_rd_data;     // SPM: Read data
+    wire [`WORD_ADDR_BUS] spm_addr;       // SPM: Address
+    wire                  spm_as_;        // SPM: Address Strobe
+    wire                  spm_rw;         // SPM: Read/Write
+    wire [`WORD_DATA_BUS] spm_wr_data;    // SPM: Write data
+    /********** EX/MEM Pipeline Register **********/
+    reg [`MEM_OP_BUS]     ex_mem_op;      // Memory operation
+    reg [`WORD_DATA_BUS]  ex_mem_wr_data; // Memory write data
+    reg [`REG_ADDR_BUS]   ex_dst_addr;    // General purpose register write address
+    reg                   ex_gpr_we_;     // General purpose register enable
+    reg [`WORD_DATA_BUS]  ex_out;         // EX stage operating result
+    /********** MEM/WB Pipeline Register **********/
+    wire [`REG_ADDR_BUS]  mem_dst_addr;
+    wire                  mem_gpr_we_;
+    wire [`WORD_DATA_BUS] mem_out;        // MEM stage operating result
 
-    /******** 定义仿真循环 ********/
+    /******** Define Simulation Loop********/
     parameter             STEP = 10;
 
-    /******** 生成时钟 ********/
+    /******** Generate Clock ********/
     always #(STEP / 2) begin
         clk <= ~clk;
     end
 
-    /******** 实例化测试模块 ********/
+    /******** Instantiate Test Module ********/
     mem_stage mem_stage(
-        // 时钟 & 复位
-        .clk(clk),                      // 时钟
-        .reset(reset),                  // 复位
-        // SPM 接口
+        // Clock & Reset
+        .clk(clk),                      // Clock
+        .reset(reset),                  // Reset
+        // SPM Interface
         .spm_rd_data(spm_rd_data),
-        .spm_addr(spm_addr),             // SPM：地址
-        .spm_as_(spm_as_),               // SPM：地址选通
-        .spm_rw(spm_rw),                 // SPM：读/写
-        .spm_wr_data(spm_wr_data),       // SPM：写入的数据
-        /********* EX/MEM 流水线寄存器 *********/
-        .ex_mem_op(ex_mem_op),           // 内存操作
-        .ex_mem_wr_data(ex_mem_wr_data), // 内存写入数据
-        .ex_dst_addr(ex_dst_addr),       // 通用寄存器写入地址
-        .ex_gpr_we_(ex_gpr_we_),         // 通用寄存器写入有效
-        .ex_out(ex_out),                 // EX阶段处理结果
-        /********** MEM/WB 流水线寄存器 **********/
-        .mem_dst_addr(mem_dst_addr),     // 通用寄存器写入地址
-        .mem_gpr_we_(mem_gpr_we_),       // 通用寄存器写入有效
-        .mem_out(mem_out)                // 处理结果
+        .spm_addr(spm_addr),
+        .spm_as_(spm_as_),
+        .spm_rw(spm_rw),
+        .spm_wr_data(spm_wr_data),
+        /********* EX/MEM Pipeline Register *********/
+        .ex_mem_op(ex_mem_op),
+        .ex_mem_wr_data(ex_mem_wr_data),
+        .ex_dst_addr(ex_dst_addr),
+        .ex_gpr_we_(ex_gpr_we_),
+        .ex_out(ex_out),
+        /********** MEM/WB Pipeline Register **********/
+        .mem_dst_addr(mem_dst_addr),
+        .mem_gpr_we_(mem_gpr_we_),
+        .mem_out(mem_out)
     );
 
     /******** Test Case ********/
@@ -186,7 +182,7 @@ module mem_stage_test;
         end
     end // initial begin
 
-    /******** 输出波形 ********/
+    /******** Output Waveform ********/
     initial begin
        $dumpfile("mem_stage.vcd");
        $dumpvars(0,mem_stage);
