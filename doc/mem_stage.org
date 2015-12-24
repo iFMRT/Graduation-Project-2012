@@ -129,41 +129,64 @@ end
 #+END_SRC
 
 **** 初始化信号 （# 0）
+假设读取的地址是 0x154，该地址的值是 0x24。
 - 输入信号
-| clk    | reset        | spm_rd_data | ex_mem_op | ex_mem_wr_data | ex_dst_addr | ex_gpr_we_ | ex_out |
-| `HIGHT | `REST_ENABLE | 32'b0       | 2'b0      | 32'b0          | 5'b0        | 1'b1       | 32'b0  |
+| clk  | reset   | spm_rd_data      | ex_mem_op   | ex_mem_wr_data                | ex_dst_addr                | ex_gpr_we_ | ex_out            |
+| 1'h1 | `ENABLE | `WORD_DATA_W'h24 | `MEM_OP_LDW | `WORD_DATA_W'h999(don't care) | `REG_ADDR_W'h7(don't care) | `DISABLE_  | `WORD_DATA_W'h154 |
 
 - 输出信号
-| spm_addr | spm_as_   | spm_rw | spm_wr_data | mem_dst_addr | mem_gpr_we_ | mem_out |
-| 30'b0    | `DISABLE_ | `READ  | 32'b0       | 5'b0         | `DISABLE_   | 32'b0   |
-
-**** 解除复位（# (STEP * 3 / 4)   #STEP）
-- 输入信号
-| reset           | spm_rd_data | ex_mem_op | ex_mem_wr_data | ex_dst_addr | ex_gpr_we_ | ex_out |
-| `REST_DISENABLE | 32'b0       | 2'b0      | 32'b0          | 5'b0        | 1'b1       | 32'b0  |
-
-- 输出信号
-| spm_addr | spm_as_   | spm_rw | spm_wr_data | mem_dst_addr | mem_gpr_we_ | mem_out |
-| 30'b0    | `DISABLE_ | `READ  | 32'b0       | 5'b0         | `DISABLE_   | 32'b0   |
+| spm_addr         | spm_as_  | spm_rw | spm_wr_data       | mem_dst_addr   | mem_gpr_we_ | mem_out         |
+| 'WORD_ADDR_W'h55 | `ENABLE_ | `READ  | `WORD_DATA_W'h999 | `REG_ADDR_W'h0 | `DISABLE_   | `WORD_DATA_W'h0 |
 
 **** 字读取（对齐）
+假设读取的地址是 0x154，该地址的值是 0x24。
 - 输入信号
-| spm_rd_data | ex_mem_op   | ex_mem_wr_data                | ex_dst_addr | ex_gpr_we_ | ex_out |
-|        0x24 | `MEM_OP_LDW | `WORD_DATA_W'h999(don't care) | 5'hx        | 1'hx       |  0x154 |
+| *reset*    | spm_rd_data      | ex_mem_op   | ex_mem_wr_data                | ex_dst_addr                | ex_gpr_we_ | ex_out            |
+| *`DISABLE* | `WORD_DATA_W'h24 | `MEM_OP_LDW | `WORD_DATA_W'h999(don't care) | `REG_ADDR_W'h7(don't care) | `DISABLE_  | `WORD_DATA_W'h154 |
 
 - 输出信号
-| spm_addr | spm_as_  | spm_rw | spm_wr_data       | mem_dst_addr | mem_gpr_we_ | mem_out |
-|     0x55 | `ENABLE_ | 'READ  | `WORD_DATA_W'h999 | 5'hx         | 1'hx        |    0x24 |
+| spm_addr         | spm_as_  | spm_rw | spm_wr_data       | mem_dst_addr   | mem_gpr_we_ | mem_out          |
+| 'WORD_ADDR_W'h55 | `ENABLE_ | `READ  | `WORD_DATA_W'h999 | `REG_ADDR_W'h7 | `DISABLE_   | `WORD_DATA_W'h24 |
 
-**** 结束仿真（# STEP）
+**** 字读取（未对齐）
+假设读取的地址是 0x59，该地址的值是 0x24。
+- 输入信号
+| spm_rd_data      | ex_mem_op   | ex_mem_wr_data                | ex_dst_addr                | ex_gpr_we_ | *ex_out*           |
+| `WORD_DATA_W'h24 | `MEM_OP_LDW | `WORD_DATA_W'h999(don't care) | `REG_ADDR_W'h7(don't care) | `DISABLE_  | *`WORD_DATA_W'h59* |
 
-#+BEGIN_SRC verilog
+- 输出信号
+| spm_addr         | *spm_as_* | spm_rw | spm_wr_data       | *mem_dst_addr*   | mem_gpr_we_ | *mem_out*         |
+| 'WORD_ADDR_W'h16 | `DISABLE_ | `READ  | `WORD_DATA_W'h999 | *`REG_ADDR_W'h0* | `DISABLE_   | *`WORD_DATA_W'h0* |
 
-# STEP begin
-    $finish; 
-end
+**** 字写入（对齐）
+假设写入的地址是 0x154，地址的值是 0x24，写入的数据是 0x13。
+- 输入信号
+| spm_rd_data      | *ex_mem_op*   | *ex_mem_wr_data*   | ex_dst_addr                | ex_gpr_we_ | *ex_out*            |
+| `WORD_DATA_W'h24 | *`MEM_OP_STW* | *`WORD_DATA_W'h13* | `REG_ADDR_W'h7(don't care) | `DISABLE_  | *`WORD_DATA_W'h154* |
 
-#+END_SRC
+- 输出信号
+| *spm_addr*         | *spm_as_*  | *spm_rw* | *spm_wr_data*      | *mem_dst_addr*   | mem_gpr_we_ | mem_out         |
+| *`WORD_ADDR_W'h55* | *`ENABLE_* | *`WRITE* | *`WORD_DATA_W'h13* | *`REG_ADDR_W'h7* | `DISABLE_   | `WORD_DATA_W'h0 |
+
+**** 字写入（未对齐）
+假设读取的地址是 0x59，该地址的值是 0x24，写入的数据是 0x13。
+- 输入信号
+| spm_rd_data      | ex_mem_op   | ex_mem_wr_data   | ex_dst_addr                | ex_gpr_we_ | *ex_out*           |
+| `WORD_DATA_W'h24 | `MEM_OP_STW | `WORD_DATA_W'h13 | `REG_ADDR_W'h7(don't care) | `DISABLE_  | *`WORD_DATA_W'h59* |
+
+- 输出信号
+| *spm_addr*         | *spm_as_*   | *spm_rw* | spm_wr_data      | *mem_dst_addr*   | mem_gpr_we_ | mem_out         |
+| *`WORD_ADDR_W'h16* | *`DISABLE_* | *`READ*  | `WORD_DATA_W'h13 | *`REG_ADDR_W'h0* | `DISABLE_   | `WORD_DATA_W'h0 |
+
+**** 无内存访问
+假设 EX 阶段运算的结果是 0x59，当被视作地址时，该地址的值是 0x24。
+- 输入信号
+| spm_rd_data      | *ex_mem_op*   | *ex_mem_wr_data*                | ex_dst_addr                | *ex_gpr_we_* | ex_out           |
+| `WORD_DATA_W'h24 | *`MEM_OP_NOP* | *`WORD_DATA_W'h999(don't care)* | `REG_ADDR_W'h7(don't care) | *`ENABLE_*   | `WORD_DATA_W'h59 |
+
+- 输出信号
+| spm_addr         | spm_as_   | spm_rw | *spm_wr_data*       | *mem_dst_addr*   | *mem_gpr_we_* | *mem_out*          |
+| `WORD_ADDR_W'h16 | `DISABLE_ | `READ  | *`WORD_DATA_W'h999* | *`REG_ADDR_W'h7* | *`ENABLE_*    | *`WORD_DATA_W'h59* |
 
 ** 内存访问控制模块
 
