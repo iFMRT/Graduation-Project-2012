@@ -23,18 +23,18 @@ module mem_reg (
 	     if (reset == `ENABLE) begin
 			     /* 异步复位 */
 			     mem_dst_addr <= #1 `REG_ADDR_W'h0;
-			     mem_gpr_we_	 <= #1 `DISABLE_;
-			     mem_out		   <= #1 `WORD_DATA_W'h0;
+			     mem_gpr_we_  <= #1 `DISABLE_;
+			     mem_out	  <= #1 `WORD_DATA_W'h0;
 		   end else begin
 		       /* 流水线寄存器的更新 */
 				   if (miss_align == `ENABLE) begin    // 未对齐异常
 					     mem_dst_addr <= #1 `REG_ADDR_W'h0;
-					     mem_gpr_we_	<= #1 `DISABLE_;
-					     mem_out		  <= #1 `WORD_DATA_W'h0;
+					     mem_gpr_we_  <= #1 `DISABLE_;
+					     mem_out	  <= #1 `WORD_DATA_W'h0;
 				   end else begin							         // 下一个数据
 					     mem_dst_addr <= #1 ex_dst_addr;
-					     mem_gpr_we_	<= #1 ex_gpr_we_;
-					     mem_out		  <= #1 out;
+					     mem_gpr_we_  <= #1 ex_gpr_we_;
+					     mem_out	  <= #1 out;
 				   end
 		   end
 	 end

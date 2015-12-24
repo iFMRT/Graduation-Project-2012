@@ -22,8 +22,8 @@ module bus_if (
 	reg [31:0]        rd_buf;		    // 读取的缓冲数据
 
 	/********** 输出的赋值 **********/
-	assign spm_addr	 = addr;
-	assign spm_rw	     = rw;
+	assign spm_addr	   = addr;
+	assign spm_rw	   = rw;
 	assign spm_wr_data = wr_data;
 
 	/********* 内存访问控制 *********/
