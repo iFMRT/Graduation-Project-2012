@@ -398,3 +398,4 @@ end
 
 **  总线接口
 
+[[file:bus_if.org][Bus interface Document]]
