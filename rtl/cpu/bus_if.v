@@ -23,16 +23,16 @@ module bus_if (
 
 	/********* Memory Access Control *********/
 	always @(*) begin
-	    /* Default Value */
-	    rd_data	 = 32'h0;
-	    spm_as_	 = `DISABLE_;
 		  /* Memory Access */
 	    if (as_ == `ENABLE_) begin
 	        spm_as_	 = `ENABLE_;
-		    if (rw == `READ) begin  // Read Access
-				rd_data	 = spm_rd_data;
-		    end
+		      if (rw == `READ) begin  // Read Access
+				      rd_data	 = spm_rd_data;
+		      end
+	    end else begin
+	    	  /* Default Value */
+	    	  rd_data	 = 32'h0;
+	    	  spm_as_	 = `DISABLE_;
 	    end
 	end
-
 endmodule
