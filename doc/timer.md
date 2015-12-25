@@ -203,7 +203,115 @@ timer 端口连接图如图 1.5。
 	end
 ```
 
+STEP 为一个周期的时间
+```
+    /********** 生成时钟 **********/
+    always #(STEP / 2)
+        begin
+            clk <= ~clk;  
+        end
+```
+###初始化信号 （# 0）
 
+*输入信号
+
+|clk |reset |cs_ |as_|rw|addr|wr_data|
+|:----|:----  | :----|:----  | :----|:----  | :----|:----  |
+|ENABLE|ENABLE_|ENABLE_|ENABLE_|WRITE|TIMER_ADDR_EXPR|WORD_DATA_W'b0001_0101|
+
+*输出信号
+
+|rd_data |rdy_ |start |mode|irq|expr_val|counter|
+|:----|:----  | :----|:----  | :----|:----  | :----|:----  |
+|WORD_DATA_W'h0|DISABLE_|DISABLE|TIMER_MODE_ONE_SHOT|DISABLE|WORD_DATA_W'b0|WORD_DATA_W'b0|
+
+###写入访问
+
+在(#(STEP * (3 / 4 + 2)))时，输入如下信号：
+
+|reset |
+|:----|
+|DISABLE_|
+
+(#STEP)后，写入控制寄存器 2 ，输出如下：
+
+|expr_val |
+|:----|
+|WORD_DATA_W'b0001_0101|
+
+(#STEP)后，输入如下信号，对控制寄存器 0 进行写操作：
+
+|addr |
+|:----|
+|TIMER_ADDR_CTRL|
+
+(#STEP)后，写入控制寄存器 0 ，输出如下：
+
+|start |mode|rdy_|
+|:----|:----|:----|
+|1'b1|1'b0|ENABLE_|
+
+###读访问
+
+(#(STEP * wr_data))后，准备进行读访问，输入如下信号：
+
+|rw |
+|:----|
+|READ|
+
+(#STEP)后，计时完成并读取控制寄存器 0，输出如下：
+
+|rd_data |expr_flag|irq|
+|:----|:----|:----|
+|WORD_DATA_W'b1|ENABLE|ENABLE|
+
+(#STEP)后，输出如下：
+
+|start |
+|:----|
+|1'b0|
+
+(#STEP)后，再次读取控制寄存器 0，输出如下：
+
+|rd_data |
+|:----|
+|WORD_DATA_W'b0|
+
+(#STEP)后，输入如下信号，准备读取控制寄存器 1：
+
+|addr |
+|:----|
+|TIMER_ADDR_INTR|
+
+(#STEP)后，读取控制寄存器 1，输出如下：
+
+|rd_data |
+|:----|
+|WORD_DATA_W'b1|
+
+(#STEP)后，输入如下信号，准备读取控制寄存器 2：
+
+|addr |
+|:----|
+|TIMER_ADDR_EXPR|
+
+(#STEP)后，读取控制寄存器 2，输出如下：
+
+|rd_data |
+|:----|
+|WORD_DATA_W'b0001_0101|
+
+(#STEP)后，输入如下信号，准备读取控制寄存器 3：
+
+|addr |
+|:----|
+|TIMER_ADDR_COUNTER|
+
+(#STEP)后，读取控制寄存器 3，输出如下：
+
+|rd_data |
+|:----|
+|WORD_DATA_W'b0|
 
 
 

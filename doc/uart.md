@@ -29,7 +29,7 @@ UART 的控制寄存器如表 1-1 所示。
 
 控制寄存器 0 ：状态寄存器如图 1.1 所示。
 
-![uart_ctrl_reg_0](doc/img/uart_ctrl_reg_0.jpg)
+![uart_ctrl_reg_0](img/uart_ctrl_reg_0.jpg)
 
 ###控制寄存器 1 ：收发数据寄存器
 
@@ -40,7 +40,7 @@ UART 的控制寄存器如表 1-1 所示。
 
 控制寄存器 1 ：收发数据寄存器如图 1.2 所示。
 
-![uart_ctrl_reg_1](doc/img/uart_ctrl_reg_1.jpg)
+![uart_ctrl_reg_1](img/uart_ctrl_reg_1.jpg)
 
 ##UART 的实现
 
@@ -53,7 +53,7 @@ UART 的控制寄存器如表 1-1 所示。
 |uart_rx    |uart_rx.v  |UART 接收模块  |
 |uart_ctrl  |uart_ctrl.v|UART 控制模块  |
 
-![uart_modules](doc/img/uart_modules.png)
+![uart_modules](img/uart_modules.png)
 
 `UART` 使用的宏一览如表 1-3 所示。
 
@@ -85,10 +85,10 @@ UART 的控制寄存器如表 1-1 所示。
 
 `UART` 的整体框图如图 1.4 所示。
 
-![uart](doc/img/uart.jpg)
+![uart](img/uart.jpg)
 
 ###发送模块
-
+####实现
 发送模块的信号线如表 1-4 所示。
 
 |分组 |信号名 |信号类型 |数据类型 |位宽 |含义|
@@ -171,7 +171,59 @@ UART 的控制寄存器如表 1-1 所示。
               end
       end
 ```
+####Testbench
+
+STEP 为一个周期的时间
+```
+    /********** 生成时钟 **********/
+    always #(STEP / 2)
+        begin
+            clk <= ~clk;  
+        end
+```
+#####初始化信号 (# 0)
+
+*输入信号
+
+|clk |reset |tx_start |tx_data |
+|:----|:----  | :----|:----|
+|ENABLE|ENABLE_|ENABLE|BYTE_DATA_W'b1110_1101|
+
+*输出信号
+
+|state |div_cnt |bit_cnt |sh_reg|tx_end|tx|
+|:----|:----  | :----|:----|:----  | :----|
+|UART_STATE_IDLE|UART_DIV_RATE|UART_BIT_CNT_START|BYTE_DATA_W'b0|DISABLE|UART_STOP_BIT|
+
+#####发送信号(#(STEP * (3 / 4 + 2)))
+
+在(#(STEP * (3 / 4 + 2)))时，输入如下信号：
+
+|reset |
+|:----|
+|DISABLE_|
+
+(#STEP)以后，开始发送信号，输出信号如下：
+
+|tx_busy |tx |tx_end |
+|:----|:----  | :----|
+|ENABLE|UART_START_BIT|DISABLE|
+
+(#( STEP * ( UART_DIV_RATE + 1 ) ))后第一个比特信号发送完成，输出如下：
+
+|tx |
+|:----|
+|UART_STOP_BIT|
+
+（#( STEP * ( UART_DIV_RATE + 1 ) )）后第二个比特信号发送完成，输出如下：
+
+|tx |
+|:----|
+|UART_START_BIT|
+
 ###接收模块
+
+####实现
 
 接收模块的信号线如表 1-5 所示。
 
@@ -250,7 +302,77 @@ UART 的控制寄存器如表 1-1 所示。
               end
       end
 ```
+####Testbench
+
+STEP 为一个周期的时间
+```
+    /********** 生成时钟 **********/
+    always #(STEP / 2)
+        begin
+            clk <= ~clk;  
+        end
+```
+#####初始化信号 (# 0)
+
+*输入信号
+
+|clk |reset |rx |
+|:----|:----  | :----|
+|ENABLE|ENABLE_|UART_START_BIT|
+
+*输出信号
+
+|rx_end |rx_data|state|div_cnt |bit_cnt |
+|:----|:----  | :----|:----|:----  | 
+|DISABLE|BYTE_DATA_W'b0|UART_STATE_IDLE|UART_DIV_RATE / 2|UART_BIT_CNT_START|
+
+#####接收信号
+
+在(#(STEP * (3 / 4 + 2)))时，进行信号接收输入如下信号：
+
+|reset |
+|:----|
+|DISABLE_|
+
+(#STEP)后输出信号如下：
+
+|rx_busy |rx_end |
+|:----| :----|
+|ENABLE|DISABLE|
+
+(#( STEP * ( UART_DIV_RATE / 2 ) ))后输入接收的第一个比特信号：
+
+|rx |
+|:----|
+|UART_STOP_BIT|
+
+(#STEP)后接收数据兼移位寄存器的值输出如下：
+
+|rx_data |
+|:----|
+|BYTE_DATA_W'b1000_0000|
+
+(#( STEP *  UART_DIV_RATE ))后输入接收的第二个比特信号：
+
+|rx |
+|:----|
+|UART_START_BIT|
+
+(#STEP)后接收数据兼移位寄存器的值输出如下：
+
+|rx_data |
+|:----|
+|BYTE_DATA_W'b0100_0000|
+
+(#( STEP * ( UART_DIV_RATE * 8 + 7 ) ))后最后一个比特信号接收完成，输出信号如下：
+
+|rx_end |rx_busy |
+|:----|:----|:----|
+|ENABLE|DISABLE|
+
 ###控制模块
+
+####实现
 
 UART 控制模块的信号线一览如表 1-6 所示。
 
@@ -358,12 +480,113 @@ UART 控制模块的信号线一览如表 1-6 所示。
               end
       end
 ```
+####Testbench
+
+STEP 为一个周期的时间
+```
+    /********** 生成时钟 **********/
+    always #(STEP / 2)
+        begin
+            clk <= ~clk;  
+        end
+```
+#####初始化信号 （# 0）
+
+*输入信号
+
+|clk |reset |cs_ |as_|rw|addr|tx_end|tx_busy|rx_busy|rx_data|wr_data|
+|:----|:----  | :----|:----  | :----|:----  | :----|:----  | :----|:----  | :----|
+|ENABLE|ENABLE_|ENABLE_|ENABLE_|WRITE|UART_ADDR_STATUS|ENABLE|ENABLE|DISABLE|BYTE_DATA_W'b0101_101|WORD_DATA_W'b0101_0101|
+
+*输出信号
+
+|rd_data |rdy_ |irq_tx |irq_rx|tx_start|tx_data|
+|:----|:----  | :----|:----  | :----|:----  | 
+|WORD_DATA_W'b0|DISABLE|DISABLE|DISABLE|DISABLE|BYTE_DATA_W'b0|
+
+#####控制写入访问
+
+在（#(STEP * (3 / 4 + 2))）时，写入控制寄存器 0，控制发送完成中断，输入如下信号：
+
+|reset |
+|:----|
+|DISABLE_|
+
+(#STEP)后输出信号如下：
+
+|irq_tx |rdy_ |
+|:----| :----|
+|ENABLE |ENABLE_|
+
+(#STEP)后输入如下信号，控制发送完成中断：
+
+|tx_end |
+|:----|
+|DISABLE |
+
+(#STEP)后输出信号如下：
+
+|irq_tx |
+| :----|
+|DISABLE|
+
+(#STEP)后输入如下信号，控制接收完成中断：
+
+|rx_end |
+|:----|
+|ENABLE |
+
+(#STEP)后输出信号如下：
+
+|irq_rx |
+| :----|
+|ENABLE|
+
+(#STEP)后输入如下信号， 写入控制寄存器 1：
+
+|addr |
+|:----|
+|UART_ADDR_DATA |
+
+(#STEP)后输出信号如下：
+
+|tx_data |tx_start|
+| :----|:----|
+| BYTE_DATA_W'b0101_0101|ENABLE|
+
+#####控制读取访问
+
+在写入测试完成 (#STEP) 后输入如下信号，读取控制寄存器0：
+
+|rw |addr|
+|:----|:----|
+|READ |UART_ADDR_STATUS|
+
+(#STEP)后输出信号如下：
+
+|rd_data |
+| :----|
+|WORD_DATA_W'b0000_1001|
+
+(#STEP) 后输入如下信号，读取控制寄存器1：
+
+|addr |
+|:----|
+|UART_ADDR_DATA |
+
+(#STEP)后输出信号如下：
+
+|rd_data |
+| :----|
+|WORD_DATA_W'b0101_1010|
 
 ###顶层模块
 
+####实现
+
 `UART` 顶层模块端口连接如图 1.5。
 
-![uart_top](doc/img/uart_top.jpg)
+![uart_top](img/uart_top.jpg)
 
 `uart` 顶层模块代码如下所示。
 ```
@@ -418,5 +641,76 @@ UART 控制模块的信号线一览如表 1-6 所示。
                       );
 ```
 
-##Teatbench
+####Teatbench
 
+STEP 为一个周期的时间
+```
+    /********** 生成时钟 **********/
+    always #(STEP / 2)
+        begin
+            clk <= ~clk;  
+        end
+```
+#####初始化信号 （# 0）
+
+*输入信号
+
+|clk |reset |cs_ |as_|rw|addr|wr_data|rx|
+|:----|:----  | :----|:----  | :----|:----  | :----|:----  |
+|ENABLE|ENABLE_|ENABLE_|ENABLE_|WRITE|UART_ADDR_DATA|WORD_DATA_W'b1110_1101|UART_START_BIT|
+
+*输出信号
+
+|rd_data |rdy_ |irq_tx |irq_rx|tx_start|tx_data|
+|:----|:----  | :----|:----  | :----|:----  | 
+|WORD_DATA_W'b0|DISABLE|DISABLE|DISABLE|DISABLE|BYTE_DATA_W'b0|
+
+#####接收发送信号
+
+在（#(STEP * (3 / 4 + 2))）时，接收发送信号，输入如下信号：
+
+|reset |
+|:----|
+|DISABLE_|
+
+(#STEP * 2)后，开始发送和接收，输出信号如下：
+
+|tx |rdy_ |
+|:----| :----|
+|UART_START_BIT | ENABLE_|
+
+(#STEP)后，输入接收的比特信号如下：
+
+|rx |
+|:----|
+|UART_STOP_BIT| 
+
+(#(STEP * UART_DIV_RATE))后，第一个信号发送完成，输出如下：
+
+|tx |
+|:----|
+|UART_STOP_BIT|
+
+(#STEP)后，对 irq 信号进行测试，输入信号如下：
+
+|rw|addr |
+|:----| :----|
+|WRITE | UART_ADDR_STATUS|
+
+(#STEP)后，输出信号如下：
+
+|irq_rx |irq_tx|
+|:----|
+|ENABLE|DISABLE |
+
+(#(STEP * (UART_DIV_RATE / 2 + UART_DIV_RATE * 8))）后，接收信号完成，准备读出接收的信号，输入信号如下：
+
+|rw|addr |
+|:----| :----|
+|READ |UART_ADDR_DATA|
+
+(#(STEP * 8)）后，读出接收的信号,输出如下：
+
+|rd_data|
+|:----|
+|WORD_DATA_W'b1111_1111|
