@@ -16,9 +16,6 @@ module bus_if (
 	output [31:0]     spm_wr_data
 );
 
-	/********** Interal Signal **********/
-	reg [31:0]        rd_buf;		    // Read buffer
-
 	/********** Output Assignment **********/
 	assign spm_addr	   = addr;
 	assign spm_rw	     = rw;
@@ -32,8 +29,8 @@ module bus_if (
 		  /* Memory Access */
 	    if (as_ == `ENABLE_) begin
 	        spm_as_	 = `ENABLE_;
-		      if (rw == `READ) begin  // Read Access
-				      rd_data	 = spm_rd_data;
+		    if (rw == `READ) begin  // Read Access
+				rd_data	 = spm_rd_data;
 		    end
 	    end
 	end
