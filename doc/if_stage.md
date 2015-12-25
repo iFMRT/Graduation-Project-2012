@@ -23,10 +23,10 @@ IF 阶段的流水线寄存器（if_reg）的信号线一览如表 1-2 所示。
 |读取数据	  |insn		|输入端口	|wire	|32	|读取的指令		|
 |流水线控制信号	  |stall	|输入端口	|wire	|1	|延迟			|
 |流水线控制信号	  |flush	|输入端口	|wire	|1	|刷新			|
-|流水线控制信号	  |new_pc	|输入端口	|wire	|30	|新程序计数器值		|
+|流水线控制信号	  |new_pc	|输入端口	|wire	|32	|新程序计数器值		|
 |流水线控制信号	  |br_taken	|输入端口	|wire	|1	|分支发生		|
-|流水线控制信号	  |br_addr	|输入端口	|wire	|30	|分支目标地址		|
-|IF/ID流水线寄存器|if_pc	|输出端口	|reg	|30	|程序计数器		|
+|流水线控制信号	  |br_addr	|输入端口	|wire	|32	|分支目标地址		|
+|IF/ID流水线寄存器|if_pc	|输出端口	|reg	|32	|程序计数器		|
 |IF/ID流水线寄存器|if_insn 	|输出端口	|reg	|32	|指令			|
 |IF/ID流水线寄存器|if_en   	|输入端口	|reg	|1	|流水线数据有效标志位	|
 
@@ -41,41 +41,41 @@ IF 阶段的流水线寄存器（if_reg）的程序如下所示。
 ```python
 always @(posedge clk)
     begin
-          if (reset == 1)
-	          begin
-	/********************异步复位********************/
-	              if_pc = #1 30'b0;     // 初始化PC为全零
-	              if_insn = #1 `ISA_NOP;   // 初始化指令为空
-	              if_en = #1 `DISABLE;         //  初始化取指使能位为无效
-	          end
+          if (reset == `ENABLE_)
+              begin
+    /********************异步复位********************/
+                  if_pc <= #1 `WORD_DATA_W'b0;          // 初始化PC为全零
+                  if_insn <= #1 `ISA_NOP;               // 初始化指令为空
+                  if_en <= #1 `DISABLE;                 // 初始化取指使能位为无效
+              end
           else
-	        begin
-	/*************更新流水线寄存器***************/
-	            if (stall == `DISABLE)
-	                begin
-	                  if (flush == `ENABLE)                
-	                  //刷新
-		                  begin
-		                      if_pc = #1 new_pc;      // 更新 PC 为新程序计数器值
-		                      if_insn = #1 `ISA_NOP;  // 设置指令为空
-		                      if_en = #1 `DISABLE;    //  初始化取指使能位为无效
-		                  end 
-	                  else if (br_taken == `ENABLE)
-		                  //分支成立
-		                  begin 
-		                      if_pc = #1 br_addr;    // 更新 PC 为分支目标地址
-		                      if_insn = #1 insn;     // 设置指令为读取的指令
-		                      if_en = #1 `ENABLE;    //   初始化取指使能位为有效
-		                 end
-	                  else                                     
-	                      /*************下一条地址***************/
-		                  begin
-		                      if_pc = #1 if_pc + 1'd1; // 更新 PC 为下一条地址
-		                      if_insn = #1 insn;    // 设置指令为读取的指令
-		                      if_en = #1 `ENABLE;   //   初始化取指使能位为有效
-		                  end
-	                end
-	    end
+            begin
+    /*************更新流水线寄存器***************/
+                if (stall == `DISABLE)
+                    begin
+                      if (flush == `ENABLE)                
+                          /************* 刷新 ***************/
+                          begin
+                              if_pc <= #1 new_pc;       // 更新 PC 为新程序计数器值
+                              if_insn <= #1 `ISA_NOP;   // 设置读取的指令为空
+                              if_en <= #1 `DISABLE;     // 设置取指使能位为无效
+                          end 
+                      else if (br_taken == `ENABLE)
+                          /************* 分支成立 ***************/
+                          begin 
+                              if_pc <= #1 br_addr;      // 更新 PC 为分支目标地址
+                              if_insn <= #1 insn;       // 设置对应地址的指令为读取的指令
+                              if_en <= #1 `ENABLE;      // 设置取指使能位为有效
+                         end
+                      else                                     
+                          /************ 下一条地址 **************/
+                          begin
+                              if_pc <= #1 if_pc + `WORD_DATA_W'd4;// 更新 PC 为下一条地址
+                              if_insn <= #1 insn;       // 设置对应地址的指令为读取的指令
+                              if_en <= #1 `ENABLE;      // 设置取指使能位为有效
+                          end
+                    end
+        end
     end
 ```
 ###**Testbench**
@@ -114,7 +114,7 @@ always @(posedge clk)
 
 | if_pc  | if_insn  |if_en   | 
 | :----  | :----    | :----  |
-| 0x1 	 | insn     |ENABLE  |
+| 0x104  | insn     |ENABLE  |
 
 ##**IF 阶段的顶层模块**
 
