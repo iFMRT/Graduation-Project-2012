@@ -104,11 +104,12 @@ module ex_stage_test;
 		begin
 			bypass_in  = bypass_in_t;
 			# STEP begin
-				$write("%m.%2d: (%b, %h, %b, %b, %h) || ",	
+				$write("%m.%2d: (%b, %b, %b, %b, %h) || ",	
 					times, rst, 
 					id_dst_address, id_gpr_we_, id_mem_op, id_mem_wr_data);
 				exp_bypass = exp_bypass_t;
 				check_reg  = ~check_reg;
+				times      = times + 1;
 			end
 		end
 	endtask
@@ -289,13 +290,14 @@ module ex_stage_test;
 
 		//# (STEP * 3 / 4)
 		rst <= RST;
-		regvct({32'hFFFF_FFFF, 1'b1, 2'b11, 32'hFFFF_FFFF}, 
-					 {32'h0000_0000, 1'b0, 2'b00, 32'h0000_0000});
+		regvct({5'b00000, 1'b1, 2'b11, 32'hFFFF_FFFF}, 
+					 {5'b00000, 1'b0, 2'b00, 32'h0000_0000});
+
 		rst <= NRST;
-		regvct({32'hFFFF_FFFF, 1'b1, 2'b11, 32'hFFFF_FFFF}, 
-					 {32'hFFFF_FFFF, 1'b1, 2'b11, 32'hFFFF_FFFF});
-		regvct({32'hF0F1_234F, 1'b0, 2'b01, 32'h12dF_0010}, 
-					 {32'hF0F1_234F, 1'b0, 2'b01, 32'h12dF_0010});
+		regvct({5'b01001, 1'b1, 2'b11, 32'hFFFF_FFFF}, 
+					 {5'b01001, 1'b1, 2'b11, 32'hFFFF_FFFF});
+		regvct({5'b01110, 1'b0, 2'b01, 32'h12dF_0010}, 
+					 {5'b01110, 1'b0, 2'b01, 32'h12dF_0010});
 
 		# STEP $finish;
 	end
