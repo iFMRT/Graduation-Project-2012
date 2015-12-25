@@ -14,6 +14,7 @@
 | ex_reg   | ex_reg.v   | 流水线寄存器 |
 
 - 模块结构  
+
 > ex_stage  
 >    |— alu  
 >    |— cmp  
@@ -31,7 +32,7 @@ EX 阶段顶层模块包括了该阶段所有子模块（包括 EX/MEM 流水线
 
 
 - EX 阶段顶层模块端口连线图  
-![EX 阶段顶层模块端口连线图](/img/ex_stage.png)
+[EX 阶段顶层模块端口连线图](img/ex_stage.png)
 
 端口详细信息如下:
 
