@@ -57,7 +57,7 @@ always @(posedge clk)
                       else                                     
                           /************ 下一条地址 **************/
                           begin
-                              if_pc <= #1 if_pc + 32'd4;// 更新 PC 为下一条地址
+                              if_pc <= #1 if_pc + `WORD_DATA_W'd4;// 更新 PC 为下一条地址
                               if_insn <= #1 insn;       // 设置对应地址的指令为读取的指令
                               if_en <= #1 `ENABLE;      // 设置取指使能位为有效
                           end
