@@ -3,7 +3,7 @@
  -- FILE NAME	: timer.v
  -- DESCRIPTION : 定时器
  -- ----------------------------------------------------------------------------
- -- Date:2015/12/17		    Coding_by:kippy
+ -- Date:2015/12/17		    
  -- ============================================================================
 */
 
@@ -134,7 +134,7 @@ module timer (
 					end 
 				else if (start == `ENABLE) 
 					begin
-						counter	 <= #1 counter + 1'd1;
+						counter	 <= #1 counter + `WORD_DATA_W'b1;
 					end
 			end
 	end
