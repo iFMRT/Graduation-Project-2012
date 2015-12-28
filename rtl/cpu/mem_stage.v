@@ -5,6 +5,9 @@ module mem_stage (
     /********** Clock & Reset **********/
     input wire                   clk,            // Clock
     input wire                   reset,          // Asynchronous Reset
+    /********** Pipeline Control Signal **********/
+    input wire                   stall,          // Stall
+    input wire                   flush,          // Flush
     /********** SPM Interface **********/
     input wire [`WORD_DATA_BUS]  spm_rd_data,    // SPM: Read data
     output wire [`WORD_ADDR_BUS] spm_addr,       // SPM: Address
@@ -12,12 +15,14 @@ module mem_stage (
     output wire                  spm_rw,         // SPM: Read/Write
     output wire [`WORD_DATA_BUS] spm_wr_data,    // SPM: Write data
     /********** EX/MEM Pipeline Register **********/
+    input wire                   ex_en,          // If Pipeline data enable
     input wire [`MEM_OP_BUS]     ex_mem_op,      // Memory operation
     input wire [`WORD_DATA_BUS]  ex_mem_wr_data, // Memory write data
     input wire [`REG_ADDR_BUS]   ex_dst_addr,    // General purpose register write address
     input wire                   ex_gpr_we_,     // General purpose register enable
     input wire [`WORD_DATA_BUS]  ex_out,         // EX Stage operating reslut
     /********** MEM/WB Pipeline Register **********/
+    output wire                  mem_en,         // If Pipeline data enables
     output wire [`REG_ADDR_BUS]  mem_dst_addr,   // General purpose register write address
     output wire                  mem_gpr_we_,    // General purpose register enable
     output wire [`WORD_DATA_BUS] mem_out
@@ -35,6 +40,7 @@ module mem_stage (
     // /********** Memory Access Control Module **********/
     mem_ctrl mem_ctrl (
         /********** EX/MEM Pipeline Register **********/
+        .ex_en            (ex_en),          // If Pipeline data enable
         .ex_mem_op        (ex_mem_op),       // Memory operation
         .ex_mem_wr_data   (ex_mem_wr_data),  // Memory write data
         .ex_out           (ex_out),          // EX Stage operating reslut
@@ -51,6 +57,9 @@ module mem_stage (
 
     // /********** Bus Interface **********/
     bus_if bus_if (
+         /********** Pipeline Control Signal **********/
+        .stall            (stall),                       // Stall
+        .flush            (flush),                       // Flush signal
         /********** CPU  Interface **********/
         .addr             (addr),            // CPU: Address
         .as_              (as_),             // CPU: Address Strobe
@@ -73,10 +82,15 @@ module mem_stage (
         /********** Memory Access Result **********/
         .out              (out),
         .miss_align       (miss_align),
+        /********** Pipeline Control Signal **********/
+        .stall            (stall),           // Stall
+        .flush            (flush),           // Flush
         /********** EX/MEM Pipeline Register **********/
+        .ex_en            (ex_en),           // If Pipeline data enable
         .ex_dst_addr      (ex_dst_addr),     // General purpose register write address
         .ex_gpr_we_       (ex_gpr_we_),      // General purpose register enable
         /********** MEM/WB Pipeline Register **********/
+        .mem_en           (mem_en),
         .mem_dst_addr     (mem_dst_addr),    // General purpose register write address
         .mem_gpr_we_      (mem_gpr_we_),     // General purpose register enable
         .mem_out          (mem_out)

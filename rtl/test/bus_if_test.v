@@ -1,48 +1,54 @@
 /******** Time scale ********/
 `timescale 1ns/1ps
 
-/******** 头文件 ********/
 `include "stddef.h"
 `include "cpu.h"
 
-/******** 测试模块 ********/
 module bus_if_test;
-    /************* CPU接口 *************/
-    reg [29:0]      addr;        // 地址
-    reg             as_;         // 地址选通信号
-    reg             rw;          // 读／写
-    reg [31:0]      wr_data;     // 写入的数据
-    wire [31:0]     rd_data;     // 读取的数据
-    /************* SPM接口 *************/
-    reg [31:0]      spm_rd_data; // 读取的数据
-    wire [29:0]     spm_addr;    // 地址
-    wire            spm_as_;     // 地址选通信号
-    wire            spm_rw;      // 读／写
-    wire [31:0]     spm_wr_data;  // 读取的数据
+    /************* Pipeline Control Signals *************/
+    reg             stall;
+    reg             flush;
+    /************* CPU Interface *************/
+    reg [29:0]      addr;        // Address
+    reg             as_;         // Address strobe
+    reg             rw;          // Read/Write
+    reg [31:0]      wr_data;     // Write data
+    wire [31:0]     rd_data;     // Read data
+    /************* SPM Interface *************/
+    reg [31:0]      spm_rd_data; // Read data
+    wire [29:0]     spm_addr;    // Address
+    wire            spm_as_;     // Address strobe
+    wire            spm_rw;      // Read/Write
+    wire [31:0]     spm_wr_data; // Read data
 
-    /******** 定义仿真循环 ********/
+    /******** Define Simulation Loop ********/
     parameter             STEP = 10;
 
-    /******** 实例化 bus_if 测试模块 ********/
+    /******** Instantiate Test Module  ********/
     bus_if bus_if (
-        /************* CPU接口 *************/
-        .addr(addr),        // 地址
-        .as_(as_),          // 地址选通信号
-        .rw(rw),          // 读／写
-        .wr_data(wr_data),     // 写入的数据
-        .rd_data(rd_data),     // 读取的数据
-        /************* SPM接口 *************/
-        .spm_rd_data(spm_rd_data), // 读取的数据
-        .spm_addr(spm_addr),    // 地址
-        .spm_as_(spm_as_),     // 地址选通信号
-        .spm_rw(spm_rw),      // 读／写
-        .spm_wr_data(spm_wr_data)  // 读取的数据
+        /************* Pipeline Control Signals *************/
+        .stall(stall),
+        .flush(flush),
+        /************* CPU Interface *************/
+        .addr(addr),               // Address
+        .as_(as_),                 // Address strobe
+        .rw(rw),                   // Read/Write
+        .wr_data(wr_data),         // Write data
+        .rd_data(rd_data),         // Read data
+        /************* SPM Interface *************/
+        .spm_rd_data(spm_rd_data), // Read data
+        .spm_addr(spm_addr),       // Address
+        .spm_as_(spm_as_),         // Address strobe
+        .spm_rw(spm_rw),           // Read/Write
+        .spm_wr_data(spm_wr_data)  // Read data
     );
 
-    /******** 测试用例 ********/
+    //******** Test Case ********/
     initial begin
         # 0 begin
-            /******** 读取数据测试输入 ********/
+            /******** Read Data Input Test ********/
+            stall       <= `DISABLE;
+            flush       <= `DISABLE;
             addr        <= `WORD_ADDR_W'h55;
             as_         <= `ENABLE_;
             rw          <= `READ;
@@ -50,7 +56,7 @@ module bus_if_test;
             spm_rd_data <= `WORD_DATA_W'h24;
         end
         # STEP begin
-            /******** 读取数据测试输出 ********/
+            /******** Read Data Output Test ********/
             if ( (rd_data      == `WORD_DATA_W'h24)  &&
                  (spm_addr     == `WORD_ADDR_W'h55)  &&
                  (spm_as_      == `ENABLE_)          &&
@@ -61,7 +67,7 @@ module bus_if_test;
             end else begin
                 $display("Bus If module read data Test Failed !");
             end
-            /******** 无内存访问测试输入 ********/
+            /******** No Memory Access Input Test ********/
             addr        <= `WORD_ADDR_W'h55;
             as_         <= `DISABLE_;
             rw          <= `READ;
@@ -69,7 +75,7 @@ module bus_if_test;
             spm_rd_data <= `WORD_DATA_W'h24;
         end
         # STEP begin
-            /******** 无内存访问测试输出 ********/
+            /******** No Memory Access Output Test ********/
             if ( (rd_data      == `WORD_DATA_W'h0)   &&
                  (spm_addr     == `WORD_ADDR_W'h55)  &&
                  (spm_as_      == `DISABLE_)         &&
@@ -80,15 +86,15 @@ module bus_if_test;
             end else begin
                 $display("Bus If module no access Test Failed !");
             end
-            /******** 写入数据测试输入 ********/
+            /******** Write Data Input Test ********/
             addr        <= `WORD_ADDR_W'h55;
             as_         <= `ENABLE_;
             rw          <= `WRITE;
-            wr_data     <= `WORD_DATA_W'h59;        // don't care, e.g: 0x999
+            wr_data     <= `WORD_DATA_W'h59;
             spm_rd_data <= `WORD_DATA_W'h24;
         end
         # STEP begin
-            /******** 写入数据测试输出 ********/
+            /******** Write Data Output Test ********/
             if ( (rd_data      == `WORD_DATA_W'h0)   &&
                  (spm_addr     == `WORD_ADDR_W'h55)  &&
                  (spm_as_      == `ENABLE_)          &&
@@ -99,11 +105,30 @@ module bus_if_test;
             end else begin
                 $display("Bus If module write data Test Failed !");
             end
+            /******** Pipeline flush or stall Input Test ********/
+            stall       <= `ENABLE;
+            flush       <= `ENABLE;
+            as_         <= `DISABLE_;
+            rw          <= `READ;
+            wr_data     <= `WORD_DATA_W'h999;        // don't care, e.g: 0x999
+        end
+        # STEP begin
+            /******** Write Data Output Test ********/
+            if ( (rd_data      == `WORD_DATA_W'h0)   &&
+                 (spm_addr     == `WORD_ADDR_W'h55)  &&
+                 (spm_as_      == `DISABLE_)          &&
+                 (spm_rw       == `READ)            &&
+                 (spm_wr_data  == `WORD_DATA_W'h999)
+                 ) begin
+                $display("Bus If module Pipeline flush or stall Test Succeeded !");
+            end else begin
+                $display("Bus If module Pipeline flush or stall Test Failed !");
+            end
             $finish;
         end
     end // initial begin
 
-    /******** 输出波形 ********/
+    /******** Output Waveform ********/
     initial begin
        $dumpfile("bus_if.vcd");
        $dumpvars(0,bus_if);

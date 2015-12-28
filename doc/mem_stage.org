@@ -32,8 +32,14 @@ MEM 阶段顶层模块用来连内存访问控制模块、MEM 阶段流水线寄
 | clk    | 输入端口 | wire     |    1 | 时钟     |
 | reset  | 输入端口 | wire     |    1 | 异步复位 |
 
+- 流水线控制信号（mem_reg.v）
+| 信号名 | 信号类型 | 数据类型 | 位宽 | 含义 |
+| stall  | 输入端口 | wire     |    1 | 延迟 |
+| flush  | 输入端口 | wire     |    1 | 刷新 |
+
 - EX/MEM 流水线寄存器
 | 信号名         | 信号类型 | 数据类型 | 位宽 | 含义                                                 |
+| ex_en          | 输入端口 | wire     |    1 | 流水线数据是否有效                                   |
 | ex_mem_op      | 输入端口 | wire     |    2 | MEM_OP_NOP/MEM_OP_LDW（字读取）/MEM_OP_STW（字写入） |
 | ex_mem_wr_data | 输入端口 | wire     |   32 | 内存写入数据                                         |
 | ex_out         | 输入端口 | wire     |   32 | EX 阶段处理结果                                      |
@@ -42,6 +48,7 @@ MEM 阶段顶层模块用来连内存访问控制模块、MEM 阶段流水线寄
 
 - MEM/WB 流水线寄存器
 | 信号名       | 信号类型 | 数据类型 | 位宽 | 含义               |
+| mem_en       | 输出端口 | reg      |    1 | 流水线数据是否有效 |
 | mem_dst_addr | 输出端口 | reg      |    5 | 通用寄存器写入地址 |
 | mem_gpr_we_  | 输出端口 | reg      |    1 | 通用寄存器写入有效 |
 | mem_out      | 输出端口 | reg      |   32 | 处理结果           |
@@ -58,7 +65,6 @@ MEM 阶段顶层模块用来连内存访问控制模块、MEM 阶段流水线寄
     wire [`WordDataBus]        wr_data;         // 写入的数据
     wire [`WordDataBus]        out;             // 内存访问结果
     wire                       miss_align;      // 未对齐
-
 
     /********** 内存访问控制模块 **********/
     mem_ctrl mem_ctrl (
@@ -131,62 +137,89 @@ end
 **** 初始化信号 （# 0）
 假设读取的地址是 0x154，该地址的值是 0x24。
 - 输入信号
-| clk  | reset   | spm_rd_data      | ex_mem_op   | ex_mem_wr_data                | ex_dst_addr                | ex_gpr_we_ | ex_out            |
-| 1'h1 | `ENABLE | `WORD_DATA_W'h24 | `MEM_OP_LDW | `WORD_DATA_W'h999(don't care) | `REG_ADDR_W'h7(don't care) | `DISABLE_  | `WORD_DATA_W'h154 |
+| clk  | reset   | stall    | flush    | spm_rd_data      | ex_en   | ex_mem_op   | ex_mem_wr_data                | ex_dst_addr                | ex_gpr_we_ | ex_out            |
+| 1'h1 | `ENABLE | `DISABLE | `DISABLE | `WORD_DATA_W'h24 | `ENABLE | `MEM_OP_LDW | `WORD_DATA_W'h999(don't care) | `REG_ADDR_W'h7(don't care) | `DISABLE_  | `WORD_DATA_W'h154 |
 
 - 输出信号
-| spm_addr         | spm_as_  | spm_rw | spm_wr_data       | mem_dst_addr   | mem_gpr_we_ | mem_out         |
-| 'WORD_ADDR_W'h55 | `ENABLE_ | `READ  | `WORD_DATA_W'h999 | `REG_ADDR_W'h0 | `DISABLE_   | `WORD_DATA_W'h0 |
+| spm_addr         | spm_as_  | spm_rw | spm_wr_data       | mem_en   | mem_dst_addr   | mem_gpr_we_ | mem_out         |
+| 'WORD_ADDR_W'h55 | `ENABLE_ | `READ  | `WORD_DATA_W'h999 | `DISABLE | `REG_ADDR_W'h0 | `DISABLE_   | `WORD_DATA_W'h0 |
 
 **** 字读取（对齐）
 假设读取的地址是 0x154，该地址的值是 0x24。
 - 输入信号
-| *reset*    | spm_rd_data      | ex_mem_op   | ex_mem_wr_data                | ex_dst_addr                | ex_gpr_we_ | ex_out            |
-| *`DISABLE* | `WORD_DATA_W'h24 | `MEM_OP_LDW | `WORD_DATA_W'h999(don't care) | `REG_ADDR_W'h7(don't care) | `DISABLE_  | `WORD_DATA_W'h154 |
+| *reset*    | stall    | flush    | spm_rd_data      | ex_en   | ex_mem_op   | ex_mem_wr_data                | ex_dst_addr                | ex_gpr_we_ | ex_out            |
+| *`DISABLE* | `DISABLE | `DISABLE | `WORD_DATA_W'h24 | `ENABLE | `MEM_OP_LDW | `WORD_DATA_W'h999(don't care) | `REG_ADDR_W'h7(don't care) | `DISABLE_  | `WORD_DATA_W'h154 |
 
 - 输出信号
-| spm_addr         | spm_as_  | spm_rw | spm_wr_data       | mem_dst_addr   | mem_gpr_we_ | mem_out          |
-| 'WORD_ADDR_W'h55 | `ENABLE_ | `READ  | `WORD_DATA_W'h999 | `REG_ADDR_W'h7 | `DISABLE_   | `WORD_DATA_W'h24 |
+| spm_addr         | spm_as_  | spm_rw | spm_wr_data       | mem_en  | mem_dst_addr   | mem_gpr_we_ | mem_out          |
+| 'WORD_ADDR_W'h55 | `ENABLE_ | `READ  | `WORD_DATA_W'h999 | `ENABLE | `REG_ADDR_W'h7 | `DISABLE_   | `WORD_DATA_W'h24 |
 
 **** 字读取（未对齐）
 假设读取的地址是 0x59，该地址的值是 0x24。
 - 输入信号
-| spm_rd_data      | ex_mem_op   | ex_mem_wr_data                | ex_dst_addr                | ex_gpr_we_ | *ex_out*           |
-| `WORD_DATA_W'h24 | `MEM_OP_LDW | `WORD_DATA_W'h999(don't care) | `REG_ADDR_W'h7(don't care) | `DISABLE_  | *`WORD_DATA_W'h59* |
+| stall    | flush    | spm_rd_data      | ex_en   | ex_mem_op   | ex_mem_wr_data                | ex_dst_addr                | ex_gpr_we_ | *ex_out*           |
+| `DISABLE | `DISABLE | `WORD_DATA_W'h24 | `ENABLE | `MEM_OP_LDW | `WORD_DATA_W'h999(don't care) | `REG_ADDR_W'h7(don't care) | `DISABLE_  | *`WORD_DATA_W'h59* |
 
 - 输出信号
-| spm_addr         | *spm_as_* | spm_rw | spm_wr_data       | *mem_dst_addr*   | mem_gpr_we_ | *mem_out*         |
-| 'WORD_ADDR_W'h16 | `DISABLE_ | `READ  | `WORD_DATA_W'h999 | *`REG_ADDR_W'h0* | `DISABLE_   | *`WORD_DATA_W'h0* |
+| spm_addr         | *spm_as_* | spm_rw | spm_wr_data       | mem_en  | *mem_dst_addr*   | mem_gpr_we_ | *mem_out*         |
+| 'WORD_ADDR_W'h16 | `DISABLE_ | `READ  | `WORD_DATA_W'h999 | `ENABLE | *`REG_ADDR_W'h0* | `DISABLE_   | *`WORD_DATA_W'h0* |
 
 **** 字写入（对齐）
 假设写入的地址是 0x154，地址的值是 0x24，写入的数据是 0x13。
 - 输入信号
-| spm_rd_data      | *ex_mem_op*   | *ex_mem_wr_data*   | ex_dst_addr                | ex_gpr_we_ | *ex_out*            |
-| `WORD_DATA_W'h24 | *`MEM_OP_STW* | *`WORD_DATA_W'h13* | `REG_ADDR_W'h7(don't care) | `DISABLE_  | *`WORD_DATA_W'h154* |
+| stall    | flush    | spm_rd_data      | ex_en   | *ex_mem_op*   | *ex_mem_wr_data*   | ex_dst_addr                | ex_gpr_we_ | *ex_out*            |
+| `DISABLE | `DISABLE | `WORD_DATA_W'h24 | `ENABLE | *`MEM_OP_STW* | *`WORD_DATA_W'h13* | `REG_ADDR_W'h7(don't care) | `DISABLE_  | *`WORD_DATA_W'h154* |
 
 - 输出信号
-| *spm_addr*         | *spm_as_*  | *spm_rw* | *spm_wr_data*      | *mem_dst_addr*   | mem_gpr_we_ | mem_out         |
-| *`WORD_ADDR_W'h55* | *`ENABLE_* | *`WRITE* | *`WORD_DATA_W'h13* | *`REG_ADDR_W'h7* | `DISABLE_   | `WORD_DATA_W'h0 |
+| *spm_addr*         | *spm_as_*  | *spm_rw* | *spm_wr_data*      | mem_en  | *mem_dst_addr*   | mem_gpr_we_ | mem_out         |
+| *`WORD_ADDR_W'h55* | *`ENABLE_* | *`WRITE* | *`WORD_DATA_W'h13* | `ENABLE | *`REG_ADDR_W'h7* | `DISABLE_   | `WORD_DATA_W'h0 |
 
 **** 字写入（未对齐）
 假设读取的地址是 0x59，该地址的值是 0x24，写入的数据是 0x13。
 - 输入信号
-| spm_rd_data      | ex_mem_op   | ex_mem_wr_data   | ex_dst_addr                | ex_gpr_we_ | *ex_out*           |
-| `WORD_DATA_W'h24 | `MEM_OP_STW | `WORD_DATA_W'h13 | `REG_ADDR_W'h7(don't care) | `DISABLE_  | *`WORD_DATA_W'h59* |
+| stall    | flush    | spm_rd_data      | ex_en   | ex_mem_op   | ex_mem_wr_data   | ex_dst_addr                | ex_gpr_we_ | *ex_out*           |
+| `DISABLE | `DISABLE | `WORD_DATA_W'h24 | `ENABLE | `MEM_OP_STW | `WORD_DATA_W'h13 | `REG_ADDR_W'h7(don't care) | `DISABLE_  | *`WORD_DATA_W'h59* |
 
 - 输出信号
-| *spm_addr*         | *spm_as_*   | *spm_rw* | spm_wr_data      | *mem_dst_addr*   | mem_gpr_we_ | mem_out         |
-| *`WORD_ADDR_W'h16* | *`DISABLE_* | *`READ*  | `WORD_DATA_W'h13 | *`REG_ADDR_W'h0* | `DISABLE_   | `WORD_DATA_W'h0 |
+| *spm_addr*         | *spm_as_*   | *spm_rw* | spm_wr_data      | mem_en  | *mem_dst_addr*   | mem_gpr_we_ | mem_out         |
+| *`WORD_ADDR_W'h16* | *`DISABLE_* | *`READ*  | `WORD_DATA_W'h13 | `ENABLE | *`REG_ADDR_W'h0* | `DISABLE_   | `WORD_DATA_W'h0 |
 
 **** 无内存访问
 假设 EX 阶段运算的结果是 0x59，当被视作地址时，该地址的值是 0x24。
 - 输入信号
-| spm_rd_data      | *ex_mem_op*   | *ex_mem_wr_data*                | ex_dst_addr                | *ex_gpr_we_* | ex_out           |
-| `WORD_DATA_W'h24 | *`MEM_OP_NOP* | *`WORD_DATA_W'h999(don't care)* | `REG_ADDR_W'h7(don't care) | *`ENABLE_*   | `WORD_DATA_W'h59 |
+| stall    | flush    | spm_rd_data      | ex_en   | *ex_mem_op*   | *ex_mem_wr_data*                | ex_dst_addr                | *ex_gpr_we_* | ex_out           |
+| `DISABLE | `DISABLE | `WORD_DATA_W'h24 | `ENABLE | *`MEM_OP_NOP* | *`WORD_DATA_W'h999(don't care)* | `REG_ADDR_W'h7(don't care) | *`ENABLE_*   | `WORD_DATA_W'h59 |
 
 - 输出信号
-| spm_addr         | spm_as_   | spm_rw | *spm_wr_data*       | *mem_dst_addr*   | *mem_gpr_we_* | *mem_out*          |
-| `WORD_ADDR_W'h16 | `DISABLE_ | `READ  | *`WORD_DATA_W'h999* | *`REG_ADDR_W'h7* | *`ENABLE_*    | *`WORD_DATA_W'h59* |
+| spm_addr         | spm_as_   | spm_rw | *spm_wr_data*       | mem_en  | *mem_dst_addr*   | *mem_gpr_we_* | *mem_out*          |
+| `WORD_ADDR_W'h16 | `DISABLE_ | `READ  | *`WORD_DATA_W'h999* | `ENABLE | *`REG_ADDR_W'h7* | *`ENABLE_*    | *`WORD_DATA_W'h59* |
+
+**** EX/MEM 流水线寄存器数据无效
+- 输入信号
+| stall    | flush    | spm_rd_data      | ex_en    | ex_mem_op   | ex_mem_wr_data                | ex_dst_addr                | ex_gpr_we_ | ex_out           |
+| `DISABLE | `DISABLE | `WORD_DATA_W'h24 | `DISABLE | `MEM_OP_NOP | `WORD_DATA_W'h999(don't care) | `REG_ADDR_W'h7(don't care) | `ENABLE_   | `WORD_DATA_W'h59 |
+
+- 输出信号
+| spm_addr         | spm_as_   | spm_rw | spm_wr_data       | mem_en  | mem_dst_addr   | mem_gpr_we_ | mem_out         |
+| `WORD_ADDR_W'h16 | `DISABLE_ | `READ  | `WORD_DATA_W'h999 | `ENABLE | `REG_ADDR_W'h7 | `ENABLE_    | `WORD_DATA_W'h0 |
+
+**** 流水线刷新
+- 输入信号
+| stall    | flush   | spm_rd_data      | ex_en   | ex_mem_op   | ex_mem_wr_data                | ex_dst_addr                | ex_gpr_we_ | ex_out           |
+| `DISABLE | `ENABLE | `WORD_DATA_W'h24 | `ENABLE | `MEM_OP_NOP | `WORD_DATA_W'h999(don't care) | `REG_ADDR_W'h7(don't care) | `ENABLE_   | `WORD_DATA_W'h59 |
+
+- 输出信号
+| spm_addr        | spm_as_   | spm_rw | spm_wr_data       | mem_en   | mem_dst_addr   | mem_gpr_we_ | mem_out         |
+| `WORD_ADDR_W'h0 | `DISABLE_ | `READ  | `WORD_DATA_W'h999 | `DISABLE | `REG_ADDR_W'h0 | `DISABLE_   | `WORD_DATA_W'h0 |
+
+**** 流水线停顿
+- 输入信号
+| stall   | flush    | spm_rd_data      | ex_en   | ex_mem_op   | ex_mem_wr_data                | ex_dst_addr                | ex_gpr_we_ | ex_out           |
+| `ENABLE | `DISABLE | `WORD_DATA_W'h24 | `ENABLE | `MEM_OP_NOP | `WORD_DATA_W'h999(don't care) | `REG_ADDR_W'h7(don't care) | `ENABLE_   | `WORD_DATA_W'h59 |
+
+- 输出信号
+| spm_addr        | spm_as_   | spm_rw | spm_wr_data       | mem_en   | mem_dst_addr   | mem_gpr_we_ | mem_out         |
+| `WORD_ADDR_W'h0 | `DISABLE_ | `READ  | `WORD_DATA_W'h999 | `DISABLE | `REG_ADDR_W'h0 | `DISABLE_   | `WORD_DATA_W'h0 |
 
 ** 内存访问控制模块
 
@@ -197,6 +230,7 @@ end
 
 - EX/MEM 流水线寄存器（mem_ctrl.v）
 | 信号名         | 信号类型 | 数据类型 | 位宽 | 含义                                                 |
+| ex_en          | 输入端口 | wire     |    1 | 流水线数据是否有效                                            |
 | ex_mem_op      | 输入端口 | wire     |    2 | MEM_OP_NOP/MEM_OP_LDW（字读取）/MEM_OP_STW（字写入） |
 | ex_mem_wr_data | 输入端口 | wire     |   32 | 内存写入数据                                         |
 | ex_out         | 输入端口 | wire     |   32 | EX 阶段处理结果                                      |
@@ -233,28 +267,30 @@ always @(*) begin
     as_        = `DISABLE_;               // 地址选通信号默认为无效
     rw         = `READ;                   // 读/写信号默认为读取 
     /* 内存访问 */
-    case (ex_mem_op)
-        `MEM_OP_lDW: begin                         // 3. 字读取
-            /* 字节偏移的检测 */
-            if (offset == `BTYE_OFFSET_WORD) begin // 对齐（字节偏移为 0
-                out        = rd_data;              // 将读取数据赋值到输出
-                as_        = `ENABLE_;　　　　　　　
-            end else begin                         // 未对齐
-                miss_align = `ENABLE;             
+    if (ex_en == `ENABLE) begin
+        case (ex_mem_op)
+            `MEM_OP_lDW: begin                         // 3. 字读取
+                /* 字节偏移的检测 */
+                if (offset == `BTYE_OFFSET_WORD) begin // 对齐（字节偏移为 0
+                    out        = rd_data;              // 将读取数据赋值到输出
+                    as_        = `ENABLE_;　　　　　　　
+                end else begin                         // 未对齐
+                    miss_align = `ENABLE;             
+                end
             end
-        end
-        `MEM_OP_STW: begin                         // 4. 字写入
-            if (offset == `BTYE_OFFSET_WORD) begin // 对齐（字节偏移为 0
-                rw         = `WRITE;　　　　　　　  
-                as_        = `ENABLE_;
-            end else begin                         // 未对齐
-                miss_align = `ENABLE;
+            `MEM_OP_STW: begin                         // 4. 字写入
+                if (offset == `BTYE_OFFSET_WORD) begin // 对齐（字节偏移为 0
+                    rw         = `WRITE;　　　　　　　  
+                    as_        = `ENABLE_;
+                end else begin                         // 未对齐
+                    miss_align = `ENABLE;
+                end
             end
-        end
-        default    : begin                         // 5. 无内存访问
-            out            = ex_out;               // 将 EX 阶段的输出赋值给输出
-        end
-    endcase
+            default    : begin                         // 5. 无内存访问
+                out            = ex_out;               // 将 EX 阶段的输出赋值给输出
+            end
+        endcase
+    end
 end
                 
 #+END_SRC
@@ -264,8 +300,8 @@ end
 **** 字读取（对齐）
 假设读取的地址是 0x154，该地址的值是 0x24。
 - 输入信号
-| ex_mem_op   | ex_mem_wr_data                | ex_out | rd_data |
-| `MEM_OP_LDW | `WORD_DATA_W'h999(don't care) |  0x154 |    0x24 |
+| ex_en   | ex_mem_op   | ex_mem_wr_data                | ex_out | rd_data |
+| `ENABLE | `MEM_OP_LDW | `WORD_DATA_W'h999(don't care) |  0x154 |    0x24 |
 
 - 输出信号
 | addr | as_      | rw    | wr_data           |  out | miss_align |
@@ -274,8 +310,8 @@ end
 **** 字读取（未对齐）
 假设读取的地址是 0x59，该地址的值是 0x24。
 - 输入信号
-| ex_mem_op   | ex_mem_wr_data                | ex_out | rd_data |
-| `MEM_OP_LDW | `WORD_DATA_W'h999(don't care) |   0x59 |    0x24 |
+| ex_en   | ex_mem_op | ex_mem_wr_data | ex_out                        | rd_data |      |
+| `ENABLE |           | `MEM_OP_LDW    | `WORD_DATA_W'h999(don't care) |    0x59 | 0x24 |
 
 - 输出信号
 | addr | as_       | rw    | wr_data           | out             | miss_align |
@@ -284,8 +320,8 @@ end
 **** 字写入（对齐）
 假设写入的地址是 0x154，地址的值是 0x24，写入的数据是 0x13。
 - 输入信号
-| ex_mem_op   | ex_mem_wr_data | ex_out | rd_data |
-| `MEM_OP_STW |           0x13 |  0x154 |    0x24 |
+| ex_en   | ex_mem_op   | ex_mem_wr_data | ex_out | rd_data |
+| `ENABLE | `MEM_OP_STW |           0x13 |  0x154 |    0x24 |
 
 - 输出信号
 | addr | as_      | rw     | wr_data | out             | miss_align |
@@ -294,8 +330,8 @@ end
 **** 字写入（未对齐）
 假设读取的地址是 0x59，该地址的值是 0x24，写入的数据是 0x13。
 - 输入信号
-| ex_mem_op   | ex_mem_wr_data | ex_out | rd_data |
-| `MEM_OP_STW |           0x13 |   0x59 |    0x24 |
+| ex_en   | ex_mem_op   | ex_mem_wr_data | ex_out | rd_data |
+| `ENABLE | `MEM_OP_STW |           0x13 |   0x59 |    0x24 |
 
 - 输出信号
 | addr | as_       | rw    | wr_data | out             | miss_align |
@@ -304,12 +340,22 @@ end
 **** 无内存访问
 假设 EX 阶段运算的结果是 0x59，当被视作地址时，该地址的值是 0x24。
 - 输入信号
-| ex_mem_op   | ex_mem_wr_data                | ex_out | rd_data |
-| `MEM_OP_NOP | `WORD_DATA_W'h999(don't care) |   0x59 |    0x24 |
+| ex_en   | ex_mem_op   | ex_mem_wr_data                | ex_out | rd_data |
+| `ENABLE | `MEM_OP_NOP | `WORD_DATA_W'h999(don't care) |   0x59 |    0x24 |
 
 - 输出信号
 | addr | as_       | rw    | wr_data           |  out | miss_align |
 | 0x16 | `DISABLE_ | `READ | `WORD_DATA_W'h999 | 0x59 | `DISENABLE |
+ 
+**** 流水线数据无效
+假设 EX 阶段运算的结果是 0x59，当被视作地址时，该地址的值是 0x24。但是流水线数据无效。
+- 输入信号
+| ex_en    | ex_mem_op   | ex_mem_wr_data                | ex_out | rd_data |
+| `DISABLE | `MEM_OP_NOP | `WORD_DATA_W'h999(don't care) |   0x59 |    0x24 |
+
+- 输出信号
+| addr | as_       | rw    | wr_data           | out             | miss_align |
+| 0x16 | `DISABLE_ | `READ | `WORD_DATA_W'h999 | `WORD_DATA_W'h0 | `DISENABLE |
  
 ** MEM 阶段流水线寄存器
 
@@ -328,13 +374,20 @@ end
 | out        | 输入端口 | wire     |   32 | 结果   |
 | miss_align | 输入端口 | wire     |    1 | 未对齐 |
 
+- 流水线控制信号（mem_reg.v）
+| 信号名 | 信号类型 | 数据类型 | 位宽 | 含义 |
+| stall  | 输入端口 | wire     |    1 | 延迟 |
+| flush  | 输入端口 | wire     |    1 | 刷新 |
+
 - EX/MEM 流水线寄存器（mem_reg.v）
 | 信号名      | 信号类型 | 数据类型 | 位宽 | 含义               |
+| ex_en       | 输入端口 | wire     |    1 | 流水线数据是否有效 |
 | ex_dst_addr | 输入端口 | wire     |    5 | 通用寄存器写入地址 |
 | ex_gpr_we_  | 输入端口 | wire     |    1 | 通用寄存器写入有效 |
 
 - MEM/WB 流水线寄存器（mem_reg.v）
 | 信号名       | 信号类型 | 数据类型 | 位宽 | 含义               |
+| mem_en       | 输出端口 | reg      |    1 | 流水线数据是否有效 |
 | mem_dst_addr | 输出端口 | reg      |    5 | 通用寄存器写入地址 |
 | mem_gpr_we_  | 输出端口 | reg      |    1 | 通用寄存器写入有效 |
 | mem_out      | 输出端口 | reg      |   32 | 处理结果           |
@@ -352,11 +405,19 @@ always @(posedge clk or `RESET_EDGE reset) begin
         mem_gpr_we_  <= #1 `DISABLE;
         mem_out      <= #1 `WORD_DATA_W'h0;
     end else begin
-        if (miss_align == `ENABLE) begin            // 2. 未对齐异常的检测：中止正在进行的操作
+        /* 流水线寄存器的更新 */
+        if (flush == `ENABLE) begin                // 2. 刷新流水线
+            mem_en       <= #1 `DISABLE;
+            mem_dst_addr <= #1 `REG_ADDR_W'h0;
+            mem_gpr_we_  <= #1 `DISABLE_;
+            mem_out      <= #1 `WORD_DATA_W'h0;
+        end else if (miss_align == `ENABLE) begin   // 3. 未对齐异常的检测：中止正在进行的操作
+            mem_en       <= #1 `DISABLE;
             mem_dst_addr <= #1 `REG_ADDR_W'h0;      // 通用寄存器写入地址设置为 0
             mem_gpr_we_  <= #1 `DISABLE;            // 通用寄存器写入有效信号设为无效
             mem_out      <= #1 `WORD_DATA_W'h0;     // 处理结果设置为 0
-        end else begin                              // 3. 更新流水线到下一个数据：内存操作的结果在此处被存储到流水线寄存器
+        end else begin                              // 4. 更新流水线到下一个数据：内存操作的结果在此处被存储到流水线寄存器
+            mem_en       <= #1 `DISABLE;
             mem_dst_addr <= #1 ex_dst_addr;
             mem_gpr_we_  <= #1 ex_gpr_we_;
             mem_out      <= #1 out;
@@ -371,30 +432,48 @@ end
 **** 初始化（复位，延迟 0 个时钟周期）
 假设读取的地址是 0x154，该地址的值是 0x24。
 - 输入信号
-| clk    | reset   | out                           | miss_align | ex_dst_addr                | ex_gpr_we_           |
-| `HIGHT | `ENABLE | `WORD_DATA_W'h999(don't care) | 1'h0       | `REG_ADDR_W'h7(don't care) | `ENABLE_(don't care) |
+| clk    | reset   | out                           | miss_align | stall    | flush    | ex_en               | ex_dst_addr                | ex_gpr_we_           |
+| `HIGHT | `ENABLE | `WORD_DATA_W'h999(don't care) | `DISABLE   | `DISABLE | `DISABLE | `ENABLE(don't care) | `REG_ADDR_W'h7(don't care) | `ENABLE_(don't care) |
 
 - 输出信号
-| mem_dst_addr | mem_gpr_we_ | mem_out |
-|              |             |         |
+| mem_en   | mem_dst_addr   | mem_gpr_we_ | mem_out         |
+| `DISABLE | `REG_ADDR_W'h0 | `DISABLE_   | `WORD_DATA_W'h0 |
 
 **** 更新流水线到下一个数据（对齐）
 - 输入信号
-| reset      | out                           | miss_align | ex_dst_addr                | ex_gpr_we_           |
-| `DISENABLE | `WORD_DATA_W'h999(don't care) | 1'h0       | `REG_ADDR_W'h7(don't care) | `ENABLE_(don't care) |
+| reset      | out                           | miss_align | stall    | flush    | ex_en               | ex_dst_addr                | ex_gpr_we_           |
+| `DISENABLE | `WORD_DATA_W'h999(don't care) | `DISABLE   | `DISABLE | `DISABLE | `ENABLE(don't care) | `REG_ADDR_W'h7(don't care) | `ENABLE_(don't care) |
 
 - 输出信号
-| mem_dst_addr   | mem_gpr_we_ | mem_out           |
-| `REG_ADDR_W'h7 | `ENABLE_    | `WORD_DATA_W'h999 |
+| mem_en | mem_dst_addr   | mem_gpr_we_ | mem_out           |
+| ex_en  | `REG_ADDR_W'h7 | `ENABLE_    | `WORD_DATA_W'h999 |
 
 **** 未对齐异常
 - 输入信号
-| reset      | out                           | miss_align | ex_dst_addr                | ex_gpr_we_           |
-| `DISENABLE | `WORD_DATA_W'h999(don't care) | 1'h1       | `REG_ADDR_W'h7(don't care) | `ENABLE_(don't care) |
+| mem_en     | reset                         | out  | miss_align | stall    | flush    | ex_en               | ex_dst_addr                | ex_gpr_we_           |
+| `DISENABLE | `WORD_DATA_W'h999(don't care) | 1'h1 | `ENABLE | `DISABLE | `DISABLE | `ENABLE(don't care) | `REG_ADDR_W'h7(don't care) | `ENABLE_(don't care) |
 
 - 输出信号
-| mem_dst_addr   | mem_gpr_we_ | mem_out         |
-| `REG_ADDR_W'h0 | `DISABLE_   | `WORD_DATA_W'h0 |
+| mem_en | mem_dst_addr   | mem_gpr_we_ | mem_out         |
+| ex_en  | `REG_ADDR_W'h0 | `DISABLE_   | `WORD_DATA_W'h0 |
+
+**** 流水线的清空 
+- 输入信号
+| mem_en     | reset                         | out  | miss_align | stall    | flush    | ex_en               | ex_dst_addr                | ex_gpr_we_           |
+| `DISENABLE | `WORD_DATA_W'h999(don't care) | 1'h1 | `DISABLE   | `DISABLE | `ENABLE | `ENABLE(don't care) | `REG_ADDR_W'h7(don't care) | `ENABLE_(don't care) |
+
+- 输出信号
+| mem_en | mem_dst_addr   | mem_gpr_we_ | mem_out         |
+| ex_en  | `REG_ADDR_W'h0 | `DISABLE_   | `WORD_DATA_W'h0 |
+
+**** 流水线的停顿 
+- 输入信号
+| mem_en     | reset                         | out  | miss_align | stall   | flush    | ex_en               | ex_dst_addr                | ex_gpr_we_           |
+| `DISENABLE | `WORD_DATA_W'h999(don't care) | 1'h1 | `DISABLE   | `ENABLE | `DISABLE | `ENABLE(don't care) | `REG_ADDR_W'h7(don't care) | `ENABLE_(don't care) |
+
+- 输出信号
+| mem_en   | mem_dst_addr   | mem_gpr_we_ | mem_out         |
+| `DISABLE | `REG_ADDR_W'h0 | `DISABLE_   | `WORD_DATA_W'h0 |
 
 **  总线接口
 

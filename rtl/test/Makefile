@@ -36,3 +36,4 @@ mem_ctrl : $(MEM_CTRL_OBJS)
 mem_stage : $(MEM_STAGE_OBJS)
 	$(CC) $(MEM_STAGE_OBJS) $(INCLUDE_PATHS) -o $(MEM_STAGE_OBJ_NAME) -s mem_stage_test
 	vvp $(MEM_STAGE_OBJ_NAME)
+

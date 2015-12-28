@@ -8,6 +8,11 @@
 
 [[file:img/bus_if.png]]
 
+- 流水线控制信号 
+| 信号名 | 信号类型 | 数据类型 | 位宽 | 含义     |
+| stall  | 输入端口 | wire     |    1 | 延迟信号 |
+| flush  | 输入端口 | wire     |    1 | 刷新信号 |
+
 - CPU 接口
 | 信号名  | 信号类型 | 数据类型 | 位宽 | 含义            |
 | addr    | 输入端口 | wire     |   30 | CPU：地址       |
@@ -42,15 +47,20 @@ assign spm_wr_data = wr_data;  // 将 CPU 要写入的数据输出到 SPM
 
 /******** 内存访问控制 ********/
 always @(*) begin
-    /* 默认值 */
-    rd_data = 32'h0;               // 读取的数据初始化为 0
-    spm_as_ = `DISABLE_;           // SPM 的地址选通信号设置为无效
     /* 内存访问 */
-    if (as_ == `ENABLE_) begin     // 地址选通信号有效时， 
-        spm_as_ = `ENABLE_;        //     执行内存访问操作
-        if (rw == `READ) begin     // 读取访问时，
-            rd_data = spm_rd_data; //     将从 SPM 读取的数据输出到数据输出端口 
+    if ( (flush == `DISABLE) &&
+         (stall == `DISABLE) &&
+         (as_ == `ENABLE_)
+       ) begin
+        spm_as_ = `ENABLE_;
+
+        if (rw == `READ) begin  // 读取访问
+            rd_data = spm_rd_data;
         end
+    end else begin
+        /* 默认值 */
+        rd_data = 32'h0;
+        spm_as_ = `DISABLE_;
     end
 end
 
@@ -61,8 +71,8 @@ end
 **** 读取数据
 假设读取的地址是 0x154，该地址的值是 0x24。
 - 输入信号
-| addr             | as_      | rw    | wr_data                       | spm_rd_data      |
-| `WORD_ADDR_W'h55 | `ENABLE_ | `READ | `WORD_DATA_W'h999(don't care) | `WORD_DATA_W'h24 |
+| stall    | flush    | addr             | as_      | rw    | wr_data                       | spm_rd_data      |
+| `DISABLE | `DISABLE | `WORD_ADDR_W'h55 | `ENABLE_ | `READ | `WORD_DATA_W'h999(don't care) | `WORD_DATA_W'h24 |
 
 - 输出信号
 | rd_data          | spm_addr         | spm_as_  | spm_rw | spm_wr_data       |
@@ -70,8 +80,8 @@ end
 
 **** 无内存访问
 - 输入信号
-| addr             | as_       | rw    | wr_data                       | spm_rd_data      |
-| `WORD_ADDR_W'h55 | `DISABLE_ | `READ | `WORD_DATA_W'h999(don't care) | `WORD_DATA_W'h24 |
+| stall    | flush    | addr             | as_       | rw    | wr_data                       | spm_rd_data      |
+| `DISABLE | `DISABLE | `WORD_ADDR_W'h55 | `DISABLE_ | `READ | `WORD_DATA_W'h999(don't care) | `WORD_DATA_W'h24 |
 
 - 输出信号
 | rd_data         | spm_addr         | spm_as_   | spm_rw | spm_wr_data       |
@@ -80,9 +90,19 @@ end
 **** 写入数据
 假设把值 0x59 写入的地址是 0x154，该地址存放的值是 0x24。
 - 输入信号
-| addr             | as_      | rw     | wr_data          | spm_rd_data      |
-| `WORD_ADDR_W'h55 | `ENABLE_ | `WRITE | `WORD_DATA_W'h59 | `WORD_DATA_W'h24 |
+| stall    | flush    | addr             | as_      | rw     | wr_data          | spm_rd_data      |
+| `DISABLE | `DISABLE | `WORD_ADDR_W'h55 | `ENABLE_ | `WRITE | `WORD_DATA_W'h59 | `WORD_DATA_W'h24 |
 
 - 输出信号
 | rd_data         | spm_addr         | spm_as_  | spm_rw | spm_wr_data      |
 | `WORD_DATA_W'h0 | `WORD_ADDR_W'h55 | `ENABLE_ | `WRITE | `WORD_DATA_W'h59 |
+
+**** 流水线的清空或是停顿
+- 输入信号
+| stall   | flush   | addr             | as_       | rw    | wr_data                       | spm_rd_data      |
+| `ENABLE | `ENABLE | `WORD_ADDR_W'h55 | `DISABLE_ | `READ | `WORD_DATA_W'h999(don't care) | `WORD_DATA_W'h24 |
+
+- 输出信号
+| rd_data         | spm_addr         | spm_as_   | spm_rw | spm_wr_data       |
+| `WORD_DATA_W'h0 | `WORD_ADDR_W'h55 | `DISABLE_ | `READ  | `WORD_DATA_W'h999 |
+

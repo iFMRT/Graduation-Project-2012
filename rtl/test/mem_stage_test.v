@@ -5,21 +5,26 @@
 
 module mem_stage_test;
     /******** Clock & Reset ********/
-    reg clk;                              // Clock
-    reg reset;                            // Asynchronous reset
+    reg                   clk;            // Clock
+    reg                   reset;          // Asynchronous reset
+    /********** Pipeline Control Signal **********/
+    reg                   stall;          // Stall
+    reg                   flush;          // Flush
     /******** SPM Interface ********/
-    reg [`WORD_DATA_BUS] spm_rd_data;     // SPM: Read data
+    reg [`WORD_DATA_BUS]  spm_rd_data;    // SPM: Read data
     wire [`WORD_ADDR_BUS] spm_addr;       // SPM: Address
     wire                  spm_as_;        // SPM: Address Strobe
     wire                  spm_rw;         // SPM: Read/Write
     wire [`WORD_DATA_BUS] spm_wr_data;    // SPM: Write data
     /********** EX/MEM Pipeline Register **********/
+    reg                   ex_en;          // If Pipeline data enable
     reg [`MEM_OP_BUS]     ex_mem_op;      // Memory operation
     reg [`WORD_DATA_BUS]  ex_mem_wr_data; // Memory write data
     reg [`REG_ADDR_BUS]   ex_dst_addr;    // General purpose register write address
     reg                   ex_gpr_we_;     // General purpose register enable
     reg [`WORD_DATA_BUS]  ex_out;         // EX stage operating result
     /********** MEM/WB Pipeline Register **********/
+    wire                  mem_en;         // If Pipeline data enables
     wire [`REG_ADDR_BUS]  mem_dst_addr;
     wire                  mem_gpr_we_;
     wire [`WORD_DATA_BUS] mem_out;        // MEM stage operating result
@@ -37,19 +42,24 @@ module mem_stage_test;
         // Clock & Reset
         .clk(clk),                      // Clock
         .reset(reset),                  // Reset
-        // SPM Interface
+        /********** Pipeline Control Signal **********/
+        .stall(stall),                  // Stall
+        .flush(flush),                  // Flush
+        /********** SPM Interface **********/
         .spm_rd_data(spm_rd_data),
         .spm_addr(spm_addr),
         .spm_as_(spm_as_),
         .spm_rw(spm_rw),
         .spm_wr_data(spm_wr_data),
         /********* EX/MEM Pipeline Register *********/
+        .ex_en(ex_en),          // If Pipeline data enable
         .ex_mem_op(ex_mem_op),
         .ex_mem_wr_data(ex_mem_wr_data),
         .ex_dst_addr(ex_dst_addr),
         .ex_gpr_we_(ex_gpr_we_),
         .ex_out(ex_out),
         /********** MEM/WB Pipeline Register **********/
+        .mem_en(mem_en),         // If Pipeline data enables
         .mem_dst_addr(mem_dst_addr),
         .mem_gpr_we_(mem_gpr_we_),
         .mem_out(mem_out)
@@ -62,7 +72,10 @@ module mem_stage_test;
             /******** Initialize Test Input********/
             clk            <= 1'h1;
             reset          <= `ENABLE;
+            stall          <= `DISABLE;
+            flush          <= `DISABLE;
             spm_rd_data    <= `WORD_DATA_W'h24;
+            ex_en          <= `ENABLE;
             ex_mem_op      <= `MEM_OP_LDW;       // when `MEM_OP_LDW, vvp will be infinite loop!
             ex_mem_wr_data <= `WORD_DATA_W'h999; // don't care, e.g: 0x999
             ex_dst_addr    <= `REG_ADDR_W'h7;    // don't care, e.g: 0x7
@@ -76,6 +89,7 @@ module mem_stage_test;
                  (spm_as_      == `ENABLE_)             &&
                  (spm_rw       == `READ)                &&
                  (spm_wr_data  == `WORD_DATA_W'h999)    &&
+                 (mem_en       == `DISABLE)             &&
                  (mem_dst_addr == `REG_ADDR_W'h0)       &&
                  (mem_gpr_we_  == `DISABLE_)            &&
                  (mem_out      == `WORD_DATA_W'h0)
@@ -94,6 +108,7 @@ module mem_stage_test;
                  (spm_as_      == `ENABLE_)             &&
                  (spm_rw       == `READ)                &&
                  (spm_wr_data  == `WORD_DATA_W'h999)    &&
+                 (mem_en       == ex_en)                &&
                  (mem_dst_addr == `REG_ADDR_W'h7)       &&
                  (mem_gpr_we_  == `DISABLE_)            &&
                  (mem_out      == `WORD_DATA_W'h24)
@@ -112,6 +127,7 @@ module mem_stage_test;
                  (spm_as_      == `DISABLE_)            &&
                  (spm_rw       == `READ)                &&
                  (spm_wr_data  == `WORD_DATA_W'h999)    &&
+                 (mem_en       == ex_en)                &&
                  (mem_dst_addr == `REG_ADDR_W'h0)       &&
                  (mem_gpr_we_  == `DISABLE_)            &&
                  (mem_out      == `WORD_DATA_W'h0)
@@ -132,6 +148,7 @@ module mem_stage_test;
                  (spm_as_      == `ENABLE_)             &&
                  (spm_rw       == `WRITE)               &&
                  (spm_wr_data  == `WORD_DATA_W'h13)     &&
+                 (mem_en       == ex_en)                &&
                  (mem_dst_addr == `REG_ADDR_W'h7)       &&
                  (mem_gpr_we_  == `DISABLE_)            &&
                  (mem_out      == `WORD_DATA_W'h0)
@@ -150,6 +167,7 @@ module mem_stage_test;
                  (spm_as_      == `DISABLE_)            &&
                  (spm_rw       == `READ)                &&
                  (spm_wr_data  == `WORD_DATA_W'h13)     &&
+                 (mem_en       == ex_en)                &&
                  (mem_dst_addr == `REG_ADDR_W'h0)       &&
                  (mem_gpr_we_  == `DISABLE_)            &&
                  (mem_out      == `WORD_DATA_W'h0)
@@ -170,6 +188,7 @@ module mem_stage_test;
                 (spm_as_      == `DISABLE_)             &&
                 (spm_rw       == `READ)                 &&
                 (spm_wr_data  == `WORD_DATA_W'h999)     &&
+                (mem_en       == ex_en)                 &&
                 (mem_dst_addr == `REG_ADDR_W'h7)        &&
                 (mem_gpr_we_  == `ENABLE_)              &&
                 (mem_out  == `WORD_DATA_W'h59)
@@ -177,6 +196,64 @@ module mem_stage_test;
                 $display("MEM Stage No Access Test Succeeded !");
             end else begin
                 $display("MEM Stage No Access Test Failed !");
+            end
+
+            /******** Pipeline Line Disable Test Input ********/
+            ex_en          <= `DISABLE;
+        end
+        # STEP begin
+            /******** Pipeline Line Disable Test Output ********/
+            if ((spm_addr     == `WORD_ADDR_W'h16)      &&
+                (spm_as_      == `DISABLE_)             &&
+                (spm_rw       == `READ)                 &&
+                (spm_wr_data  == `WORD_DATA_W'h999)     &&
+                (mem_en       == ex_en)                 &&
+                (mem_dst_addr == `REG_ADDR_W'h7)        &&
+                (mem_gpr_we_  == `ENABLE_)              &&   
+                (mem_out  == `WORD_DATA_W'h0)
+               ) begin
+                $display("MEM Stage Pipeline Line Disable Test Succeeded !");
+            end else begin
+                $display("MEM Stage Pipeline Line Disable Test Failed !");
+            end
+            /******** Pipeline Flush Test Input ********/
+            ex_en          <= `ENABLE;
+            flush          <= `ENABLE;
+        end
+        # STEP begin
+            /******** Pipeline Flush Test Output ********/
+            if ((spm_addr     == `WORD_ADDR_W'h16)      &&
+                (spm_as_      == `DISABLE_)             &&
+                (spm_rw       == `READ)                 &&
+                (spm_wr_data  == `WORD_DATA_W'h999)     &&
+                (mem_en       == `DISABLE)                 &&
+                (mem_dst_addr == `REG_ADDR_W'h0)        &&
+                (mem_gpr_we_  == `DISABLE_)              &&
+                (mem_out  == `WORD_DATA_W'h0)
+                ) begin
+                $display("MEM Stage Pipeline Flush Test Succeeded !");
+            end else begin
+                $display("MEM Stage Pipeline Flush Test Failed !");
+            end
+            
+            /******** Pipeline Stall Test Input ********/
+            flush          <= `DISABLE;
+            stall          <= `ENABLE;
+        end
+        # STEP begin
+            /******** Pipeline Stall Test Output ********/
+            if ((spm_addr     == `WORD_ADDR_W'h16)      &&
+                (spm_as_      == `DISABLE_)             &&
+                (spm_rw       == `READ)                 &&
+                (spm_wr_data  == `WORD_DATA_W'h999)     &&
+                (mem_en       == `DISABLE)                 &&
+                (mem_dst_addr == `REG_ADDR_W'h0)        &&
+                (mem_gpr_we_  == `DISABLE_)              &&
+                (mem_out  == `WORD_DATA_W'h0)
+                ) begin
+                $display("MEM Stage Pipeline Stall Test Succeeded !");
+            end else begin
+                $display("MEM Stage Pipeline Stall Test Failed !");
             end
             $finish;
         end

@@ -6,6 +6,7 @@
 /********** Memory Access Control Module **********/
 module mem_ctrl (
     /********** EX/MEM Pipeline Register **********/
+    input wire                   ex_en,          // If Pipeline data enable
     input wire [`MEM_OP_BUS]     ex_mem_op,      // Memory operation
     input wire [`WORD_DATA_BUS]  ex_mem_wr_data, // Memory write data
     input wire [`WORD_DATA_BUS]  ex_out,         // EX stage operating result
@@ -24,7 +25,7 @@ module mem_ctrl (
     wire [`BYTE_OFFSET_BUS]      offset;         // Byte offset
 
     /********** Output Assignment **********/
-    assign wr_data = ex_mem_wr_data;
+    assign wr_data = ex_mem_wr_data;            
     assign addr    = ex_out[`WORD_ADDR_LOC];
     assign offset  = ex_out[`BYTE_OFFSET_LOC];
 
@@ -36,29 +37,31 @@ module mem_ctrl (
         as_        = `DISABLE_;
         rw         = `READ;
         /* Memory Access */
-        case (ex_mem_op)
-            `MEM_OP_LDW : begin                        // Read a word
-                /* Check offset */
-                if (offset == `BYTE_OFFSET_WORD) begin // Align
-                    out         = rd_data;
-                    as_         = `ENABLE_;
-                end else begin                        // Miss align
-                    miss_align  = `ENABLE;
+        if (ex_en == `ENABLE) begin
+            case (ex_mem_op)
+                `MEM_OP_LDW : begin                        // Read a word
+                    /* Check offset */
+                    if (offset == `BYTE_OFFSET_WORD) begin // Align
+                        out         = rd_data;
+                        as_         = `ENABLE_;
+                    end else begin                        // Miss align
+                        miss_align  = `ENABLE;
+                    end
                 end
-            end
-            `MEM_OP_STW : begin                        // Write a word
-                /* Check offset */
-                if (offset == `BYTE_OFFSET_WORD) begin // Align
-                    rw          = `WRITE;
-                    as_         = `ENABLE_;
-                end else begin                         // Miss align
-                    miss_align  = `ENABLE;
+                `MEM_OP_STW : begin                        // Write a word
+                    /* Check offset */
+                    if (offset == `BYTE_OFFSET_WORD) begin // Align
+                        rw          = `WRITE;
+                        as_         = `ENABLE_;
+                    end else begin                         // Miss align
+                        miss_align  = `ENABLE;
+                    end
                 end
-            end
-            default     : begin                        // No memory access
-                out             = ex_out;
-            end
-        endcase
+                default     : begin                        // No memory access
+                    out             = ex_out;
+                end
+            endcase
+        end
     end
 
 endmodule
