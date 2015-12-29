@@ -8,7 +8,7 @@
 
 [[file:img/riscv_instr_formats_var.png]]
 
-** 算术逻辑运算
+** 算术逻辑运算（19条）
 
 - ~ADDI rd,rs1,imm~ (I-type)
   | I-imm[11:0] | rs1 | funct3 | rd |  opcode |
@@ -69,7 +69,7 @@
 - ~XOR rd,rs1,rs2~ (R-type)
   |  funct7 | rs2 | rs1 | 111 | rd |  opcode |
   | 0000000 | rs2 | rs1 | 100 | rd | 0110011 |
-
+  
 - ~SRL rd,rs1,rs2~ (R-type)
   |  funct7 | rs2 | rs1 | 111 | rd |  opcode |
   | 0000000 | rs2 | rs1 | 101 | rd | 0110011 |
@@ -86,7 +86,7 @@
   |  funct7 | rs2 | rs1 | 111 | rd |  opcode |
   | 0000000 | rs2 | rs1 | 111 | rd | 0110011 |
 
-** 立即数操作
+** 立即数操作（2条）
 
 - ~LUI rd, imm~ (U-type)
   | U-imm[31:12] | rd |  opcode |
@@ -96,7 +96,7 @@
   | U-imm[31:12] | rd |  opcode |
   | imm[31:12] | rd | 0010111 |
   
-** 分支
+** 分支（6条）
 
 - ~BEQ rs1,rs2,imm~ (SB-type)
   | imm[12,10:5] | rs2 | rs1 | funct3 | imm[4:1,11] | opcode |
@@ -122,7 +122,7 @@
   | imm[12,10:5] | rs2 | rs1 | funct3 | imm[4:1,11] | opcode |
   | imm[12,10:5] | rs2 | rs1 |    111 | imm[4:1,11] | 1100011 |
 
-** 跳转
+** 跳转（2条）
 
 - ~JAL rd,imm~ (UJ-type)
   | j-imm[20,10:1,11,19:12] | rd |  opcode |
@@ -132,7 +132,7 @@
   | imm[11:0] | rs1 | funct3 | rd |  opcode |
   | imm[11:0] | rs1 |    000 | rd | 1100111 |
 
-** 取数
+** 取数（5条）
 
 - ~LB rd,rs1,imm~ (I-type)
   | imm[11:0] | rs1 | funct3 | rd |  opcode |
@@ -154,7 +154,7 @@
   | imm[11:0] | rs1 | funct3 | rd |  opcode |
   | imm[11:0] | rs1 |    101 | rd | 0000011 |
   
-** 存数
+** 存数（3条）
 
 - ~SB rs1,rs2,imm~ (S-type)
   | imm[11:5] | rs2 | rs1 | funct3 | imm[4:0] |  opcode |
