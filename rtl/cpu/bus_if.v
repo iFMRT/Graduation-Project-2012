@@ -54,10 +54,8 @@ module bus_if (
             (as_ == `ENABLE_)
            ) begin
             spm_as_ = `ENABLE_;
-
-            if (rw == `READ) begin  // Read Access
-                rd_data    = spm_rd_data;
-            end
+            // write a half word or a byte need spm_rd_data
+            rd_data    = spm_rd_data;
         end else begin
             /* Default Value */
             rd_data = 32'h0;

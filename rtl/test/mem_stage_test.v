@@ -2,6 +2,7 @@
 
 `include "stddef.h"
 `include "cpu.h"
+`include "mem.h"
 
 module mem_stage_test;
     /******** Clock & Reset ********/
@@ -68,15 +69,15 @@ module mem_stage_test;
     /******** Test Case ********/
     initial begin
         # 0 begin
-            // Case: read the value 0x24 from address 0x154
+            // Case: read the value 41a4d9 from address 0x154
             /******** Initialize Test Input********/
             clk            <= 1'h1;
             reset          <= `ENABLE;
             stall          <= `DISABLE;
             flush          <= `DISABLE;
-            spm_rd_data    <= `WORD_DATA_W'h24;
+            spm_rd_data    <= `WORD_DATA_W'h41a4d9;
             ex_en          <= `ENABLE;
-            ex_mem_op      <= `MEM_OP_LDW;       // when `MEM_OP_LDW, vvp will be infinite loop!
+            ex_mem_op      <= `MEM_OP_LW;       // when `MEM_OP_LW, vvp will be infinite loop!
             ex_mem_wr_data <= `WORD_DATA_W'h999; // don't care, e.g: 0x999
             ex_dst_addr    <= `REG_ADDR_W'h7;    // don't care, e.g: 0x7
             ex_gpr_we_     <= `DISABLE_;
@@ -98,12 +99,12 @@ module mem_stage_test;
             end else begin
                 $display("MEM Stage Initialize Test Failed !");
             end
-            // Case: read the value 0x24 from address 0x154
-            /******** Read Data(align) Test Input ********/
+            // Case: read the word 0x41a4d9 from address 0x154
+            /******** Read a Word(align) Test Input ********/
             reset          <= `DISABLE;
         end
         # STEP begin
-            /******** Read Data(align) Test Output ********/
+            /******** Read a Word(align) Test Output ********/
             if ( (spm_addr     == `WORD_ADDR_W'h55)     &&
                  (spm_as_      == `ENABLE_)             &&
                  (spm_rw       == `READ)                &&
@@ -111,18 +112,95 @@ module mem_stage_test;
                  (mem_en       == ex_en)                &&
                  (mem_dst_addr == `REG_ADDR_W'h7)       &&
                  (mem_gpr_we_  == `DISABLE_)            &&
-                 (mem_out      == `WORD_DATA_W'h24)
+                 (mem_out      == `WORD_DATA_W'h41a4d9)
                ) begin
-                $display("MEM Stage Read Data(align) Test Succeeded !");
+                $display("MEM Stage Read a Word(align) Test Succeeded !");
             end else begin
-                $display("MEM Stage Read Data(align) Test Failed !");
+                $display("MEM Stage Read a Word(align) Test Failed !");
             end
-            // Case: read the value 0x24 from address 0x59
-            /******** Read Data(miss align) Test Input ********/
+            // Case: read a half word 0xa4d9 from address 0x154
+            /******** Read a Signed Half Word(align) Test Input ********/
+            ex_mem_op      <= `MEM_OP_LH;
+        end 
+        # STEP begin
+            /******** Read a Signed Half Word(align) Test Output ********/
+            if ( (spm_addr     == `WORD_ADDR_W'h55)     &&
+                 (spm_as_      == `ENABLE_)             &&
+                 (spm_rw       == `READ)                &&
+                 (spm_wr_data  == `WORD_DATA_W'h999)    &&
+                 (mem_en       == ex_en)                &&
+                 (mem_dst_addr == `REG_ADDR_W'h7)       &&
+                 (mem_gpr_we_  == `DISABLE_)            &&
+                 (mem_out      == `WORD_DATA_W'hffffa4d9)
+               ) begin
+                $display("MEM Stage Read a Signed Half Word(align) Test Succeeded !");
+            end else begin
+                $display("MEM Stage Read a Signed Half Word(align) Test Failed !");
+            end
+            // Case: read a half word 0xa4d9 from address 0x154
+            /******** Read a Half Word(align) Test Input ********/
+            ex_mem_op      <= `MEM_OP_LHU;
+        end 
+        # STEP begin
+            /******** Read a Unsigned Half Word(align) Test Output ********/
+            if ( (spm_addr     == `WORD_ADDR_W'h55)     &&
+                 (spm_as_      == `ENABLE_)             &&
+                 (spm_rw       == `READ)                &&
+                 (spm_wr_data  == `WORD_DATA_W'h999)    &&
+                 (mem_en       == ex_en)                &&
+                 (mem_dst_addr == `REG_ADDR_W'h7)       &&
+                 (mem_gpr_we_  == `DISABLE_)            &&
+                 (mem_out      == `WORD_DATA_W'ha4d9)
+               ) begin
+                $display("MEM Stage Read a Unsigned Half Word(align) Test Succeeded !");
+            end else begin
+                $display("MEM Stage Read a Unsigned Half Word(align) Test Failed !");
+            end
+            // Case: read a byte 0xd9 from address 0x154
+            /******** Read a Signed Byte Test Input ********/
+            ex_mem_op      <= `MEM_OP_LB;
+        end
+        # STEP begin
+            /******** Read a Signed Byte Test Output ********/
+            if ( (spm_addr     == `WORD_ADDR_W'h55)     &&
+                 (spm_as_      == `ENABLE_)             &&
+                 (spm_rw       == `READ)                &&
+                 (spm_wr_data  == `WORD_DATA_W'h999)    &&
+                 (mem_en       == ex_en)                &&
+                 (mem_dst_addr == `REG_ADDR_W'h7)       &&
+                 (mem_gpr_we_  == `DISABLE_)            &&
+                 (mem_out      == `WORD_DATA_W'hffffffd9)
+               ) begin
+                $display("MEM Stage Read a Signed Byte Test Succeeded !");
+            end else begin
+                $display("MEM Stage Read a Signed Byte Test Failed !");
+            end
+            // Case: read a byte 0xd9 from address 0x154
+            /******** Read a Unsigned Byte Test Input ********/
+            ex_mem_op      <= `MEM_OP_LBU;
+        end
+        # STEP begin
+            /******** Read a Unsigned Byte Test Output ********/
+            if ( (spm_addr     == `WORD_ADDR_W'h55)     &&
+                 (spm_as_      == `ENABLE_)             &&
+                 (spm_rw       == `READ)                &&
+                 (spm_wr_data  == `WORD_DATA_W'h999)    &&
+                 (mem_en       == ex_en)                &&
+                 (mem_dst_addr == `REG_ADDR_W'h7)       &&
+                 (mem_gpr_we_  == `DISABLE_)            &&
+                 (mem_out      == `WORD_DATA_W'hd9)
+               ) begin
+                $display("MEM Stage Read a Unsigned Byte Test Succeeded !");
+            end else begin
+                $display("MEM Stage Read a Unsigned Byte Test Failed !");
+            end
+            // Case: read the value 0x41a4d9 from address 0x59
+            /******** Read a Word(miss align) Test Input ********/
+            ex_mem_op      <= `MEM_OP_LW;
             ex_out         <= `WORD_DATA_W'h59;
         end
         # STEP begin
-            /******** Read Data(miss align) Test Output ********/
+            /******** Read a Word(miss align) Test Output ********/
             if ( (spm_addr     == `WORD_ADDR_W'h16)     &&
                  (spm_as_      == `DISABLE_)            &&
                  (spm_rw       == `READ)                &&
@@ -132,13 +210,32 @@ module mem_stage_test;
                  (mem_gpr_we_  == `DISABLE_)            &&
                  (mem_out      == `WORD_DATA_W'h0)
                ) begin
-                $display("MEM Stage Read Data(miss align) Test Succeeded !");
+                $display("MEM Stage Read a Word(miss align) Test Succeeded !");
             end else begin
-                $display("MEM Stage Read Data(miss align) Test Failed !");
+                $display("MEM Stage Read a Word(miss align) Test Failed !");
             end   ex_out       <= `WORD_DATA_W'h59;
-            // Case: write the value 0x13 to address 0x154 which hold value 0x24
+            // Case: read the value 0xa4d9 from address 0x59
+            /******** Read a Half Data(miss align) Test Input ********/
+            ex_mem_op      <= `MEM_OP_LH;
+        end
+         # STEP begin
+            /******** Read a Half Data(miss align) Test Output ********/
+            if ( (spm_addr     == `WORD_ADDR_W'h16)     &&
+                 (spm_as_      == `DISABLE_)            &&
+                 (spm_rw       == `READ)                &&
+                 (spm_wr_data  == `WORD_DATA_W'h999)    &&
+                 (mem_en       == ex_en)                &&
+                 (mem_dst_addr == `REG_ADDR_W'h0)       &&
+                 (mem_gpr_we_  == `DISABLE_)            &&
+                 (mem_out      == `WORD_DATA_W'h0)
+               ) begin
+                $display("MEM Stage Read a Half Data(miss align) Test Succeeded !");
+            end else begin
+                $display("MEM Stage Read a Half Data(miss align) Test Failed !");
+            end   ex_out       <= `WORD_DATA_W'h59;
+            // Case: write the value 0x13 to address 0x154 which hold value 0x41a4d9
             /******** Write Data(align) Test Input ********/
-            ex_mem_op      <= `MEM_OP_STW;       // when `MEM_OP_LDW, vvp can't finish! 
+            ex_mem_op      <= `MEM_OP_SW;       
             ex_out         <= `WORD_DATA_W'h154;
             ex_mem_wr_data <= `WORD_DATA_W'h13;
         end
@@ -157,9 +254,48 @@ module mem_stage_test;
             end else begin
                 $display("MEM Stage Write Data(align) Test Failed !");
             end
-            // Case: write the value 0x13 to address 0x59 which hold value 0x24
+            // Case: write a half word 0x13 to address 0x154 which hold value 0x41a4d9
+            /******** Write a Half Word(align) Test Input ********/
+            ex_mem_op      <= `MEM_OP_SH;
+        end
+        # STEP begin
+            /******** Write a Half Word(align) Test Output ********/
+            if ( (spm_addr     == `WORD_ADDR_W'h55)     &&
+                 (spm_as_      == `ENABLE_)             &&
+                 (spm_rw       == `WRITE)               &&
+                 (spm_wr_data  == `WORD_DATA_W'h410013) &&
+                 (mem_en       == ex_en)                &&
+                 (mem_dst_addr == `REG_ADDR_W'h7)       &&
+                 (mem_gpr_we_  == `DISABLE_)            &&
+                 (mem_out      == `WORD_DATA_W'h0)
+               ) begin
+                $display("MEM Stage Write a Half Word(align) Test Succeeded !");
+            end else begin
+                $display("MEM Stage Write a Half Word(align) Test Failed !");
+            end
+            // Case: write half word 0x13 to address 0x154 which hold value 41a4d9
+            /******** Write a Byte(align) Test Input ********/
+            ex_mem_op      <= `MEM_OP_SB;
+        end
+        # STEP begin
+            /******** Write a Byte(align) Test Output ********/
+            if ( (spm_addr     == `WORD_ADDR_W'h55)     &&
+                 (spm_as_      == `ENABLE_)             &&
+                 (spm_rw       == `WRITE)               &&
+                 (spm_wr_data  == `WORD_DATA_W'h41a413) &&
+                 (mem_en       == ex_en)                &&
+                 (mem_dst_addr == `REG_ADDR_W'h7)       &&
+                 (mem_gpr_we_  == `DISABLE_)            &&
+                 (mem_out      == `WORD_DATA_W'h0)
+               ) begin
+                $display("MEM Stage Write a Byte Test Succeeded !");
+            end else begin
+                $display("MEM Stage Write a Byte Test Failed !");
+            end
+            // Case: write the value 0x13 to address 0x59 which hold value 41a4d9
             /******** Write Data(miss align) Test Input ********/
             ex_out         <= `WORD_DATA_W'h59;
+            ex_mem_op      <= `MEM_OP_SW;
         end
         # STEP begin
             /******** Write Data(miss align) Test Output ********/
@@ -176,9 +312,28 @@ module mem_stage_test;
             end else begin
                 $display("MEM Stage Write Data(miss align) Test Failed !");
             end
-            // Case: EX Stage out is 0x59, and the address 0x59 hold value 0x24
+            // Case: write a half word 0x13 to address 0x59 which hold value 41a4d9
+            /******** Write a Half Word(miss align) Test Input ********/
+            ex_mem_op      <= `MEM_OP_SH;
+        end
+        # STEP begin
+            /******** Write a Half Word(miss align) Test Output ********/
+            if ( (spm_addr     == `WORD_ADDR_W'h16)     &&
+                 (spm_as_      == `DISABLE_)            &&
+                 (spm_rw       == `READ)                &&
+                 (spm_wr_data  == `WORD_DATA_W'h13)     &&
+                 (mem_en       == ex_en)                &&
+                 (mem_dst_addr == `REG_ADDR_W'h0)       &&
+                 (mem_gpr_we_  == `DISABLE_)            &&
+                 (mem_out      == `WORD_DATA_W'h0)
+               ) begin
+                $display("MEM Stage Write a Half Word(miss align) Test Succeeded !");
+            end else begin
+                $display("MEM Stage Write a Half Word(miss align) Test Failed !");
+            end
+            // Case: EX Stage out is 0x59, and the address 0x59 hold value 41a4d9
             /******** No Access Test Input ********/
-            ex_mem_op      <= `MEM_OP_NOP;       // when `MEM_OP_LDW, vvp can't finish! 
+            ex_mem_op      <= `MEM_OP_NOP;       // when `MEM_OP_LW, vvp can't finish! 
             ex_mem_wr_data <= `WORD_DATA_W'h999; // don't care, e.g: 0x999
             ex_gpr_we_     <= `ENABLE_;
         end

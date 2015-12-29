@@ -1,5 +1,6 @@
 `include "stddef.h"
 `include "cpu.h"
+`include "mem.h"
 
 module mem_stage (
     /********** Clock & Reset **********/
