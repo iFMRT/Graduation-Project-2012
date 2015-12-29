@@ -7,7 +7,7 @@
  -- ============================================================================
 */
 
-/********** 时间规格 **********/
+/************** Time scale ***************/
 `timescale 1ns/1ps
 
 /********** General header file **********/
@@ -18,50 +18,54 @@
 
 module if_stage_test;
 
-    /********** input & output **********/
-    /********** clock & reset **********/ 
-                reg  clk;                           // Clk
-                reg  reset;                         // Reset
-                reg  br_taken;                      // Branch taken
-                reg  [`WORD_DATA_BUS] new_pc;       // New value of program counter
-                reg  [`WORD_DATA_BUS] br_addr;      // Branch target
-                wire [`WORD_DATA_BUS] if_pc;        // Program counter
-                wire [`WORD_DATA_BUS] if_insn;      // Instruction
-                wire  if_en;                            // Effective mark of pipeline
-                /********** Pipeline control **********/ 
-                reg  stall;                         // Stall 
-                reg  flush;                         // Flush  
-                /************ SPM Interface ***********/
-                reg  [`WORD_DATA_BUS] spm_rd_data;  // Address of reading SPM
-                wire [`WORD_ADDR_BUS] spm_addr;     // Address of SPM
-                wire spm_as_;                       // SPM strobe
-                wire spm_rw;                        // Read/Write SPM
-                wire [`WORD_DATA_BUS] spm_wr_data;  // Write data of SPM
+    /******* input & output *******/
+    /******* clock & reset ********/ 
+    reg  clk;                           // Clk
+    reg  reset;                         // Reset
+    reg  br_taken;                      // Branch taken
+    reg  [`WORD_DATA_BUS] new_pc;       // New value of program counter
+    reg  [`WORD_DATA_BUS] br_addr;      // Branch target
+    wire [`WORD_DATA_BUS] if_pc;        // Program counter
+    wire [`WORD_DATA_BUS] if_pc_plus4;  // Next PC
+    wire [`WORD_DATA_BUS] if_insn;      // Instruction
+    wire  if_en;                        // Effective mark of pipeline
+    /****** Pipeline control *****/ 
+    reg  stall;                         // Stall 
+    reg  flush;                         // Flush  
+    /******* SPM Interface *******/
+    reg  [`WORD_DATA_BUS] spm_rd_data;  // Address of reading SPM
+    wire [`WORD_ADDR_BUS] spm_addr;     // Address of SPM
+    wire spm_as_;                       // SPM strobe
+    wire spm_rw;                        // Read/Write SPM
+    wire [`WORD_DATA_BUS] spm_wr_data;  // Write data of SPM
 
-    /******** Define the simulation loop ********/ 
+    /* Define the simulation loop */ 
     parameter     STEP = 10; 
 
-    if_stage if_stage(/********** clock & reset **********/ 
-                        .clk        (clk),          // Clk
-                        .reset      (reset),        // Reset
-                        .br_taken   (br_taken),     // Branch taken
-                        .new_pc     (new_pc),       // New value of program counter
-                        .br_addr    (br_addr),      // Branch target
-                        .if_pc      (if_pc),        // Program counter
-                        .if_insn    (if_insn),      // Instruction
-                        .if_en      (if_en),        // Effective mark of pipeline
-                        /********** Pipeline control **********/ 
-                        .stall      (stall),        // Stall 
-                        .flush      (flush),        // Flush  
-                        /************* SPM Interface *************/
-                        .spm_rd_data(spm_rd_data),  // Address of reading SPM
-                        .spm_addr   (spm_addr),     // Address of SPM
-                        .spm_as_    (spm_as_),      // SPM strobe
-                        .spm_rw     (spm_rw),       // Read/Write SPM
-                        .spm_wr_data(spm_wr_data)   // Write data of SPM
-                        );
+    /* Instantiate the test module */
+    if_stage if_stage(
+                        /****** clock & reset ******/ 
+                        .clk            (clk),          // Clk
+                        .reset          (reset),        // Reset
+                        .br_taken       (br_taken),     // Branch taken
+                        .new_pc         (new_pc),       // New value of program counter
+                        .br_addr        (br_addr),      // Branch target
+                        .if_pc          (if_pc),        // Program counter
+                        .if_pc_plus4    (if_pc_plus4),        // Next PC
+                        .if_insn        (if_insn),      // Instruction
+                        .if_en          (if_en),        // Effective mark of pipeline
+                        /**** Pipeline control ****/ 
+                        .stall          (stall),        // Stall 
+                        .flush          (flush),        // Flush  
+                        /***** SPM Interface ******/
+                        .spm_rd_data    (spm_rd_data),  // Address of reading SPM
+                        .spm_addr       (spm_addr),     // Address of SPM
+                        .spm_as_        (spm_as_),      // SPM strobe
+                        .spm_rw         (spm_rw),       // Read/Write SPM
+                        .spm_wr_data    (spm_wr_data)   // Write data of SPM
+                      );
 
-    /********** Generated Clocks **********/
+    /******* Generated Clocks *******/
     always #(STEP / 2)
         begin
             clk <= ~clk;  
@@ -70,14 +74,14 @@ module if_stage_test;
     /********** Testbench **********/
     initial
     begin
-        /************* next pc ***************/
+        /************ next pc **************/
         #0  
         begin
             clk <= `ENABLE;
             reset <= `ENABLE;
             br_taken <= `DISABLE; 
-            new_pc <= `WORD_DATA_W'h154;
-            br_addr <= `WORD_DATA_W'h100; 
+            new_pc <= `WORD_DATA_W'd160;
+            br_addr <= `WORD_DATA_W'd128; 
             stall <= `DISABLE;
             flush <= `DISABLE;
             spm_rd_data <=  `WORD_DATA_W'd128;        
@@ -89,7 +93,10 @@ module if_stage_test;
         end
         #STEP 
         begin
-            if (if_pc === `WORD_DATA_W'h4 & if_insn === `WORD_DATA_W'd128 & if_en === `ENABLE) 
+            if (if_pc == `WORD_DATA_W'b100 && if_insn == `WORD_DATA_W'd128 && if_en == `ENABLE
+                && if_pc_plus4 == `WORD_DATA_W'b1000
+                && spm_wr_data == `WORD_DATA_W'h0 && spm_rw == `READ && spm_addr == `WORD_ADDR_W'b1
+                && spm_as_ == `ENABLE_) 
                 begin
                     $display ("Simulation of next pc succeeded");      
                 end
@@ -105,7 +112,10 @@ module if_stage_test;
         end
         #STEP 
         begin
-            if (if_pc === 32'h154 & if_insn === `ISA_NOP & if_en === `DISABLE) 
+            if (if_pc == `WORD_DATA_W'd160 && if_insn == `ISA_NOP && if_en == `DISABLE
+                && if_pc_plus4 == `WORD_DATA_W'd164
+                && spm_wr_data == `WORD_DATA_W'h0 && spm_rw == `READ && spm_addr == `WORD_ADDR_W'd40
+                && spm_as_ == `DISABLE_) 
                 begin
                     $display ("Simulation of flush succeeded");      
                 end
@@ -114,7 +124,7 @@ module if_stage_test;
                     $display ("Simulation of flush failed");
                 end
         end
-        /************* branch taken ***************/
+        /********** branch taken ************/
         #STEP
         begin
             flush <= `DISABLE;
@@ -122,7 +132,10 @@ module if_stage_test;
         end
         #STEP
         begin
-            if (if_pc === `WORD_DATA_W'h100 & if_insn === `WORD_DATA_W'd128 & if_en === `ENABLE) 
+            if (if_pc == `WORD_DATA_W'd128 && if_insn == `WORD_DATA_W'd128 && if_en == `ENABLE
+                && if_pc_plus4 == `WORD_DATA_W'd132
+                && spm_wr_data == `WORD_DATA_W'h0 && spm_rw == `READ && spm_addr == `WORD_ADDR_W'd32
+                && spm_as_ == `ENABLE_) 
                 begin
                     $display ("Simulation of branch succeeded");        
                 end

@@ -17,6 +17,7 @@ module if_stage(/********** clock & reset *********/
                 input  [`WORD_DATA_BUS] new_pc,         // New value of program counter
                 input  [`WORD_DATA_BUS] br_addr,        // Branch target
                 output [`WORD_DATA_BUS] if_pc,          // Program counter
+                output [`WORD_DATA_BUS] if_pc_plus4,    // Next PC
                 output [`WORD_DATA_BUS] if_insn,        // Instruction
                 output  if_en,                          // Effective mark of pipeline
                 /******** Pipeline control ********/ 
@@ -33,16 +34,16 @@ module if_stage(/********** clock & reset *********/
     /********** Inner Signal **********/ 
     wire [`WORD_DATA_BUS]insn;
 
-    bus_if bus_if(/********** Pipeline control **********/ 
+    bus_if bus_if(/****** Pipeline control ********/ 
                   .stall        (stall),                // Stall 
                   .flush        (flush),                // Flush 
-                  /************* CPU Interface *************/
+                  /******** CPU Interface ********/
                   .addr         (if_pc[`WORD_MSB:2]),   // Address
                   .as_          (`ENABLE_),             // Address strobe
                   .rw           (`READ),                // Read/Write
                   .wr_data      (`WORD_DATA_W'h0),      // Write data
                   .rd_data      (insn),                 // Read data
-                  /************* SPM Interface *************/
+                  /****** SPM Interface ********/
                   .spm_rd_data  (spm_rd_data),          // Address of reading SPM
                   .spm_addr     (spm_addr),             // Address of SPM
                   .spm_as_      (spm_as_),              // SPM strobe
@@ -50,16 +51,17 @@ module if_stage(/********** clock & reset *********/
                   .spm_wr_data  (spm_wr_data)           // Write data of SPM
                  );
 
-    if_reg if_reg(.clk      (clk),      // Clk
-                  .reset    (reset),    // Reset
-                  .stall    (stall),    // Stall
-                  .flush    (flush),    // Flush
-                  .br_taken (br_taken), // Branch taken
-                  .new_pc   (new_pc),   // New value of program counter
-                  .br_addr  (br_addr),  // Branch target
-                  .insn     (insn),     // Reading instruction
-                  .if_pc    (if_pc),    // Program counter
-                  .if_insn  (if_insn),  // Instruction
-                  .if_en    (if_en)     // Effective mark of pipeline
+    if_reg if_reg(.clk          (clk),                  // Clk
+                  .reset        (reset),                // Reset
+                  .stall        (stall),                // Stall
+                  .flush        (flush),                // Flush
+                  .br_taken     (br_taken),             // Branch taken
+                  .new_pc       (new_pc),               // New value of program counter
+                  .br_addr      (br_addr),              // Branch target
+                  .insn         (insn),                 // Reading instruction
+                  .if_pc        (if_pc),                // Program counter
+                  .if_pc_plus4  (if_pc_plus4),          // Next PC
+                  .if_insn      (if_insn),              // Instruction
+                  .if_en        (if_en)                 // Effective mark of pipeline
                   ); 
 endmodule
