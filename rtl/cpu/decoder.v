@@ -1,9 +1,9 @@
-//---------------------------------------------------------
+//-------------------------------------------------------------
 // FILENAME: decoder.v
 // ESCRIPTION:The decoder module of id_stage
 // AUTHOR:cjh
 // DETA:2015-12-14 17:03:57
-//---------------------------------------------------------
+//-------------------------------------------------------------
 `include "isa.h"
 `include "alu.h"
 `include "cmp.h"
@@ -50,48 +50,46 @@ module decoder (
 	output reg							br_taken,		// 跳转成立
 	output reg							br_flag,		// 分支标志位
 	output reg	[`MEM_OP_B]				mem_op,			// 内存操作
-	output reg	[`WORD_DATA_BUS]		mem_wr_data,	// mem 写入数据
+	output wire	[`WORD_DATA_BUS]		mem_wr_data,	// mem 写入数据
 	output reg 							ex_out_mux,		// EX 阶段输出选通
 	output reg			 				gpr_we_,		// 通用寄存器写入操作
-	output reg	[`REG_ADDR_BUS]			dst_addr,		// 通用寄存器写入地址
+	output wire	[`REG_ADDR_BUS]			dst_addr,		// 通用寄存器写入地址
 	output reg  						gpr_mux_ex,		// ex 阶段的 gpr 写入信号选通
 	output reg							gpr_mux_mem,	// mem 阶段的 gpr 写入信号选通
-	output reg 	[`WORD_DATA_BUS]		gpr_wr_data		// ID 阶段输出的 gpr 输入信号选通
+	output reg 	[`WORD_DATA_BUS]		gpr_wr_data,		// ID 阶段输出的 gpr 输入信号选通
 	// 第一阶段不考虑 output reg	[`IsaExpBus]	 exp_code,		// 异常代码
 	output reg							ld_hazard		// LOAD 冲突
 );
 
 	/********** 指令字段 **********/
-	wire [`INS_OP_B]		op      = if_insn[`INSN_OP];	// 操作码
-	wire [`REG_ADDR_BUS]	ra_addr = if_insn[`INSN_RA]; 	// Ra 地址
-	wire [`REG_ADDR_BUS]	rb_addr = if_insn[`INSN_RB]; 	// Rb 地址
-	wire [`REG_ADDR_BUS]	rc_addr = if_insn[`INSN_RC];  	// Rc 地址
-	wire [`INS_F3_B]  		funct3  = if_insn[`INSN_F3]; 	// funct3
-	wire [`INS_F7_B]		funct7  = if_insn[`INSN_F7]; 	// funct7
+	wire [`INS_OP_B]		op 		= if_insn[`INSN_OP];		// 操作码
+	wire [`REG_ADDR_BUS]	ra_addr	= if_insn[`INSN_RA]; 	// Ra 地址
+	wire [`REG_ADDR_BUS]	rb_addr	= if_insn[`INSN_RB]; 	// Rb 地址	
+	wire [`INS_F3_B]  		funct3 	= if_insn[`INSN_F3]; 	// funct3
+	wire [`INS_F7_B]		funct7	= if_insn[`INSN_F7]; 	// funct7
+	
 	/********** 立即数 **********/
 	// U 格式立即数处理
 	wire [`WORD_DATA_BUS] imm_u  = {if_insn[31:12],12'b0}; 
 	// I 格式立即数处理
-	wire [`WORD_DATA_BUS] imm_i  = {20{if_insn[31]},if_insn[31:20]};
+	wire [`WORD_DATA_BUS] imm_i  = {{20{if_insn[31]}},if_insn[31:20]};
 	// I 格式右移指令立即数处理
-	wire [`WORD_DATA_BUS] imm_ir = {27{if_insn[31]},if_insn[24:20]};
+	wire [`WORD_DATA_BUS] imm_ir = {{26{if_insn[31]}},if_insn[24:20]};
 	// S 格式立即数处理
-	wire [`WORD_DATA_BUS] imm_s  = {20{if_insn[31]},if_insn[31:25],if_insn[11:7]};
+	wire [`WORD_DATA_BUS] imm_s  = {{20{if_insn[31]}},if_insn[31:25],if_insn[11:7]};
 	// B 格式立即数处理
-	wire [`WORD_DATA_BUS] imm_b  = {20{if_insn[31]},if_insn[7],if_insn[30:25],if_insn[11:8],1'b0};
+	wire [`WORD_DATA_BUS] imm_b  = {{20{if_insn[31]}},if_insn[7],if_insn[30:25],if_insn[11:8],1'b0};
 	// J 格式立即数处理
-	wire [`WORD_DATA_BUS] imm_j  = {12{if_insn[31]},if_insn[19:12],if_insn[20],if_insn[30:21],1'b0};
+	wire [`WORD_DATA_BUS] imm_j  = {{12{if_insn[31]}},if_insn[19:12],if_insn[20],if_insn[30:21],1'b0};
 	/********** 两个操作数 **********/
 	reg			[`WORD_DATA_BUS]	ra_data;						// 第一个操作数
 	reg			[`WORD_DATA_BUS]	rb_data;						// 第二个操作数
 
-	assign dst_addr 		= rc_addr;							// 通用寄存器写入地址
 	assign mem_wr_data 		= rb_data;
 	assign gpr_rd_addr_0 	= ra_addr;
 	assign gpr_rd_addr_1 	= rb_addr;
-	assign mem_wr_data 		= rb_data;						// 写入 mem 的数据
-	assign gpr_wr_data 		= if_pc_plus4;
-
+	assign dst_addr 		= if_insn[`INSN_RC];  	// Rc 地址
+	
 	/********** 转发 **********/
 	always @(*) 
 		begin
@@ -154,6 +152,7 @@ module decoder (
 		ex_out_mux 	= 	`ALU_OUT;
 		gpr_mux_ex  =	`EX_EX_OUT;
 		gpr_mux_mem =	`MEM_MEM_OUT;
+		gpr_wr_data 	= if_pc_plus4;
 		
 		//exp_code = `ISA_EXP_NO_EXP;
 		/* 指令类型判别 */
@@ -163,35 +162,35 @@ module decoder (
 				`ISA_OP_LD  : 
 					begin // LD指令
 						case(funct3)
-							`ISA_OP_LD_LB  :
+							`ISA_OP_LD_LB:
 								begin 		//LB指令
 									alu_op 	= `ALU_OP_ADD;
 									alu_in_1 = imm_i;
 									mem_op 	= `MEM_OP_LB;
 									gpr_we_ = `ENABLE_;
 								end
-							`ISA_OP_LD_LH
+							`ISA_OP_LD_LH:
 								begin 		//LH指令
 									alu_op 	= `ALU_OP_ADD;
 									alu_in_1 = imm_i;
 									mem_op 	= `MEM_OP_LH;
 									gpr_we_ = `ENABLE_;
 								end
-							`ISA_OP_LD_LW
+							`ISA_OP_LD_LW:
 								begin 		//LW指令
 									alu_op 	= `ALU_OP_ADD;
 									alu_in_1 = imm_i;
 									mem_op 	= `MEM_OP_LW;
 									gpr_we_ = `ENABLE_;
 								end
-							`ISA_OP_LD_LBU
+							`ISA_OP_LD_LBU:
 								begin 		//LBU指令
 									alu_op 	= `ALU_OP_ADD;
 									alu_in_1 = imm_i;
 									mem_op 	= `MEM_OP_LBU;
 									gpr_we_ = `ENABLE_;
 								end
-							`ISA_OP_LD_LHU
+							`ISA_OP_LD_LHU:
 								begin 		//LHU指令
 									alu_op 	= `ALU_OP_ADD;
 									alu_in_1 = imm_i;
@@ -200,61 +199,61 @@ module decoder (
 								end
 							default		  :
 								begin // 未定义命令
-									exp_code = `ISA_EXP_UNDEF_INSN;
+									$display("error");
 								end
 						endcase
 					end
 				`ISA_OP_ALSI  : 
 					begin // ALSI指令
-						case(funct3)  :
-							`ISA_OP_ALSI_ADDI
+						case(funct3) 
+							`ISA_OP_ALSI_ADDI :
 								begin 	//  ADDI 指令
 									alu_op	 	= `ALU_OP_ADD;
 									alu_in_1 	= imm_i;
 									gpr_we_	 	= `ENABLE_;
 									gpr_mux_mem = `MEM_EX_OUT;	
 								end
-							`ISA_OP_ALSI_SLLI
+							`ISA_OP_ALSI_SLLI :
 								begin  	// SLLI 指令
 									alu_op	 	= `ALU_OP_SLL;
 									alu_in_1 	= imm_i;
 									gpr_we_	 	= `ENABLE_;
 									gpr_mux_mem = `MEM_EX_OUT;	
 								end
-							`ISA_OP_ALSI_SLTI
+							`ISA_OP_ALSI_SLTI:
 								begin  	// SLTI 指令
-									cmp_op	 	= `CMP_OP_ST;										//这里大概需要一个控制信号，将最后写回寄存器的选通为cmp输出
+									cmp_op	 	= `CMP_OP_LT;										//这里大概需要一个控制信号，将最后写回寄存器的选通为cmp输出
 									cmp_in_1 	= imm_i;
-									ex_out_mux 	= `CMP_OUT
+									ex_out_mux 	= `CMP_OUT;
 									gpr_we_	 	= `ENABLE_;
 									gpr_mux_mem = `MEM_EX_OUT;	
 								end
-							`ISA_OP_ALSI_SLTIU
+							`ISA_OP_ALSI_SLTIU:
 								begin  	// SLTIU 指令
-									cmp_op	 	= `CMP_OP_STU;
+									cmp_op	 	= `CMP_OP_LTU;
 									cmp_in_1 	= imm_i;
-									ex_out_mux 	= `CMP_OUT
+									ex_out_mux 	= `CMP_OUT;
 									gpr_we_	 	= `ENABLE_;
 									gpr_mux_mem = `MEM_EX_OUT;	
 								end
-							`ISA_OP_ALSI_XORI
+							`ISA_OP_ALSI_XORI:
 								begin  	// XORI 指令
 									alu_op	 	= `ALU_OP_XOR;
 									alu_in_1 	= imm_i;
 									gpr_we_	 	= `ENABLE_;	
 									gpr_mux_mem = `MEM_EX_OUT;
 								end
-							`ISA_OP_ALSI_SRI
+							`ISA_OP_ALSI_SRI:
 								begin
 									if(funct7 == `ISA_OP_ALSI_SRI_SRLI)
-										begin 	SRLI 指令
+										begin 	//SRLI 指令
 											alu_op	 	= `ALU_OP_SRL;
 											alu_in_1 	= imm_ir;
 											gpr_we_	 	= `ENABLE_;
 											gpr_mux_mem = `MEM_EX_OUT;
 										end
 									else if(funct7 == `ISA_OP_ALSI_SRI_SRAI)
-										begin 	SRAI 指令
+										begin 	//SRAI 指令
 											alu_op	 	= `ALU_OP_SRA;
 											alu_in_1 	= imm_ir;
 											gpr_we_	 	= `ENABLE_;
@@ -262,18 +261,17 @@ module decoder (
 										end
 									else
 										begin // 未定义命令
-											exp_code = `ISA_EXP_UNDEF_INSN;
+											$display("error");
 										end
-									else
 								end
-							`ISA_OP_ALSI_ORI
+							`ISA_OP_ALSI_ORI:
 								begin  	// ORI 指令
 									alu_op	 	= `ALU_OP_OR;
 									alu_in_1 	= imm_i;
 									gpr_we_	 	= `ENABLE_;
 									gpr_mux_mem = `MEM_EX_OUT;	
 								end
-							`ISA_OP_ALSI_ANDI
+							`ISA_OP_ALSI_ANDI:
 								begin  	// ANDI 指令
 									alu_op	 	= `ALU_OP_AND;
 									alu_in_1 	= imm_i;
@@ -282,7 +280,7 @@ module decoder (
 								end
 							default		  :
 								begin // 未定义命令
-									exp_code = `ISA_EXP_UNDEF_INSN;
+									$display("error");
 								end
 						endcase
 					end
@@ -291,7 +289,6 @@ module decoder (
 						alu_op	 	= `ALU_OP_ADD;
 						alu_in_1 	= imm_i;
 						gpr_we_	 	= `ENABLE_;
-						alu_op	 	= `ALU_OP_NOP;
 						br_taken 	= `ENABLE;
 						gpr_mux_ex 	= `EX_ID_OUT; // pc + 4
 						gpr_mux_mem = `MEM_EX_OUT;
@@ -300,52 +297,52 @@ module decoder (
 				/* R 格式 */
 					begin 
 						case(funct3)
-							`ISA_OP_ALS_AS
+							`ISA_OP_ALS_AS:
 								begin
 									if(funct7 == `ISA_OP_ALS_AS_ADD)
-										begin 	ADD 指令
+										begin 	//ADD 指令
 											alu_op	 = `ALU_OP_ADD;
 											gpr_we_	 = `ENABLE_;
 											gpr_mux_mem = `MEM_EX_OUT;
 										end
 									else if(funct7 == `ISA_OP_ALS_AS_SUB)
-										begin  	SUB 指令
+										begin  	//SUB 指令
 											alu_op	 = `ALU_OP_SUB;
 											gpr_we_	 = `ENABLE_;
 											gpr_mux_mem = `MEM_EX_OUT;
 										end
 									else
 										begin // 未定义命令
-											exp_code = `ISA_EXP_UNDEF_INSN;
+											$display("error");
 										end
 								end
-							`ISA_OP_ALS_SLL
+							`ISA_OP_ALS_SLL:
 								begin
 									alu_op	 	= `ALU_OP_SLL;
 									gpr_we_	 	= `ENABLE_;
 									gpr_mux_mem = `MEM_EX_OUT;
 								end
-							`ISA_OP_ALS_SLT
+							`ISA_OP_ALS_SLT:
 								begin
-									cmp_op	 	= `CMP_OP_ST;
+									cmp_op	 	= `CMP_OP_LT;
 									gpr_we_	 	= `ENABLE_;
 									ex_out_mux 	= `CMP_OUT;
 									gpr_mux_mem = `MEM_EX_OUT;
 								end
-							`ISA_OP_ALS_SLTU
+							`ISA_OP_ALS_SLTU:
 								begin
-									cmp_op		= `CMP_OP_STU;
+									cmp_op		= `CMP_OP_LTU;
 									gpr_we_	 	= `ENABLE_;
 									ex_out_mux 	= `CMP_OUT;
 									gpr_mux_mem = `MEM_EX_OUT;
 								end
-							`ISA_OP_ALS_XOR
+							`ISA_OP_ALS_XOR:
 								begin
 									alu_op	 	= `ALU_OP_XOR;
 									gpr_we_	 	= `ENABLE_;
 									gpr_mux_mem = `MEM_EX_OUT;
 								end
-							`ISA_OP_ALS_SR
+							`ISA_OP_ALS_SR:
 								begin
 									if(funct7 == `ISA_OP_ALS_SR_SRL)
 										begin
@@ -361,16 +358,16 @@ module decoder (
 										end
 									else
 										begin // 未定义命令
-											exp_code = `ISA_EXP_UNDEF_INSN;
+											$display("error");
 										end
 								end
-							`ISA_OP_ALS_OR
+							`ISA_OP_ALS_OR:
 								begin
 									alu_op	 	= `ALU_OP_OR;
 									gpr_we_	 	= `ENABLE_;
 									gpr_mux_mem = `MEM_EX_OUT;
 								end
-							`ISA_OP_ALS_AND
+							`ISA_OP_ALS_AND:
 								begin
 									alu_op	 	= `ALU_OP_AND;
 									gpr_we_	 	= `ENABLE_;
@@ -378,7 +375,7 @@ module decoder (
 								end
 							default		  :
 								begin // 未定义命令
-									exp_code = `ISA_EXP_UNDEF_INSN;
+									$display("error");
 								end
 						endcase
 					end
@@ -423,7 +420,7 @@ module decoder (
 								end
 							default		  :
 								begin // 未定义命令
-									exp_code = `ISA_EXP_UNDEF_INSN;
+									$display("error");
 								end
 						endcase
 					end
@@ -431,7 +428,7 @@ module decoder (
 				`ISA_OP_BR	  : 
 					begin // 
 						case(funct3)
-							`ISA_OP_BR_BEQ
+							`ISA_OP_BR_BEQ:
 								begin
 									alu_op	 = `ALU_OP_ADD;
 									cmp_op 	 = `CMP_OP_EQ;
@@ -439,7 +436,7 @@ module decoder (
 									alu_in_1 = imm_b;
 									br_flag	 = `ENABLE;
 								end
-							`ISA_OP_BR_BNE
+							`ISA_OP_BR_BNE:
 								begin
 									alu_op	 = `ALU_OP_ADD;
 									cmp_op 	 = `CMP_OP_NE;
@@ -447,7 +444,7 @@ module decoder (
 									alu_in_1 = imm_b;
 									br_flag	 = `ENABLE;
 								end
-							`ISA_OP_BR_BLT
+							`ISA_OP_BR_BLT:
 								begin
 									alu_op	 = `ALU_OP_ADD;
 									cmp_op 	 = `CMP_OP_LT;
@@ -455,7 +452,7 @@ module decoder (
 									alu_in_1 = imm_b;
 									br_flag	 = `ENABLE;
 								end
-							`ISA_OP_BR_BGE
+							`ISA_OP_BR_BGE:
 								begin
 									alu_op	 = `ALU_OP_ADD;
 									cmp_op 	 = `CMP_OP_GE;
@@ -463,7 +460,7 @@ module decoder (
 									alu_in_1 = imm_b;
 									br_flag	 = `ENABLE;
 								end
-							`ISA_OP_BR_BLTU
+							`ISA_OP_BR_BLTU:
 								begin
 									alu_op	 = `ALU_OP_ADD;
 									cmp_op 	 = `CMP_OP_LTU;
@@ -471,7 +468,7 @@ module decoder (
 									alu_in_1 = imm_b;
 									br_flag	 = `ENABLE;
 								end
-							`ISA_OP_BR_BGEU
+							`ISA_OP_BR_BGEU:
 								begin
 									alu_op	 = `ALU_OP_ADD;
 									cmp_op 	 = `CMP_OP_GEU;
@@ -481,7 +478,7 @@ module decoder (
 								end
 							default		  :
 								begin // 未定义命令
-									exp_code = `ISA_EXP_UNDEF_INSN;
+									$display("error");
 								end
 						endcase
 					end
@@ -493,13 +490,13 @@ module decoder (
 						alu_in_1 	= imm_j;
 						br_taken 	= `ENABLE;
 						gpr_we_	 	= `ENABLE_;
-						gpr_mux_ex 	= `ID_OUT;
+						gpr_mux_ex 	= `EX_ID_OUT;
 						gpr_mux_mem = `MEM_EX_OUT;
 					end								
 				/* 其它命令 */
 				default		  :
 					begin // 未定义命令
-						exp_code = `ISA_EXP_UNDEF_INSN;
+						$display("error");
 					end
 			endcase
 		end
