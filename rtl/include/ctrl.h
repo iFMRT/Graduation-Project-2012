@@ -17,13 +17,13 @@
 	`define MEM_MEM_OUT 		1'b0		// 以 MEM_OUT 作为通用寄存器的输入信号
 	`define MEM_EX_OUT			1'b1		// 以 EX_OUT  作为通用寄存器的输入信号
 // 指令处理位宽
-	`define INSN_OP				[6:0]
-	`define INSN_RA				[19:15]
-	`define INSN_RB				[24:20]
-	`define INSN_RC				[11:7]
-	`define INSN_F3				[14:12]
-	`define INSN_F7				[31:25]
-	`define INS_OP_B			[6:0]
-	`define INS_F3_B			[2:0]
-	`define INS_F7_B			[6:0]
+	`define INSN_OP				6:0
+	`define INSN_RA				19:15
+	`define INSN_RB				24:20
+	`define INSN_RC				11:7
+	`define INSN_F3				14:12
+	`define INSN_F7				31:25
+	`define INS_OP_B			6:0
+	`define INS_F3_B			2:0
+	`define INS_F7_B			6:0
 `endif

@@ -55,7 +55,7 @@ module gpr_testbench();
 	/******** 读取测试用例，定义复位信号 ********/
 	initial
 		begin
-			$readmemb("example.tv",test_vectors);
+			$readmemb("gpr_example.tv",test_vectors);
 			vector_num 	= 	0;
 			errors		=	0;
 			reset		= 	1;	#27;

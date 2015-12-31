@@ -53,6 +53,8 @@
 	`define BYTE_OFFSET_LOC			1:0	// 字节位移位置 
 	/********** 字节的偏移值 *********/ 
 	`define BYTE_OFFSET_WORD		2'b00	// 字边界 
+    `define BYTE_OFFSET_HALF_WORD	1'b0	 // 半字边界
+
 
 
 // -----------------------------------------------------------------------------
@@ -83,7 +85,7 @@
 	`define WORD_ADDR_LOC			31:2	 // 字地址位置
 	`define BYTE_OFFSET_LOC		1:0		 // 字节位移位置
 	/********** 字节的偏移值 *********/
-	`define BYTE_OFFSET_WORD	2'b00	 // 字边界
+	`define BYTE_OFFSET_WORD	    2'b00	 // 字边界
 
 
 `endif
