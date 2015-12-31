@@ -145,34 +145,104 @@ end
 | 'WORD_ADDR_W'h55 | `ENABLE_ | `READ  | `WORD_DATA_W'h999 | `DISABLE | `REG_ADDR_W'h0 | `DISABLE_   | `WORD_DATA_W'h0 |
 
 **** 字读取（对齐）
-假设读取的地址是 0x154，该地址的值是 0x24。
+假设读取的地址是 0x154，该地址的字是 0x41a4d9。
 - 输入信号
-| *reset*    | stall    | flush    | spm_rd_data      | ex_en   | ex_mem_op   | ex_mem_wr_data                | ex_dst_addr                | ex_gpr_we_ | ex_out            |
-| *`DISABLE* | `DISABLE | `DISABLE | `WORD_DATA_W'h24 | `ENABLE | `MEM_OP_LDW | `WORD_DATA_W'h999(don't care) | `REG_ADDR_W'h7(don't care) | `DISABLE_  | `WORD_DATA_W'h154 |
+| *reset*    | stall    | flush    | spm_rd_data          | ex_en   | ex_mem_op  | ex_mem_wr_data                | ex_dst_addr                | ex_gpr_we_ | ex_out            |
+| *`DISABLE* | `DISABLE | `DISABLE | `WORD_DATA_W'h41a4d9 | `ENABLE | `MEM_OP_LW | `WORD_DATA_W'h999(don't care) | `REG_ADDR_W'h7(don't care) | `DISABLE_  | `WORD_DATA_W'h154 |
+
+- 输出信号
+| spm_addr         | spm_as_  | spm_rw | spm_wr_data       | mem_en  | mem_dst_addr   | mem_gpr_we_ | mem_out              |
+| 'WORD_ADDR_W'h55 | `ENABLE_ | `READ  | `WORD_DATA_W'h999 | `ENABLE | `REG_ADDR_W'h7 | `DISABLE_   | `WORD_DATA_W'h41a4d9 |
+
+**** 有符号半字读取（对齐）
+假设读取的地址是 0x154，该地址的a半字是 0xa4d9。
+- 输入信号
+| *reset*    | stall    | flush    | spm_rd_data          | ex_en   | ex_mem_op  | ex_mem_wr_data                | ex_dst_addr                | ex_gpr_we_ | ex_out            |
+| *`DISABLE* | `DISABLE | `DISABLE | `WORD_DATA_W'h41a4d9 | `ENABLE | `MEM_OP_LH | `WORD_DATA_W'h999(don't care) | `REG_ADDR_W'h7(don't care) | `DISABLE_  | `WORD_DATA_W'h154 |
+
+- 输出信号
+| spm_addr         | spm_as_  | spm_rw | spm_wr_data       | mem_en  | mem_dst_addr   | mem_gpr_we_ | mem_out                |
+| 'WORD_ADDR_W'h55 | `ENABLE_ | `READ  | `WORD_DATA_W'h999 | `ENABLE | `REG_ADDR_W'h7 | `DISABLE_   | `WORD_DATA_W'hffffa4d9 |
+
+**** 无符号半字读取（对齐）
+假设读取的地址是 0x154，该地址的a半字是 0xa4d9。
+- 输入信号
+| *reset*    | stall    | flush    | spm_rd_data          | ex_en   | ex_mem_op   | ex_mem_wr_data                | ex_dst_addr                | ex_gpr_we_ | ex_out            |
+| *`DISABLE* | `DISABLE | `DISABLE | `WORD_DATA_W'h41a4d9 | `ENABLE | `MEM_OP_LHU | `WORD_DATA_W'h999(don't care) | `REG_ADDR_W'h7(don't care) | `DISABLE_  | `WORD_DATA_W'h154 |
+
+- 输出信号
+| spm_addr         | spm_as_  | spm_rw | spm_wr_data       | mem_en  | mem_dst_addr   | mem_gpr_we_ | mem_out            |
+| 'WORD_ADDR_W'h55 | `ENABLE_ | `READ  | `WORD_DATA_W'h999 | `ENABLE | `REG_ADDR_W'h7 | `DISABLE_   | `WORD_DATA_W'ha4d9 |
+
+**** 有符号字节读取（对齐）
+假设读取的地址是 0x154，该地址的字节是 0xd9。
+- 输入信号
+| *reset*    | stall    | flush    | spm_rd_data          | ex_en   | ex_mem_op  | ex_mem_wr_data                | ex_dst_addr                | ex_gpr_we_ | ex_out            |
+| *`DISABLE* | `DISABLE | `DISABLE | `WORD_DATA_W'h41a4d9 | `ENABLE | `MEM_OP_LB | `WORD_DATA_W'h999(don't care) | `REG_ADDR_W'h7(don't care) | `DISABLE_  | `WORD_DATA_W'h154 |
+
+- 输出信号
+| spm_addr         | spm_as_  | spm_rw | spm_wr_data       | mem_en  | mem_dst_addr   | mem_gpr_we_ | mem_out                |
+| 'WORD_ADDR_W'h55 | `ENABLE_ | `READ  | `WORD_DATA_W'h999 | `ENABLE | `REG_ADDR_W'h7 | `DISABLE_   | `WORD_DATA_W'hffffffd9 |
+
+**** 无符号字节读取（对齐）
+假设读取的地址是 0x154，该地址的字节是 0xd9。
+- 输入信号
+| *reset*    | stall    | flush    | spm_rd_data          | ex_en   | ex_mem_op   | ex_mem_wr_data                | ex_dst_addr                | ex_gpr_we_ | ex_out            |
+| *`DISABLE* | `DISABLE | `DISABLE | `WORD_DATA_W'h41a4d9 | `ENABLE | `MEM_OP_LBU | `WORD_DATA_W'h999(don't care) | `REG_ADDR_W'h7(don't care) | `DISABLE_  | `WORD_DATA_W'h154 |
 
 - 输出信号
 | spm_addr         | spm_as_  | spm_rw | spm_wr_data       | mem_en  | mem_dst_addr   | mem_gpr_we_ | mem_out          |
-| 'WORD_ADDR_W'h55 | `ENABLE_ | `READ  | `WORD_DATA_W'h999 | `ENABLE | `REG_ADDR_W'h7 | `DISABLE_   | `WORD_DATA_W'h24 |
+| 'WORD_ADDR_W'h55 | `ENABLE_ | `READ  | `WORD_DATA_W'h999 | `ENABLE | `REG_ADDR_W'h7 | `DISABLE_   | `WORD_DATA_W'hd9 |
 
 **** 字读取（未对齐）
-假设读取的地址是 0x59，该地址的值是 0x24。
+假设读取的地址是 0x59，该地址的值是 0x41a4d9。
 - 输入信号
-| stall    | flush    | spm_rd_data      | ex_en   | ex_mem_op   | ex_mem_wr_data                | ex_dst_addr                | ex_gpr_we_ | *ex_out*           |
-| `DISABLE | `DISABLE | `WORD_DATA_W'h24 | `ENABLE | `MEM_OP_LDW | `WORD_DATA_W'h999(don't care) | `REG_ADDR_W'h7(don't care) | `DISABLE_  | *`WORD_DATA_W'h59* |
+| stall    | flush    | spm_rd_data          | ex_en   | ex_mem_op  | ex_mem_wr_data                | ex_dst_addr                | ex_gpr_we_ | *ex_out*           |
+| `DISABLE | `DISABLE | `WORD_DATA_W'h41a4d9 | `ENABLE | `MEM_OP_LW | `WORD_DATA_W'h999(don't care) | `REG_ADDR_W'h7(don't care) | `DISABLE_  | *`WORD_DATA_W'h59* |
+
+- 输出信号
+| spm_addr         | *spm_as_* | spm_rw | spm_wr_data       | mem_en  | *mem_dst_addr*   | mem_gpr_we_ | *mem_out*         |
+| 'WORD_ADDR_W'h16 | `DISABLE_ | `READ  | `WORD_DATA_W'h999 | `ENABLE | *`REG_ADDR_W'h0* | `DISABLE_   | *`WORD_DATA_W'h0* |
+
+**** 半字读取（未对齐）
+假设读取的地址是 0x59，该地址的值是 0xa4d9。
+- 输入信号
+| stall    | flush    | spm_rd_data          | ex_en   | ex_mem_op   | ex_mem_wr_data                | ex_dst_addr                | ex_gpr_we_ | *ex_out*           |
+| `DISABLE | `DISABLE | `WORD_DATA_W'h41a4d9 | `ENABLE | `MEM_OP_LH | `WORD_DATA_W'h999(don't care) | `REG_ADDR_W'h7(don't care) | `DISABLE_  | *`WORD_DATA_W'h59* |
 
 - 输出信号
 | spm_addr         | *spm_as_* | spm_rw | spm_wr_data       | mem_en  | *mem_dst_addr*   | mem_gpr_we_ | *mem_out*         |
 | 'WORD_ADDR_W'h16 | `DISABLE_ | `READ  | `WORD_DATA_W'h999 | `ENABLE | *`REG_ADDR_W'h0* | `DISABLE_   | *`WORD_DATA_W'h0* |
 
 **** 字写入（对齐）
-假设写入的地址是 0x154，地址的值是 0x24，写入的数据是 0x13。
+假设写入的地址是 0x154，地址的值是 0x41a4d9，写入的数据是 0x13。
 - 输入信号
-| stall    | flush    | spm_rd_data      | ex_en   | *ex_mem_op*   | *ex_mem_wr_data*   | ex_dst_addr                | ex_gpr_we_ | *ex_out*            |
-| `DISABLE | `DISABLE | `WORD_DATA_W'h24 | `ENABLE | *`MEM_OP_STW* | *`WORD_DATA_W'h13* | `REG_ADDR_W'h7(don't care) | `DISABLE_  | *`WORD_DATA_W'h154* |
+| stall    | flush    | spm_rd_data      | ex_en   | ex_mem_op   | ex_mem_wr_data   | ex_dst_addr                | ex_gpr_we_ | ex_out            |
+| `DISABLE | `DISABLE | `WORD_DATA_W'h24 | `ENABLE | `MEM_OP_STW | `WORD_DATA_W'h13 | `REG_ADDR_W'h7(don't care) | `DISABLE_  | `WORD_DATA_W'h154 |
 
 - 输出信号
-| *spm_addr*         | *spm_as_*  | *spm_rw* | *spm_wr_data*      | mem_en  | *mem_dst_addr*   | mem_gpr_we_ | mem_out         |
-| *`WORD_ADDR_W'h55* | *`ENABLE_* | *`WRITE* | *`WORD_DATA_W'h13* | `ENABLE | *`REG_ADDR_W'h7* | `DISABLE_   | `WORD_DATA_W'h0 |
+| spm_addr         | spm_as_  | spm_rw | spm_wr_data      | mem_en  | mem_dst_addr   | mem_gpr_we_ | mem_out         |
+| `WORD_ADDR_W'h55 | `ENABLE_ | `WRITE | `WORD_DATA_W'h13 | `ENABLE | `REG_ADDR_W'h7 | `DISABLE_   | `WORD_DATA_W'h0 |
+
+**** 半字写入（对齐）
+假设写入的地址是 0x154，地址的值是 0x41a4d9，写入的数据是 0x13。
+- 输入信号
+| stall    | flush    | spm_rd_data      | ex_en   | ex_mem_op   | ex_mem_wr_data   | ex_dst_addr                | ex_gpr_we_ | ex_out            |
+| `DISABLE | `DISABLE | `WORD_DATA_W'h24 | `ENABLE | `MEM_OP_STW | `WORD_DATA_W'h13 | `REG_ADDR_W'h7(don't care) | `DISABLE_  | `WORD_DATA_W'h154 |
+
+- 输出信号
+| spm_addr         | spm_as_  | spm_rw | spm_wr_data          | mem_en  | mem_dst_addr   | mem_gpr_we_ | mem_out         |
+| `WORD_ADDR_W'h55 | `ENABLE_ | `WRITE | `WORD_DATA_W'h410013 | `ENABLE | `REG_ADDR_W'h7 | `DISABLE_   | `WORD_DATA_W'h0 |
+
+**** 字节写入（对齐）
+假设写入的地址是 0x154，地址的值是 0x41a4d9，写入的数据是 0x13。
+- 输入信号
+| stall    | flush    | spm_rd_data      | ex_en   | ex_mem_op   | ex_mem_wr_data   | ex_dst_addr                | ex_gpr_we_ | ex_out            |
+| `DISABLE | `DISABLE | `WORD_DATA_W'h24 | `ENABLE | `MEM_OP_STW | `WORD_DATA_W'h13 | `REG_ADDR_W'h7(don't care) | `DISABLE_  | `WORD_DATA_W'h154 |
+
+- 输出信号
+| spm_addr         | spm_as_  | spm_rw | spm_wr_data          | mem_en  | mem_dst_addr   | mem_gpr_we_ | mem_out         |
+| `WORD_ADDR_W'h55 | `ENABLE_ | `WRITE | `WORD_DATA_W'h41a413 | `ENABLE | `REG_ADDR_W'h7 | `DISABLE_   | `WORD_DATA_W'h0 |
 
 **** 字写入（未对齐）
 假设读取的地址是 0x59，该地址的值是 0x24，写入的数据是 0x13。
