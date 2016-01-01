@@ -141,7 +141,7 @@ module decoder (
     // /********** Load 冲突的检测 **********/
     // always @(*) begin
     //     if ((id_en == `ENABLE)         &&
-    //         (id_gpr_we_ = `ENABLE_)    &&
+    //         (id_gpr_we_ = `ENABLE_)    &&   // load must enable id_gpr_we_
     //         (id_mem_op != `MEM_OP_NOP) &&
     //         (    (id_dst_addr == ra_addr) ||
     //              (id_dst_addr == rb_addr)
