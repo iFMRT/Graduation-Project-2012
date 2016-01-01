@@ -26,7 +26,7 @@ module id_reg (
 	input  wire [31:0] 			cmp_in_1,	   	// CMP 输入 1
 	input  wire 				br_taken,		// 跳转成立
 	input  wire				   	br_flag,		// 分支标志位
-	input  wire [1:0]	   		mem_op,		   	// 内存操作
+	input  wire [3:0]	   		mem_op,		   	// 内存操作
 	input  wire [31:0]			mem_wr_data,	// mem 写入数据
 	input  wire 				ex_out_mux,		// EX 阶段输出选通信号
 	input  wire				   	gpr_we_,		// 寄存器写入有效
@@ -34,7 +34,6 @@ module id_reg (
 	input  wire  				gpr_mux_ex,
 	input  wire 	 			gpr_mux_men,		// 通用寄存器输入选通信号
 	input  wire [31:0] 			gpr_wr_data,	// ID 阶段输出的 gpr 输入值
-	//input  wire [`IsaExpBus]  exp_code,	   	// 异常代码
 	/********** 寄存器控制信号 **********/
 	input  wire				   	stall,		   	// 停顿
 	input  wire				   	flush,		   	// 刷新
@@ -50,7 +49,7 @@ module id_reg (
 	output reg	[31:0] 			id_cmp_in_1,	// CMP 输入 1
 	output reg  				id_br_taken,	// 跳转成立
 	output reg				   	id_br_flag,	   	// 分支标志位
-	output reg	[1:0]	   		id_mem_op,	   	// 存储器操作
+	output reg	[3:0]	   		id_mem_op,	   	// 存储器操作
 	output reg  [31:0]			id_mem_wr_data, // 存储器写入数据
 	output reg 					id_ex_out_mux,	// EX 阶段输出选通信号	
 	output reg				   	id_gpr_we_,	   	// 寄存器写入信号
@@ -81,7 +80,7 @@ module id_reg (
 			id_dst_addr    <= #1 5'h0;
 			id_gpr_mux_ex  <= #1 `DISABLE;
 			id_gpr_mux_mem <= #1 `DISABLE;
-			id_gpr_wr_data	   <= #1 `WORD_DATA_W'h0;
+			id_gpr_wr_data <= #1 `WORD_DATA_W'h0;
 
 		end else begin
 			/* 寄存器数据更新 */
@@ -104,7 +103,6 @@ module id_reg (
 					id_gpr_mux_ex  <= #1 `DISABLE;
 					id_gpr_mux_mem <= #1 `DISABLE;
 					id_gpr_wr_data <= #1 `WORD_DATA_W'h0;
-		//id_exp_code	   <= #1 `ISA_EXP_NO_EXP;
 				end else begin				// 给寄存器赋值
 				   	id_en		   <= #1 if_en;
 				   	id_alu_op	   <= #1 alu_op;
@@ -123,7 +121,6 @@ module id_reg (
 				   	id_gpr_mux_ex  <= #1 gpr_mux_ex;
 				   	id_gpr_mux_mem <= #1 gpr_mux_men;
 				   	id_gpr_wr_data <= #1 gpr_wr_data;
-		//id_exp_code	  <= #1 exp_code;
 				end
 			end
 		end
