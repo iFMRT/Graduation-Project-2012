@@ -11,32 +11,32 @@
 
 module ex_stage (
 	input  wire                 clk,
-	input  wire                 rst,
+	input  wire                 reset,
 
-	input  wire [ 4:0]          id_dst_address,     // bypass input
-	input  wire                 id_gpr_we_,
 	input  wire [ 1:0]          id_mem_op,
 	input  wire [31:0]          id_mem_wr_data,
+	input  wire [ 4:0]          id_dst_addr,     // bypass input
+	input  wire                 id_gpr_we_,
 
-	output wire [ 4:0]          ex_dst_address,     // bypass output
-	output wire                 ex_gpr_we_,
 	output wire [ 1:0]          ex_mem_op,
 	output wire [31:0]          ex_mem_wr_data,
+	output wire [ 4:0]          ex_dst_addr,     // bypass output
+	output wire                 ex_gpr_we_,
 
+	input  wire [`ALU_OP_B]     alu_op,
 	input  wire [31:0]          alu_in0,
 	input  wire [31:0]          alu_in1,
-	input  wire [`ALU_OP_B]     alu_op,
-	input  wire [31:0]          cmp_in0,
-	input  wire [31:0]          cmp_in1,
-	input  wire [`CMP_OP_B]     cmp_op,
+	// input  wire [31:0]          cmp_in0,
+	// input  wire [31:0]          cmp_in1,
+	// input  wire [`CMP_OP_B]     cmp_op,
 	input  wire [`EX_OUT_SEL_B] ex_out_sel,
 	output wire [31:0]          ex_out,
 
-	input  wire [31:0]          pc_next,     // pc_next = current pc + 1
-	input  wire                 jump_en,     // true - jump to target pc
-	input  wire                 branch_en,   // true - branch instruction
-	output wire [31:0]          pc_target,   // target pc value of branch or jump
-	output wire                 branch       // ture - take branch or jump
+	// input  wire [31:0]          pc_next,     // pc_next = current pc + 1
+	// input  wire                 jump_en,     // true - jump to target pc
+	// input  wire                 branch_en,   // true - branch instruction
+	// output wire [31:0]          pc_target,   // target pc value of branch or jump
+	// output wire                 branch       // ture - take branch or jump
 );
 
 	/* internal signles ==============================================*/
@@ -77,14 +77,14 @@ module ex_stage (
 	/* ex_stage reg ==================================================*/
 	ex_reg ex_reg_i (
 		.clk            (clk           ),
-		.rst            (rst           ),
+		.reset            (reset           ),
 		.ex_out_in      (ex_out_in     ),  // ex_stage out
 		.ex_out         (ex_out        ),
-		.id_dst_address (id_dst_address),  // bypass out
+		.id_dst_addr 	(id_dst_addr),  // bypass out
 		.id_gpr_we_     (id_gpr_we_    ),
 		.id_mem_op      (id_mem_op     ),
 		.id_mem_wr_data (id_mem_wr_data),
-		.ex_dst_address (ex_dst_address),
+		.ex_dst_addr 	(ex_dst_addr),
 		.ex_gpr_we_     (ex_gpr_we_    ),
 		.ex_mem_op      (ex_mem_op     ),
 		.ex_mem_wr_data (ex_mem_wr_data)

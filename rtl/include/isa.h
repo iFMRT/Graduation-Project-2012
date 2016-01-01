@@ -22,6 +22,8 @@
 	// 定义位数
 	`define ISA_OP_W		    7	         // 操作码位数
         // 定义操作码内容
+	// NOP Opcode
+	`define ISA_OP_NOP                   7'b0000000
 	// I 格式
 	`define ISA_OP_LD                   7'b0000011   // LoaD  
 	`define ISA_OP_ALSI		    7'b0010011   // Arithmetic Logic Shift Immediate
@@ -42,7 +44,7 @@
         // 定义位数
 	`define ISA_Funct3_W	            3	         // Funct3 位数
         // 定义功能码3字段内容
-        // ISA_OP_LD	
+        // ISA_OP_LD
         `define ISA_OP_LD_LB	      	    3'b000	 // 读取有符号的字节
 	`define ISA_OP_LD_LH	      	    3'b001	 // 读取有符号的半字
 	`define ISA_OP_LD_LW	      	    3'b010	 // 读取有符号的字
@@ -66,7 +68,7 @@
 	`define ISA_OP_ALS_SLL	            3'b001	 // 寄存器间的逻辑左移
 	`define ISA_OP_ALS_SLT	            3'b010	 // 寄存器间的有符号比较（<）
 	`define ISA_OP_ALS_SLTU	            3'b011	 // 寄存器间的无符号比较（<）
-	`define ISA_OP_ALST_XOR	            3'b100	 // 寄存器间的逻辑异或
+	`define ISA_OP_ALS_XOR	            3'b100	 // 寄存器间的逻辑异或
 	`define ISA_OP_ALS_SR	            3'b101	 // 寄存器间的右移
 	`define ISA_OP_ALS_OR	            3'b110	 // 寄存器间的逻辑或
 	`define ISA_OP_ALS_AND	            3'b111	 // 寄存器间的逻辑与

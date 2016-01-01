@@ -8,7 +8,7 @@
  	`define _MEM_HEADER_ 				
 
 // mem_op 操作信号比特位
- 	`define MEM_OP_B 		3:0 			// mem_op 位宽
+ 	`define MEM_OP_BUS 		3:0 			// mem_op 位宽
 
  	`define MEM_OP_NOP 			4'h0 		
  	`define MEM_OP_LB 			4'h1

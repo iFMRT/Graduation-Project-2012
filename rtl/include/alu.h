@@ -18,6 +18,6 @@
 	`define ALU_OP_SUB        4'h8
 
 	`define ALU_OP_W          4
-	`define ALU_OP_B          3:0
+	`define ALU_OP_BUS        3:0
 `endif
 
