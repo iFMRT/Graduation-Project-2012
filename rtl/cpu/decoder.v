@@ -51,13 +51,11 @@ module decoder (
 	output reg							br_flag,		// 分支标志位
 	output reg	[`MEM_OP_B]				mem_op,			// 内存操作
 	output wire	[`WORD_DATA_BUS]		mem_wr_data,	// mem 写入数据
-	output reg 							ex_out_mux,		// EX 阶段输出选通
 	output reg			 				gpr_we_,		// 通用寄存器写入操作
 	output wire	[`REG_ADDR_BUS]			dst_addr,		// 通用寄存器写入地址
 	output reg  						gpr_mux_ex,		// ex 阶段的 gpr 写入信号选通
 	output reg							gpr_mux_mem,	// mem 阶段的 gpr 写入信号选通
-	output reg 	[`WORD_DATA_BUS]		gpr_wr_data,		// ID 阶段输出的 gpr 输入信号选通
-	// 第一阶段不考虑 output reg	[`IsaExpBus]	 exp_code,		// 异常代码
+	output reg 	[`WORD_DATA_BUS]		gpr_wr_data,	// ID 阶段输出的 gpr 输入信号选通
 	output reg							ld_hazard		// LOAD 冲突
 );
 
@@ -142,15 +140,14 @@ module decoder (
 		alu_op	 	= 	`ALU_OP_NOP;
 		cmp_op 	 	= 	`CMP_OP_NOP;
 		alu_in_0 	= 	ra_data;
-		alu_in_1 	= 	rb_data;
+		alu_in_1 	= 	rb_data; 		
 		cmp_in_0 	= 	ra_data;
 		cmp_in_1 	= 	rb_data;
 		br_taken 	= 	`DISABLE;
-		br_flag	 	= 	`DISABLE;
+		br_flag	 	= 	`DISABLE; 
 		mem_op	 	= 	`MEM_OP_NOP;
 		gpr_we_	 	= 	`DISABLE_;
-		ex_out_mux 	= 	`ALU_OUT;
-		gpr_mux_ex  =	`EX_EX_OUT;
+		gpr_mux_ex  =	`EX_ALU_OUT;
 		gpr_mux_mem =	`MEM_MEM_OUT;
 		gpr_wr_data 	= if_pc_plus4;
 		
@@ -158,7 +155,7 @@ module decoder (
 		/* 指令类型判别 */
 		if (if_en == `ENABLE) begin
 			case (op)
-			/* I格式 */
+			/* I格式 */							
 				`ISA_OP_LD  : 
 					begin // LD指令
 						case(funct3)
@@ -211,7 +208,7 @@ module decoder (
 									alu_op	 	= `ALU_OP_ADD;
 									alu_in_1 	= imm_i;
 									gpr_we_	 	= `ENABLE_;
-									gpr_mux_mem = `MEM_EX_OUT;	
+									gpr_mux_mem = `MEM_EX_OUT;
 								end
 							`ISA_OP_ALSI_SLLI :
 								begin  	// SLLI 指令
@@ -219,22 +216,23 @@ module decoder (
 									alu_in_1 	= imm_i;
 									gpr_we_	 	= `ENABLE_;
 									gpr_mux_mem = `MEM_EX_OUT;	
+									gpr_mux_ex  = `EX_CMP_OUT;
 								end
 							`ISA_OP_ALSI_SLTI:
 								begin  	// SLTI 指令
 									cmp_op	 	= `CMP_OP_LT;										//这里大概需要一个控制信号，将最后写回寄存器的选通为cmp输出
 									cmp_in_1 	= imm_i;
-									ex_out_mux 	= `CMP_OUT;
 									gpr_we_	 	= `ENABLE_;
 									gpr_mux_mem = `MEM_EX_OUT;	
+									gpr_mux_ex  = `EX_CMP_OUT;
 								end
 							`ISA_OP_ALSI_SLTIU:
 								begin  	// SLTIU 指令
 									cmp_op	 	= `CMP_OP_LTU;
 									cmp_in_1 	= imm_i;
-									ex_out_mux 	= `CMP_OUT;
 									gpr_we_	 	= `ENABLE_;
 									gpr_mux_mem = `MEM_EX_OUT;	
+									gpr_mux_ex  = `EX_CMP_OUT;
 								end
 							`ISA_OP_ALSI_XORI:
 								begin  	// XORI 指令
@@ -290,7 +288,7 @@ module decoder (
 						alu_in_1 	= imm_i;
 						gpr_we_	 	= `ENABLE_;
 						br_taken 	= `ENABLE;
-						gpr_mux_ex 	= `EX_ID_OUT; // pc + 4
+						gpr_mux_ex 	= `EX_ID_PCN; // pc + 4
 						gpr_mux_mem = `MEM_EX_OUT;
 					end
 				`ISA_OP_ALS	  : 
@@ -320,20 +318,21 @@ module decoder (
 								begin
 									alu_op	 	= `ALU_OP_SLL;
 									gpr_we_	 	= `ENABLE_;
+									gpr_mux_ex  = `EX_CMP_OUT;
 									gpr_mux_mem = `MEM_EX_OUT;
 								end
 							`ISA_OP_ALS_SLT:
 								begin
 									cmp_op	 	= `CMP_OP_LT;
 									gpr_we_	 	= `ENABLE_;
-									ex_out_mux 	= `CMP_OUT;
+									gpr_mux_ex  = `EX_CMP_OUT;
 									gpr_mux_mem = `MEM_EX_OUT;
 								end
 							`ISA_OP_ALS_SLTU:
 								begin
 									cmp_op		= `CMP_OP_LTU;
 									gpr_we_	 	= `ENABLE_;
-									ex_out_mux 	= `CMP_OUT;
+									gpr_mux_ex  = `EX_CMP_OUT;
 									gpr_mux_mem = `MEM_EX_OUT;
 								end
 							`ISA_OP_ALS_XOR:
@@ -384,7 +383,7 @@ module decoder (
 					begin // LUI 指令
 						gpr_we_	 	= `DISABLE_;// 选通imm_u作为结果
 						gpr_wr_data = imm_u;
-						gpr_mux_ex  = `EX_ID_OUT;
+						gpr_mux_ex  = `EX_ID_PCN;
 						gpr_mux_mem = `MEM_EX_OUT;
 					end
 				`ISA_OP_AUIPC  :
@@ -490,7 +489,7 @@ module decoder (
 						alu_in_1 	= imm_j;
 						br_taken 	= `ENABLE;
 						gpr_we_	 	= `ENABLE_;
-						gpr_mux_ex 	= `EX_ID_OUT;
+						gpr_mux_ex 	= `EX_ID_PCN;
 						gpr_mux_mem = `MEM_EX_OUT;
 					end								
 				/* 其它命令 */
