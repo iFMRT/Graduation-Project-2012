@@ -51,7 +51,6 @@ module decoder (
     // output reg                   br_flag,        // 分支标志位
     output reg [`MEM_OP_BUS]       mem_op,         // 内存操作
     output wire [`WORD_DATA_BUS] mem_wr_data,    // mem 写入数据
-    output reg                   ex_out_mux,     // EX 阶段输出选通
     output reg                   gpr_mux_ex,     // ex 阶段的 gpr 写入信号选通
     output reg                   gpr_mux_mem,    // mem 阶段的 gpr 写入信号选通
     output reg [`WORD_DATA_BUS]  gpr_wr_data,    // ID 阶段输出的 gpr 输入信号选通
@@ -170,8 +169,7 @@ module decoder (
         // br_flag     =   `DISABLE;
         mem_op      =   `MEM_OP_NOP;
         gpr_we_     =   `DISABLE_;
-        ex_out_mux  =   `ALU_OUT;
-        gpr_mux_ex  =   `EX_EX_OUT;
+        gpr_mux_ex  =   `EX_ALU_OUT;
         gpr_mux_mem =   `MEM_MEM_OUT;
         gpr_wr_data = if_pc_plus4;
 
@@ -233,20 +231,21 @@ module decoder (
                             alu_in_1    = imm_i;
                             gpr_we_     = `ENABLE_;
                             gpr_mux_mem = `MEM_EX_OUT;
+                            gpr_mux_ex  = `EX_CMP_OUT;
                         end
                         `ISA_OP_ALSI_SLTI:begin   // SLTI 指令
                             // cmp_op      = `CMP_OP_LT;    //这里大概需要一个控制信号，将最后写回寄存器的选通为cmp输出
                             // cmp_in_1    = imm_i;
-                            ex_out_mux  = `CMP_OUT;
                             gpr_we_     = `ENABLE_;
                             gpr_mux_mem = `MEM_EX_OUT;
+                            gpr_mux_ex  = `EX_CMP_OUT;
                         end
                         `ISA_OP_ALSI_SLTIU:begin   // SLTIU 指令
                             // cmp_op      = `CMP_OP_LTU;
                             // cmp_in_1    = imm_i;
-                            ex_out_mux  = `CMP_OUT;
                             gpr_we_     = `ENABLE_;
                             gpr_mux_mem = `MEM_EX_OUT;
+                            gpr_mux_ex  = `EX_CMP_OUT;
                         end
                         `ISA_OP_ALSI_XORI:begin   // XORI 指令
                             alu_op      = `ALU_OP_XOR;
@@ -295,7 +294,7 @@ module decoder (
                 //     alu_in_1    = imm_i;
                 //     gpr_we_     = `ENABLE_;
                 //     // br_taken    = `ENABLE;
-                //     gpr_mux_ex  = `EX_ID_OUT; // pc + 4
+                //     gpr_mux_ex  = `EX_ID_PCN; // pc + 4
                 //     gpr_mux_mem = `MEM_EX_OUT;
                 // end
                 `ISA_OP_ALS   : begin
@@ -320,18 +319,19 @@ module decoder (
                             alu_op      = `ALU_OP_SLL;
                             gpr_we_     = `ENABLE_;
                             gpr_mux_mem = `MEM_EX_OUT;
+                            gpr_mux_ex  = `EX_CMP_OUT;
                         end
                         `ISA_OP_ALS_SLT: begin
                             // cmp_op      = `CMP_OP_LT;
                             gpr_we_     = `ENABLE_;
-                            ex_out_mux  = `CMP_OUT;
                             gpr_mux_mem = `MEM_EX_OUT;
+                            gpr_mux_ex  = `EX_CMP_OUT;
                         end
                         `ISA_OP_ALS_SLTU: begin
                             // cmp_op      = `CMP_OP_LTU;
                             gpr_we_     = `ENABLE_;
-                            ex_out_mux  = `CMP_OUT;
                             gpr_mux_mem = `MEM_EX_OUT;
+                            gpr_mux_ex  = `EX_CMP_OUT;
                         end
                         `ISA_OP_ALS_XOR: begin
                             alu_op      = `ALU_OP_XOR;
@@ -372,7 +372,7 @@ module decoder (
                 // `ISA_OP_LUI  : begin // LUI 指令
                 //     gpr_we_     = `DISABLE_;// 选通imm_u作为结果
                 //     gpr_wr_data = imm_u;
-                //     gpr_mux_ex  = `EX_ID_OUT;
+                //     gpr_mux_ex  = `EX_ID_PCN;
                 //     gpr_mux_mem = `MEM_EX_OUT;
                 // end
                 // `ISA_OP_AUIPC  : begin // LUIPC 指令
@@ -462,7 +462,7 @@ module decoder (
                 //     alu_in_1    = imm_j;
                 //     br_taken    = `ENABLE;
                 //     gpr_we_     = `ENABLE_;
-                //     gpr_mux_ex  = `EX_ID_OUT;
+                //     gpr_mux_ex  = `EX_ID_PCN;
                 //     gpr_mux_mem = `MEM_EX_OUT;
                 // end
                 /* 其它命令 */
@@ -472,4 +472,5 @@ module decoder (
             endcase
         end
     end
+    
 endmodule
