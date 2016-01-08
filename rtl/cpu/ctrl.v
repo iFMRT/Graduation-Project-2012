@@ -16,6 +16,8 @@ module ctrl (
     // state of pipeline
 //  input  wire                   if_busy,      // IF busy mark
     input  wire                   ld_hazard,    // load hazard mark
+    input  wire                   br_hazard,    // branch hazard mark
+//  input  wire                   br_flag,      // branch instruction flag
 //  input  wire                   mem_busy,     // MEM busy mark
     // 延迟信号
     output wire                   if_stall,     // IF stage stall 
@@ -32,7 +34,7 @@ module ctrl (
 
     /********** pipeline control **********/
     // stall
-    assign if_stall  = ld_hazard;
+    assign if_stall   = ld_hazard;
 //  wire   stall  = if_busy | mem_busy;
 //  assign if_stall   = stall | ld_hazard;
 //  assign id_stall   = stall;
@@ -40,11 +42,13 @@ module ctrl (
 //  assign mem_stall = stall;
 
     // flush
-    reg    flush;
-    assign if_flush  = flush;
-    assign id_flush  = flush | ld_hazard;
-    assign ex_flush  = flush;
-    assign mem_flush = flush;
+    assign if_flush  = br_hazard;
+    assign id_flush  = ld_hazard | br_hazard;    
+//  reg    flush;
+//  assign if_flush  = flush | br_hazard;
+//  assign id_flush  = flush | ld_hazard | br_hazard;
+//  assign ex_flush  = flush;
+//  assign mem_flush = flush;
 
     always @(*) begin
         /* default */
