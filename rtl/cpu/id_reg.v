@@ -10,7 +10,7 @@
 `include "stddef.h"
 `include "cpu.h"
 `include "mem.h"
-
+`include "ex_stage.h"
 
 /********** id 阶段状态寄存器模块 **********/
 module id_reg (
@@ -28,16 +28,12 @@ module id_reg (
 	// input 				   	br_flag,		// 分支标志位
 	input [`MEM_OP_BUS]         mem_op, // 内存操作
 	input [`WORD_DATA_BUS]      mem_wr_data, // mem 写入数据
-	input                       ex_out_mux, // EX 阶段输出选通信号
 	input [`REG_ADDR_BUS]       dst_addr, // 寄存器写入地址
 	input                       gpr_we_, // 寄存器写入有效
-	input                       gpr_mux_ex,
+	input [`EX_OUT_SEL_BUS]     gpr_mux_ex,
 	input                       gpr_mux_mem, // 通用寄存器输入选通信号
 	input [`WORD_DATA_BUS]      gpr_wr_data, // ID 阶段输出的 gpr 输入值
 	//input  [`IsaExpBus]  exp_code,	   	// 异常代码
-	/********** 寄存器控制信号 **********/
-	input  wire				   	stall,		   	// 停顿
-	input  wire				   	flush,		   	// 刷新
 	/********** IF/ID 直接输入 **********/
 	input                       if_en, // 流水线有效信号
 	/********** ID/EX寄存器输出信号 **********/
@@ -52,10 +48,9 @@ module id_reg (
 	// output reg				   	id_br_flag,	   	// 分支标志位
 	output reg [`MEM_OP_BUS]    id_mem_op, // 存储器操作
 	output reg [`WORD_DATA_BUS] id_mem_wr_data, // 存储器写入数据
-	output reg                  id_ex_out_mux, // EX 阶段输出选通信号
 	output reg [`REG_ADDR_BUS]  id_dst_addr, // 寄存器写入地址
 	output reg                  id_gpr_we_, // 寄存器写入信号
-	output reg                  id_gpr_mux_ex,
+	output reg [`EX_OUT_SEL_BUS] id_gpr_mux_ex,
 	output reg                  id_gpr_mux_mem,
 	output reg [`WORD_DATA_BUS] id_gpr_wr_data   // ID 阶段输出的 gpr 输入值6
 	//output reg  [`IsaExpBus]  id_exp_code	   	// 异常代码
@@ -80,7 +75,6 @@ module id_reg (
 			// id_br_flag	   <= #1 `DISABLE;
 			id_mem_op	   <= #1 `MEM_OP_NOP;
 			id_mem_wr_data <= #1 `WORD_DATA_W'h0;
-			id_ex_out_mux  <= #1 `ALU_OUT;
 			id_gpr_we_	   <= #1 `DISABLE_;
 			id_dst_addr    <= #1 5'h0;
 			id_gpr_mux_ex  <= #1 `DISABLE;
@@ -102,7 +96,6 @@ module id_reg (
 					// id_br_flag	   <= #1 `DISABLE;
 					id_mem_op	   <= #1 `MEM_OP_NOP;
 					id_mem_wr_data <= #1 `WORD_DATA_W'h0;
-					id_ex_out_mux  <= #1 `ALU_OUT;
 					id_gpr_we_	   <= #1 `DISABLE_;
 					id_dst_addr    <= #1 5'h0;
 					id_gpr_mux_ex  <= #1 `DISABLE;
@@ -120,7 +113,6 @@ module id_reg (
 				   	// id_br_flag	   <= #1 br_flag;
 				   	id_mem_op	   <= #1 mem_op;
 				   	id_mem_wr_data <= #1 mem_wr_data;
-				   	id_ex_out_mux  <= #1 ex_out_mux;
 				   	id_gpr_we_	   <= #1 gpr_we_;
 				   	id_dst_addr	   <= #1 dst_addr;
 				   	id_gpr_mux_ex  <= #1 gpr_mux_ex;

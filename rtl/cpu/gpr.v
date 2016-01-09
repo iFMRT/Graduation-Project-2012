@@ -19,11 +19,11 @@ module gpr (
     output wire [`WORD_DATA_BUS]    rd_data_0,          // 读取的数据
     /********** 读取端口 1 **********/
     input  wire [`REG_ADDR_BUS]     rd_addr_1,          // 读取的地址
-    output wire [`WORD_DATA_BUS]    rd_data_1           // 读取的数据
+    output wire [`WORD_DATA_BUS]    rd_data_1,          // 读取的数据
     /********** 写入端口 **********/
-    // input  wire                      we_,                // 写入有效信号
-    // input  wire [`REG_ADDR_BUS]      wr_addr,            // 写入的地址
-    // input  wire [`WORD_DATA_BUS]     wr_data             // 写入的数据
+    input  wire                      we_,                // 写入有效信号
+    input  wire [`REG_ADDR_BUS]      wr_addr,            // 写入的地址
+    input  wire [`WORD_DATA_BUS]     wr_data             // 写入的数据
 );
 
     /********** 内部信号 **********/
@@ -32,11 +32,11 @@ module gpr (
 
     /********** 读取访问 (先读后写) **********/
     // 读取端口 0
-    // assign rd_data_0 = ((we_ == `ENABLE_) && (wr_addr == rd_addr_0)) ? wr_data : gpr[rd_addr_0];
-    assign rd_data_0 = gpr[rd_addr_0];
+    assign rd_data_0 = ((we_ == `ENABLE_) && (wr_addr == rd_addr_0)) ? wr_data : gpr[rd_addr_0];
+    // assign rd_data_0 = gpr[rd_addr_0];
     // 读取端口 1
-    // assign rd_data_1 = ((we_ == `ENABLE_) && (wr_addr == rd_addr_1)) ? wr_data : gpr[rd_addr_1];
-    assign rd_data_1 = gpr[rd_addr_1];
+    assign rd_data_1 = ((we_ == `ENABLE_) && (wr_addr == rd_addr_1)) ? wr_data : gpr[rd_addr_1];
+    // assign rd_data_1 = gpr[rd_addr_1];
 
     /********** 写入访问 **********/
     always @ (posedge clk or reset) begin
@@ -46,10 +46,10 @@ module gpr (
                 gpr[i]  <= #1 32'b0;
             end
         end
-        // else if (we_ == `ENABLE_) begin
-        //      写入访问 
-        //     gpr[wr_addr] <= #1 wr_data;
-        // end
+        else if (we_ == `ENABLE_) begin
+            // 写入访问 
+            gpr[wr_addr] <= #1 wr_data;
+        end
     end
 
 endmodule

@@ -39,17 +39,17 @@ module spm (
 	/********** Simulate FPGA Block RAM: dpram_sim **********/
 	dpram_sim x_s3e_dpram (
 		/********** Port A: IF Stage **********/
-		.clock_a   (clk),			            // Clock
+		.clock_a   (clk),			        // Clock
 		.address_a (if_spm_addr),     		// Address
 		.data_a    (if_spm_wr_data),     	// Write data (Not Connected)
-		.wren_a    (wea),			            // Write enable A (Disable)
-		.q_a       (if_spm_rd_data)     	// Read data
+		.wren_a    (wea),			        // Write enable A (Disable)
+		.q_a       (if_spm_rd_data),    	// Read data
 		/********** Port B: MEM Stage **********/
-		// .clock_b   (clk),			        // Clock
-		// .address_b (mem_spm_addr),	  	// Address
-		// .data_b    (mem_spm_wr_data),  // Write data
-		// .wren_b    (web),			        // Write enable
-		// .q_b       (mem_spm_rd_data)  	// Read data
+		.clock_b   (clk),			        // Clock
+		.address_b (mem_spm_addr),	  	    // Address
+		.data_b    (mem_spm_wr_data),       // Write data
+		.wren_b    (web),			        // Write enable
+		.q_b       (mem_spm_rd_data)  	    // Read data
 	);
 
 endmodule

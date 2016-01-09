@@ -6,11 +6,11 @@
  *	 SPM_ADDR_W: log2(4096) = 12
  */
 
-	`define SPM_SIZE   16384 // 16384Byte（16KB）
-	`define SPM_DEPTH  4096	 // SPM depth
-	`define SPM_ADDR_W 12	 // Address width
-	`define SpmAddrBus 11:0	 // Address bus
-	`define SpmAddrLoc 11:0	 // Address location
+	`define SPM_SIZE     16384   // 16384Byte（16KB）
+	`define SPM_DEPTH    4096	 // SPM depth
+	`define SPM_ADDR_W   12	     // Address width
+	`define SPM_ADDR_BUS 11:0	 // Address bus
+	`define SPM_ADDR_LOC 11:0	 // Address location
 
 `endif
 

@@ -11,6 +11,7 @@
 `include "stddef.h"
 `include "cpu.h"
 `include "mem.h"
+`include "ex_stage.h"
 
 module decoder (
     /********** IF/ID Pipeline Register **********/
@@ -51,8 +52,7 @@ module decoder (
     // output reg                   br_flag,        // 分支标志位
     output reg [`MEM_OP_BUS]       mem_op,         // 内存操作
     output wire [`WORD_DATA_BUS] mem_wr_data,    // mem 写入数据
-    output reg                   gpr_mux_ex,     // ex 阶段的 gpr 写入信号选通
-    output reg                   gpr_mux_mem,    // mem 阶段的 gpr 写入信号选通
+    output reg  [`EX_OUT_SEL_BUS] gpr_mux_ex,     // ex 阶段的 gpr 写入信号选通
     output reg [`WORD_DATA_BUS]  gpr_wr_data,    // ID 阶段输出的 gpr 输入信号选通
     output wire [`REG_ADDR_BUS]  dst_addr,       // 通用寄存器写入地址
     output reg                   gpr_we_       // 通用寄存器写入操作
@@ -168,8 +168,7 @@ module decoder (
         // br_flag     =   `DISABLE;
         mem_op      =   `MEM_OP_NOP;
         gpr_we_     =   `DISABLE_;
-        gpr_mux_ex  =   `EX_ALU_OUT;
-        gpr_mux_mem =   `MEM_MEM_OUT;
+        gpr_mux_ex  =   `EX_OUT_ALU;
         gpr_wr_data = if_pc_plus4;
 
         //exp_code = `ISA_EXP_NO_EXP;
@@ -223,34 +222,29 @@ module decoder (
                             alu_op      = `ALU_OP_ADD;
                             alu_in_1    = imm_i;
                             gpr_we_     = `ENABLE_;
-                            gpr_mux_mem = `MEM_EX_OUT;
                         end
                         `ISA_OP_ALSI_SLLI :begin   // SLLI 指令
                             alu_op      = `ALU_OP_SLL;
                             alu_in_1    = imm_i;
                             gpr_we_     = `ENABLE_;
-                            gpr_mux_mem = `MEM_EX_OUT;
-                            gpr_mux_ex  = `EX_CMP_OUT;
+                            gpr_mux_ex  = `EX_OUT_CMP;
                         end
                         `ISA_OP_ALSI_SLTI:begin   // SLTI 指令
                             // cmp_op      = `CMP_OP_LT;    //这里大概需要一个控制信号，将最后写回寄存器的选通为cmp输出
                             // cmp_in_1    = imm_i;
                             gpr_we_     = `ENABLE_;
-                            gpr_mux_mem = `MEM_EX_OUT;
-                            gpr_mux_ex  = `EX_CMP_OUT;
+                            gpr_mux_ex  = `EX_OUT_CMP;
                         end
                         `ISA_OP_ALSI_SLTIU:begin   // SLTIU 指令
                             // cmp_op      = `CMP_OP_LTU;
                             // cmp_in_1    = imm_i;
                             gpr_we_     = `ENABLE_;
-                            gpr_mux_mem = `MEM_EX_OUT;
-                            gpr_mux_ex  = `EX_CMP_OUT;
+                            gpr_mux_ex  = `EX_OUT_CMP;
                         end
                         `ISA_OP_ALSI_XORI:begin   // XORI 指令
                             alu_op      = `ALU_OP_XOR;
                             alu_in_1    = imm_i;
                             gpr_we_     = `ENABLE_;
-                            gpr_mux_mem = `MEM_EX_OUT;
                         end
                         `ISA_OP_ALSI_SRI: begin
                             if (
@@ -259,14 +253,12 @@ module decoder (
                                 alu_op      = `ALU_OP_SRL;
                                 alu_in_1    = imm_ir;
                                 gpr_we_     = `ENABLE_;
-                                gpr_mux_mem = `MEM_EX_OUT;
                             end else if (
                                 funct7 == `ISA_OP_ALSI_SRI_SRAI
                             ) begin   //SRAI 指令
                                 alu_op      = `ALU_OP_SRA;
                                 alu_in_1    = imm_ir;
                                 gpr_we_     = `ENABLE_;
-                                gpr_mux_mem = `MEM_EX_OUT;
                             end else begin // 未定义命令
                                 $display("error");
                             end
@@ -275,13 +267,11 @@ module decoder (
                             alu_op      = `ALU_OP_OR;
                             alu_in_1    = imm_i;
                             gpr_we_     = `ENABLE_;
-                            gpr_mux_mem = `MEM_EX_OUT;
                         end
                         `ISA_OP_ALSI_ANDI: begin   // ANDI 指令
                             alu_op      = `ALU_OP_AND;
                             alu_in_1    = imm_i;
                             gpr_we_     = `ENABLE_;
-                            gpr_mux_mem = `MEM_EX_OUT;
                         end
                         default       : begin // 未定义命令
                             $display("error");
@@ -294,7 +284,6 @@ module decoder (
                 //     gpr_we_     = `ENABLE_;
                 //     // br_taken    = `ENABLE;
                 //     gpr_mux_ex  = `EX_ID_PCN; // pc + 4
-                //     gpr_mux_mem = `MEM_EX_OUT;
                 // end
                 `ISA_OP_ALS   : begin
                     /* R 格式 */
@@ -305,11 +294,9 @@ module decoder (
                             ) begin   //ADD 指令
                                 alu_op   = `ALU_OP_ADD;
                                 gpr_we_  = `ENABLE_;
-                                gpr_mux_mem = `MEM_EX_OUT;
                             end else if(funct7 == `ISA_OP_ALS_AS_SUB) begin   //SUB 指令
                                 alu_op   = `ALU_OP_SUB;
                                 gpr_we_  = `ENABLE_;
-                                gpr_mux_mem = `MEM_EX_OUT;
                             end else begin // 未定义命令
                                 $display("error");
                             end
@@ -317,36 +304,30 @@ module decoder (
                         `ISA_OP_ALS_SLL: begin
                             alu_op      = `ALU_OP_SLL;
                             gpr_we_     = `ENABLE_;
-                            gpr_mux_mem = `MEM_EX_OUT;
-                            gpr_mux_ex  = `EX_CMP_OUT;
+                            gpr_mux_ex  = `EX_OUT_CMP;
                         end
                         `ISA_OP_ALS_SLT: begin
                             // cmp_op      = `CMP_OP_LT;
                             gpr_we_     = `ENABLE_;
-                            gpr_mux_mem = `MEM_EX_OUT;
-                            gpr_mux_ex  = `EX_CMP_OUT;
+                            gpr_mux_ex  = `EX_OUT_CMP;
                         end
                         `ISA_OP_ALS_SLTU: begin
                             // cmp_op      = `CMP_OP_LTU;
                             gpr_we_     = `ENABLE_;
-                            gpr_mux_mem = `MEM_EX_OUT;
-                            gpr_mux_ex  = `EX_CMP_OUT;
+                            gpr_mux_ex  = `EX_OUT_CMP;
                         end
                         `ISA_OP_ALS_XOR: begin
                             alu_op      = `ALU_OP_XOR;
                             gpr_we_     = `ENABLE_;
-                            gpr_mux_mem = `MEM_EX_OUT;
                         end
                         `ISA_OP_ALS_SR: begin
                             if(funct7 == `ISA_OP_ALS_SR_SRL) begin
                                 alu_op      = `ALU_OP_SRL;
                                 gpr_we_     = `ENABLE_;
-                                gpr_mux_mem = `MEM_EX_OUT;
                             end
                             else if(funct7 == `ISA_OP_ALS_SR_SRA) begin
                                 alu_op      = `ALU_OP_SRA;
                                 gpr_we_     = `ENABLE_;
-                                gpr_mux_mem = `MEM_EX_OUT;
                             end
                                  else begin // 未定义命令
                                      $display("error");
@@ -355,12 +336,10 @@ module decoder (
                         `ISA_OP_ALS_OR: begin
                             alu_op      = `ALU_OP_OR;
                             gpr_we_     = `ENABLE_;
-                            gpr_mux_mem = `MEM_EX_OUT;
                         end
                         `ISA_OP_ALS_AND: begin
                             alu_op      = `ALU_OP_AND;
                             gpr_we_     = `ENABLE_;
-                            gpr_mux_mem = `MEM_EX_OUT;
                         end
                         default       : begin // 未定义命令
                             $display("error");
@@ -372,14 +351,12 @@ module decoder (
                 //     gpr_we_     = `DISABLE_;// 选通imm_u作为结果
                 //     gpr_wr_data = imm_u;
                 //     gpr_mux_ex  = `EX_ID_PCN;
-                //     gpr_mux_mem = `MEM_EX_OUT;
                 // end
                 // `ISA_OP_AUIPC  : begin // LUIPC 指令
                 //     alu_op      = `ALU_OP_ADD;
                 //     alu_in_0    = if_pc;
                 //     alu_in_1    = imm_u;
                 //     gpr_we_     = `ENABLE_;
-                //     gpr_mux_mem = `MEM_EX_OUT;
                 // end
                 /* S 格式 */
                 `ISA_OP_ST  : begin // SW 命令
@@ -462,7 +439,6 @@ module decoder (
                 //     br_taken    = `ENABLE;
                 //     gpr_we_     = `ENABLE_;
                 //     gpr_mux_ex  = `EX_ID_PCN;
-                //     gpr_mux_mem = `MEM_EX_OUT;
                 // end
                 /* 其它命令 */
                 default       : begin // 未定义命令
