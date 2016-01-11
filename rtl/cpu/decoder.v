@@ -27,37 +27,37 @@ module decoder (
     output wire [`REG_ADDR_BUS]  gpr_rd_addr_1,  // Read address 1
 
     /********** 数据转发 **********/
-    // LOAD冲突
-    // input wire                   id_en,          // 流水线数据有效
-    // input wire [`REG_ADDR_BUS]   id_dst_addr,    // 写入地址
-    // input wire                   id_gpr_we_,     // 写入有效
-    // input wire [`MEM_OP_B]       id_mem_op,      // 内存操作
+    // LOAD Hazard
+    input wire                   id_en,          // Pipeline Register enable
+    input wire [`REG_ADDR_BUS]   id_dst_addr,    // GPR write address
+    input wire                   id_gpr_we_,     // GPR write enable
+    input wire [`MEM_OP_BUS]     id_mem_op,      // Mem operation
 
-    // 来自EX阶段的数据转发
-    // input wire                   ex_en,          // 流水线数据有效
-    // input wire [`REG_ADDR_BUS]   ex_dst_addr,    // 写入地址
-    // input wire                   ex_gpr_we_,     // 写入有效
-    // input wire [`WORD_DATA_BUS]  ex_fwd_data,    // 数据转发
+    // 来自EX 阶段的数据转发
+    input wire                   ex_en,          // Pipeline Register enable
+    input wire [`REG_ADDR_BUS]   ex_dst_addr,    // GPR write address
+    input wire                   ex_gpr_we_,     // GPR write enable
+    input wire [`WORD_DATA_BUS]  ex_fwd_data,    // 数据转发
     // 来自MEM阶段的数据转发
-    // input wire [`WORD_DATA_BUS]  mem_fwd_data,   // 数据转发
+    input wire [`WORD_DATA_BUS]  mem_fwd_data,   // 数据转发
 
     /********** 解码结果 **********/
-    output reg [`ALU_OP_BUS]       alu_op,         // ALU 操作
-    // output reg [`CMP_OP_B]       cmp_op,         // CMP 操作
-    output reg [`WORD_DATA_BUS]  alu_in_0,       // ALU 输入 0
-    output reg [`WORD_DATA_BUS]  alu_in_1,       // ALU 输入 1
-    // output reg [`WORD_DATA_BUS]  cmp_in_0,       // CMP 输入 0
-    // output reg [`WORD_DATA_BUS]  cmp_in_1,       // CMP 输入 1
-    // output reg                   br_taken,       // 跳转成立
-    // output reg                   br_flag,        // 分支标志位
-    output reg [`MEM_OP_BUS]       mem_op,         // 内存操作
-    output wire [`WORD_DATA_BUS] mem_wr_data,    // mem 写入数据
+    output reg [`ALU_OP_BUS]      alu_op,         // ALU 操作
+//  output reg [`CMP_OP_B]        cmp_op,         // CMP 操作
+    output reg [`WORD_DATA_BUS]   alu_in_0,       // ALU 输入 0
+    output reg [`WORD_DATA_BUS]   alu_in_1,       // ALU 输入 1
+//  output reg [`WORD_DATA_BUS]   cmp_in_0,       // CMP 输入 0
+//  output reg [`WORD_DATA_BUS]   cmp_in_1,       // CMP 输入 1
+//  output reg                    br_taken,       // 跳转成立
+//  output reg                    br_flag,        // 分支标志位
+    output reg [`MEM_OP_BUS]      mem_op,         // Mem operation
+    output wire [`WORD_DATA_BUS]  mem_wr_data,    // mem 写入数据
     output reg  [`EX_OUT_SEL_BUS] gpr_mux_ex,     // ex 阶段的 gpr 写入信号选通
-    output reg [`WORD_DATA_BUS]  gpr_wr_data,    // ID 阶段输出的 gpr 输入信号选通
-    output wire [`REG_ADDR_BUS]  dst_addr,       // 通用寄存器写入地址
-    output reg                   gpr_we_       // 通用寄存器写入操作
+    output reg [`WORD_DATA_BUS]   gpr_wr_data,    // ID 阶段输出的 gpr 输入信号选通
+    output wire [`REG_ADDR_BUS]   dst_addr,       // 通用寄存器写入地址
+    output reg                    gpr_we_,        // 通用寄存器写入操作
     // 第一阶段不考虑 output reg   [`IsaExpBus]     exp_code,      // 异常代码
-    // output reg                   ld_hazard       // LOAD 冲突
+    output reg                    ld_hazard       // LOAD hazard
 );
 
     /********** 指令字段 **********/
@@ -69,7 +69,7 @@ module decoder (
 
     /********** 立即数 **********/
     // U 格式立即数处理
-    wire [`WORD_DATA_BUS] imm_u  = {if_insn[31:12],12'b0}; 
+    wire [`WORD_DATA_BUS] imm_u  = {if_insn[31:12],12'b0};
     // I 格式立即数处理
     wire [`WORD_DATA_BUS] imm_i  = {{20{if_insn[31]}},if_insn[31:20]};
     // I 格式右移指令立即数处理
@@ -81,8 +81,8 @@ module decoder (
     // J 格式立即数处理
     wire [`WORD_DATA_BUS] imm_j  = {{12{if_insn[31]}},if_insn[19:12],if_insn[20],if_insn[30:21],1'b0};
     /********** 两个操作数 **********/
-    wire         [`WORD_DATA_BUS]    ra_data;                        // 第一个操作数
-    wire         [`WORD_DATA_BUS]    rb_data;                        // 第二个操作数
+    reg         [`WORD_DATA_BUS]    ra_data;                        // 第一个操作数
+    reg         [`WORD_DATA_BUS]    rb_data;                        // 第二个操作数
 
     assign mem_wr_data      = rb_data;
     assign gpr_rd_addr_0    = ra_addr;
@@ -90,70 +90,72 @@ module decoder (
     assign dst_addr         = if_insn[`INSN_RC];    // Rc 地址
 
     /********** 转发 **********/
-    // always @(*) begin
-    //     /* 关于 Ra 的转发 */
-    //     if ((id_en       == `ENABLE)  &&
-    //         (id_gpr_we_  == `ENABLE_) &&
-    //         (id_dst_addr == ra_addr)
-    //     ) begin
+    always @(*) begin
+        /* 关于 Ra 的转发 */
+        if ((id_en       == `ENABLE)  &&
+            (id_gpr_we_  == `ENABLE_) &&
+            (id_dst_addr == ra_addr)
+        ) begin
 
-    //         ra_data = ex_fwd_data;   // 来自 EX 阶段的转发
+            ra_data = ex_fwd_data;   // 来自 EX 阶段的转发
 
-    //     end else if (
-    //         (ex_en       == `ENABLE)  &&
-    //         (ex_gpr_we_  == `ENABLE_) &&
-    //         (ex_dst_addr == ra_addr)
-    //     ) begin
+        end else if (
+            (ex_en       == `ENABLE)  &&
+            (ex_gpr_we_  == `ENABLE_) &&
+            (ex_dst_addr == ra_addr)
+        ) begin
 
-    //         ra_data = mem_fwd_data;  // 来自 MEM 阶段的转发
+            ra_data = mem_fwd_data;  // 来自 MEM 阶段的转发
 
-    //     end else begin
+        end else begin
 
-    //         ra_data = gpr_rd_data_0; // 没有发生流水线冲突
+            ra_data = gpr_rd_data_0; // 没有发生流水线hazard
 
-    //     end
+        end
 
-    //     /* 关于 Rb 的转发*/
-    //     if ((id_en       == `ENABLE)  &&
-    //         (id_gpr_we_  == `ENABLE_) &&
-    //         (id_dst_addr == rb_addr)
-    //     ) begin
+        /* 关于 Rb 的转发*/
+        if ((id_en       == `ENABLE)    &&
+            (id_gpr_we_  == `ENABLE_)   &&
+            (op          != `ISA_OP_LD) &&  // ISA_OP_LD without rb
+            (id_dst_addr == rb_addr)
+        ) begin
 
-    //         rb_data = ex_fwd_data;   // 来自 EX 阶段的转发
-    //     end else if (
-    //         (ex_en       == `ENABLE)  &&
-    //         (ex_gpr_we_  == `ENABLE_) &&
-    //         (ex_dst_addr == rb_addr)
-    //     ) begin
+            rb_data = ex_fwd_data;   // 来自 EX 阶段的转发
+        end else if (
+            (ex_en       == `ENABLE)  &&
+            (ex_gpr_we_  == `ENABLE_) &&
+            (op          != `ISA_OP_LD) &&  // ISA_OP_LD without rb
+            (ex_dst_addr == rb_addr)
+        ) begin
 
-    //         rb_data = mem_fwd_data;  // 来自 MEM 阶段的转发
+            rb_data = mem_fwd_data;  // 来自 MEM 阶段的转发
 
-    //     end else begin
+        end else begin
 
-    //         rb_data = gpr_rd_data_1; // 没有发生流水线冲突
+            rb_data = gpr_rd_data_1; // 没有发生流水线hazard
 
-    //     end
-    // end
-    assign ra_data = gpr_rd_data_0; // 没有发生流水线冲突
+        end
+    end
 
-    assign rb_data = gpr_rd_data_1; // 没有发生流水线冲突
-
-    // /********** Load 冲突的检测 **********/
-    // always @(*) begin
-    //     if ((id_en == `ENABLE)         &&
-    //         (id_gpr_we_ = `ENABLE_)    &&   // load must enable id_gpr_we_
-    //         (id_mem_op != `MEM_OP_NOP) &&
-    //         (    (id_dst_addr == ra_addr) ||
-    //              (id_dst_addr == rb_addr)
-    //         )
-    //     ) begin
-
-    //         ld_hazard = `ENABLE;  // 存在 Load 冲突
-
-    //     end else begin
-    //         ld_hazard = `DISABLE; // 不存在 Load 冲突
-    //     end
-    // end
+    // /********** Load hazard的检测 **********/
+    always @(*) begin
+        if ((id_en      == `ENABLE)         &&
+            (id_gpr_we_ == `ENABLE_)        &&   // load must enable id_gpr_we_
+            (id_mem_op  != `MEM_OP_NOP)
+        ) begin
+            if (op == `ISA_OP_LD) begin
+                if (id_dst_addr == ra_addr) begin
+                    ld_hazard = `ENABLE;  // 存在 Load hazard
+                end
+            end else if ( (id_dst_addr == ra_addr) ||
+                          (id_dst_addr == rb_addr)
+            ) begin
+                ld_hazard = `ENABLE;  // 存在 Load hazard
+            end
+        end else begin
+            ld_hazard = `DISABLE; // 不存在 Load hazard
+        end
+    end
 
     /********** 指令译码 **********/
     always @(*) begin

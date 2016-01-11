@@ -39,18 +39,26 @@ module cpu_test;
     wire                       ex_gpr_we_;     // General purpose RegisterWrite enable
     wire [`WORD_DATA_BUS]      ex_out;         // Operating result
     // MEM/WB Pipeline  Register
-    wire [`REG_ADDR_BUS]         mem_dst_addr;   // General purpose RegisterWrite  address
+    wire [`REG_ADDR_BUS]       mem_dst_addr;   // General purpose RegisterWrite  address
     wire                       mem_gpr_we_;    // General purpose RegisterWrite enable
     wire [`WORD_DATA_BUS]      mem_out;        // Operating result
     /**********  Pipeline Control Signal **********/
     // Stall  Signal
-    reg                        if_stall;       // IF Stage
+    wire                       if_stall;       // IF Stage
+    wire                       id_stall;       // ID Stage
+    wire                       ex_stall;       // EX Stage
+    wire                       mem_stall;      // MEM Stage
     // Flush Signal
-    reg                        if_flush;       // IF Stage
+    wire                       if_flush;       // IF Stage
+    wire                       id_flush;       // ID Stage
+    wire                       ex_flush;       // EX Stage
+    wire                       mem_flush;      // MEM Stage
     // Control Signal
-    reg [`WORD_DATA_BUS]       new_pc;         // New PC
-    reg [`WORD_DATA_BUS]       br_addr;        // Branch  address
-    reg                        br_taken;       // Branch taken
+    wire [`WORD_DATA_BUS]       new_pc;         // New PC
+    // reg [`WORD_DATA_BUS]       br_addr;        // Branch  address
+    // reg                        br_taken;       // Branch taken
+    wire                       ld_hazard;      // Hazard
+
     /********** General Purpose Register Signal **********/
     wire [`WORD_DATA_BUS]      gpr_rd_data_0;  // Read data 0
     wire [`WORD_DATA_BUS]      gpr_rd_data_1;  // Read data 1
@@ -72,6 +80,9 @@ module cpu_test;
     wire                       mem_spm_as_;     //  address strobe
     wire                       mem_spm_rw;      // Read/Write
     wire [`WORD_DATA_BUS]      mem_spm_wr_data; //  Write data
+    /********** Forward  Signal **********/
+    wire [`WORD_DATA_BUS]      ex_fwd_data;     // EX Stage
+    wire [`WORD_DATA_BUS]      mem_fwd_data;    // MEM Stage
 
     /******** Define Simulation Loop********/
     parameter             STEP = 10;
@@ -99,8 +110,8 @@ module cpu_test;
         .stall          (if_stall),         // Stall
         .flush          (if_flush),         // Flush
         .new_pc         (new_pc),           // New PC
-        .br_taken       (br_taken),         // Branch taken
-        .br_addr        (br_addr),          // Branch address
+        // .br_taken       (br_taken),         // Branch taken
+        // .br_addr        (br_addr),          // Branch address
         /********** IF/ID Pipeline Register **********/
         .if_pc          (if_pc),            // Program count
         .if_pc_plus4    (if_pc_plus4),      // Next PC
@@ -118,6 +129,19 @@ module cpu_test;
         .gpr_rd_data_1  (gpr_rd_data_1),    // Read data 1
         .gpr_rd_addr_0  (gpr_rd_addr_0),    // Read  address 0
         .gpr_rd_addr_1  (gpr_rd_addr_1),    // Read  address 1
+
+        .ex_en          (ex_en),
+        /********** Forward  **********/
+        // EX Stage Forward 
+        .ex_fwd_data    (ex_fwd_data),      // Forward data
+        .ex_dst_addr    (ex_dst_addr),      // Write  address
+        .ex_gpr_we_     (ex_gpr_we_),       // Write enable
+        // MEM Stage Forward 
+        .mem_fwd_data   (mem_fwd_data),     // Forward data
+        /*********  Pipeline Control Signal *********/
+        .stall          (id_stall),         // Stall 
+        .flush          (id_flush),         // Flush
+        .ld_hazard      (ld_hazard),        // Hazard
         /********** IF/ID Pipeline  Register **********/
         .if_pc          (if_pc),            // Program count
         .if_pc_plus4    (if_pc_plus4),      // Jump adn link return address
@@ -139,26 +163,31 @@ module cpu_test;
     /********** EX Stage **********/
     ex_stage ex_stage (
         /********** Clock & Reset **********/
-         .clk            (clk),              // Clock
-         .reset          (reset),            // Asynchronous Reset
-         /********** ID/EX Pipeline  Register **********/
-         .alu_op         (id_alu_op),        // ALU operation
-         .alu_in0       (id_alu_in_0),       // ALU input 0
-         .alu_in1       (id_alu_in_1),       // ALU input 1
+        .clk            (clk),              // Clock
+        .reset          (reset),            // Asynchronous Reset
+        /**********  Pipeline Control Signal **********/
+        .stall          (ex_stall),         // Stall 
+        .flush          (ex_flush),         // Flush
+        /********** Forward  **********/
+        .fwd_data       (ex_fwd_data),      // Forward data
+        /********** ID/EX Pipeline  Register **********/
+        .id_en          (id_en),
+        .id_alu_op      (id_alu_op),        // ALU operation
+        .id_alu_in_0    (id_alu_in_0),       // ALU input 0
+        .id_alu_in_1    (id_alu_in_1),       // ALU input 1
 
-         .id_mem_op      (id_mem_op),        // Memory operation
-         .id_mem_wr_data (id_mem_wr_data),   // Memory Write data
-         .id_dst_addr    (id_dst_addr),      // General purpose RegisterWrite  address
-         .id_gpr_we_     (id_gpr_we_),       // General purpose RegisterWrite enable
-
-         .ex_out_sel     (id_gpr_mux_ex),
+        .id_mem_op      (id_mem_op),        // Memory operation
+        .id_mem_wr_data (id_mem_wr_data),   // Memory Write data
+        .id_dst_addr    (id_dst_addr),      // General purpose RegisterWrite  address
+        .id_gpr_we_     (id_gpr_we_),       // General purpose RegisterWrite enable
+        .ex_out_sel     (id_gpr_mux_ex),
          /********** EX/MEM Pipeline  Register **********/
-
-         .ex_mem_op      (ex_mem_op),        // Memory operation
-         .ex_mem_wr_data (ex_mem_wr_data),   // Memory Write data
-         .ex_dst_addr    (ex_dst_addr),      // General purpose RegisterWrite address
-         .ex_gpr_we_     (ex_gpr_we_),       // General purpose RegisterWrite enable
-         .ex_out         (ex_out)            // Operating result
+        .ex_en          (ex_en),  
+        .ex_mem_op      (ex_mem_op),        // Memory operation
+        .ex_mem_wr_data (ex_mem_wr_data),   // Memory Write data
+        .ex_dst_addr    (ex_dst_addr),      // General purpose RegisterWrite address
+        .ex_gpr_we_     (ex_gpr_we_),       // General purpose RegisterWrite enable
+        .ex_out         (ex_out)            // Operating result
     );
 
     /********** MEM Stage **********/
@@ -166,6 +195,11 @@ module cpu_test;
         /********** Clock & Reset **********/
         .clk            (clk),              // Clock
         .reset          (reset),            // Asynchronous Reset
+        /**********  Pipeline Control Signal **********/
+        .stall          (mem_stall),        // Stall 
+        .flush          (mem_flush),        // Flush
+        /********** Forward  **********/
+        .fwd_data       (mem_fwd_data),     // Forward data
         /********** SPM Interface **********/
         .spm_rd_data    (mem_spm_rd_data),  // Read data
         .spm_addr       (mem_spm_addr),     //  address
@@ -173,6 +207,7 @@ module cpu_test;
         .spm_rw         (mem_spm_rw),       // Read/Write
         .spm_wr_data    (mem_spm_wr_data),  //  Write data
         /********** EX/MEM Pipeline  Register **********/
+        .ex_en          (ex_en),
         .ex_mem_op      (ex_mem_op),        // Memory operation
         .ex_mem_wr_data (ex_mem_wr_data),   // Memory Write data
         .ex_dst_addr    (ex_dst_addr),      // General purpose RegisterWrite address
@@ -180,9 +215,28 @@ module cpu_test;
         .ex_out         (ex_out),           // Operating result
 
         /********** MEM/WB Pipeline  Register **********/
+        .mem_en         (mem_en),
         .mem_dst_addr   (mem_dst_addr),     // General purpose RegisterWrite address
         .mem_gpr_we_    (mem_gpr_we_),      // General purpose RegisterWrite enable
         .mem_out        (mem_out)           // Operating result
+    );
+
+     /********** Control Module **********/
+    ctrl ctrl (
+        /**********  Pipeline Control Signal **********/
+        //  Pipeline Status
+        .ld_hazard      (ld_hazard),        // Load hazard
+        // Stall  Signal
+        .if_stall       (if_stall),         // IF Stage Stall 
+        .id_stall       (id_stall),         // ID Stage Stall 
+        .ex_stall       (ex_stall),         // EX Stage Stall 
+        .mem_stall      (mem_stall),        // MEM Stage Stall 
+        // Flush Signal
+        .if_flush       (if_flush),         // IF StageFlush
+        .id_flush       (id_flush),         // ID StageFlush
+        .ex_flush       (ex_flush),         // EX StageFlush
+        .mem_flush      (mem_flush),        // MEM StageFlush
+        .new_pc         (new_pc)
     );
 
     /********** General purpose Register **********/
@@ -234,12 +288,13 @@ module cpu_test;
               ) begin
                 $display("IF  Stage Test Succeeded !");
             end else begin
-                $display("ID  Stage Test Failed !");
+                $display("IF  Stage Test Failed !");
             end
         end
     endtask
 
     task id_tb;
+        input                   _ld_hazard;
         input                   _id_en;          //  Pipeline data enable
         input [`ALU_OP_BUS]     _id_alu_op;      // ALU operation
         input [`WORD_DATA_BUS]  _id_alu_in_0;    // ALU input 0
@@ -252,7 +307,8 @@ module cpu_test;
         input [`WORD_DATA_BUS]  _id_gpr_wr_data;
 
         begin
-            if( (id_en          == _id_en)          &&
+            if( (ld_hazard      == _ld_hazard)      &&
+                (id_en          == _id_en)          &&
                 (id_alu_op      == _id_alu_op)      &&
                 (id_alu_in_0    == _id_alu_in_0)    &&
                 (id_alu_in_1    == _id_alu_in_1)    &&
@@ -271,14 +327,18 @@ module cpu_test;
     endtask
 
     task ex_tb;
-        input [`MEM_OP_BUS]         _ex_mem_op;      // Memory operation
-        input [`WORD_DATA_BUS]      _ex_mem_wr_data; // Memory Write data
-        input [`REG_ADDR_BUS]       _ex_dst_addr;    // General purpose RegisterWrite  address
-        input                       _ex_gpr_we_;     // General purpose RegisterWrite enable
-        input [`WORD_DATA_BUS]      _ex_out;         // Operating result
+        input [`WORD_DATA_BUS]     _ex_fwd_data;
+        input                      _ex_en; 
+        input [`MEM_OP_BUS]        _ex_mem_op;      // Memory operation
+        input [`WORD_DATA_BUS]     _ex_mem_wr_data; // Memory Write data
+        input [`REG_ADDR_BUS]      _ex_dst_addr;    // General purpose RegisterWrite  address
+        input                      _ex_gpr_we_;     // General purpose RegisterWrite enable
+        input [`WORD_DATA_BUS]     _ex_out;         // Operating result
 
         begin
-            if( (ex_mem_op      == _ex_mem_op)       &&      // Memory operation
+            if( (ex_fwd_data    == _ex_fwd_data)     &&
+                (ex_en          == _ex_en)           &&
+                (ex_mem_op      == _ex_mem_op)       &&      // Memory operation
                 (ex_mem_wr_data == _ex_mem_wr_data)  &&      // Memory Write data
                 (ex_dst_addr    == _ex_dst_addr)     &&      // General purpose RegisterWrite address
                 (ex_gpr_we_     == _ex_gpr_we_)      &&      // General purpose RegisterWrite enable
@@ -292,12 +352,16 @@ module cpu_test;
     endtask
 
     task mem_tb;
+        input [`WORD_DATA_BUS]        _mem_fwd_data;
+        input                         _mem_en;
         input [`REG_ADDR_BUS]         _mem_dst_addr; // General purpose RegisterWrite  address
         input                         _mem_gpr_we_;  // General purpose RegisterWrite enable
         input [`WORD_DATA_BUS]        _mem_out;      // Operating result
 
         begin
-            if( (mem_dst_addr  == _mem_dst_addr)     &&      // Memory operation
+            if( (mem_fwd_data  == _mem_fwd_data)     &&      
+                (mem_en        == _mem_en)           &&      
+                (mem_dst_addr  == _mem_dst_addr)     &&      // Memory operation
                 (mem_gpr_we_   == _mem_gpr_we_)      &&      // Memory Write data
                 (mem_out       == _mem_out)                  // General purpose RegisterWrite address
               ) begin
@@ -308,16 +372,44 @@ module cpu_test;
         end
     endtask
 
+    task ctrl_tb;
+        input                   _if_stall;     // IF stage stall 
+        input                   _id_stall;     // ID stage stall 
+        input                   _ex_stall;     // EX stage stall 
+        input                   _mem_stall;    // MEM stage stall 
+
+        input                   _if_flush;     // IF stage flush
+        input                   _id_flush;     // ID stage flush
+        input                   _ex_flush;     // EX stage flush
+        input                   _mem_flush;    // MEM stage flush
+
+        input [`WORD_DATA_BUS]  _new_pc;
+
+        begin
+            if( (if_stall  == _if_stall)     &&      
+                (id_stall  == _id_stall)     &&      
+                (ex_stall  == _ex_stall)     &&
+                (mem_stall == _mem_stall)    &&
+                (if_flush  == _if_flush)     &&
+                (id_flush  == _id_flush)     &&
+                (ex_flush  == _ex_flush)     &&
+                (mem_flush == _mem_flush)    &&
+                (new_pc    == _new_pc)
+              ) begin
+                $display("Ctrl      Test Succeeded !");
+            end else begin
+                $display("Ctrl      Test Failed !");
+            end
+        end
+
+    endtask
     /******** Test Case ********/
     initial begin
         # 0 begin
             clk      <= 1'h1;
             reset    <= `ENABLE;
-            if_stall <= `DISABLE;
-            if_flush <= `DISABLE;
-            new_pc   <= `WORD_ADDR_W'hx;  // don't care
-            br_taken <= `DISABLE;
-            br_addr  <=  `WORD_DATA_W'hx; // don't care
+            // br_taken <= `DISABLE;
+            // br_addr  <=  `WORD_DATA_W'hx; // don't care
         end
         # (STEP * 3/4)
         # STEP begin
@@ -340,6 +432,17 @@ module cpu_test;
                   `WORD_DATA_W'h400093,          // if_insn
                   `ENABLE
                  );
+
+            ctrl_tb(`DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `WORD_DATA_W'h0
+                   );
         end
         # STEP begin
             $display("\n========= Clock 2 ========");
@@ -351,7 +454,8 @@ module cpu_test;
                  );
 
             /******** ADDI r1, r0, 4 ID Stage Test Output ********/
-            id_tb(`ENABLE,                       // id_en
+            id_tb(`DISABLE,                       // ld_hazard
+                  `ENABLE,                       // id_en
                   `ALU_OP_ADD,                   // id_alu_op
                   `WORD_DATA_W'h0,               // id_alu_in_0
                   `WORD_DATA_W'h4,               // id_alu_in_1
@@ -362,6 +466,17 @@ module cpu_test;
                   `EX_OUT_ALU,                   // id_gpr_mux_ex
                   `WORD_DATA_W'h8                // id_gpr_wr_data
                  );
+
+             ctrl_tb(`DISABLE,
+                     `DISABLE,
+                     `DISABLE,
+                     `DISABLE,
+                     `DISABLE,
+                     `DISABLE,
+                     `DISABLE,
+                     `DISABLE,
+                     `WORD_DATA_W'h0
+                    );
         end
         # STEP begin
             $display("\n========= Clock 3 ========");
@@ -373,7 +488,8 @@ module cpu_test;
                  );
 
             /********ADDI r2 r0, 9  ID Stage Test Output ********/
-            id_tb(`ENABLE,                       // id_en
+            id_tb(`DISABLE,                       // ld_hazard
+                  `ENABLE,                       // id_en
                   `ALU_OP_ADD,                   // id_alu_op
                   `WORD_DATA_W'h0,               // id_alu_in_0
                   `WORD_DATA_W'h9,               // id_alu_in_1
@@ -386,12 +502,25 @@ module cpu_test;
                  );
 
             /******** ADDI r1, r0, 4 EX Stage Test Output ********/
-            ex_tb(`MEM_OP_NOP,
+            ex_tb(`WORD_DATA_W'h9,
+                  `ENABLE,
+                  `MEM_OP_NOP,
                   `WORD_DATA_W'h0,
                   `REG_ADDR_W'h1,
                   `ENABLE_,
                   `WORD_DATA_W'h4
                  );
+
+            ctrl_tb(`DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `WORD_DATA_W'h0
+                   );
         end
         # STEP begin
             $display("\n========= Clock 4 ========");
@@ -403,7 +532,8 @@ module cpu_test;
                  );
 
             /******** ADDI r3, r0, 13 ID Stage Test Output ********/
-            id_tb(`ENABLE,
+            id_tb(`DISABLE,                       // ld_hazard
+                  `ENABLE,
                   `ALU_OP_ADD,
                   `WORD_DATA_W'h0,
                   `WORD_DATA_W'hd,
@@ -416,7 +546,9 @@ module cpu_test;
                  );
 
             /******** ADDI r2, r0, 9  EX Stage Test Output ********/
-            ex_tb(`MEM_OP_NOP,
+            ex_tb(`WORD_DATA_W'hd,
+                  `ENABLE,
+                  `MEM_OP_NOP,
                   `WORD_DATA_W'h0,
                   `REG_ADDR_W'h2,
                   `ENABLE_,
@@ -424,10 +556,22 @@ module cpu_test;
                  );
 
             /******** ADDI r1, r0, 4  MEM Stage Test Output ********/
-            mem_tb(`REG_ADDR_W'h1,
+            mem_tb(`WORD_DATA_W'h9,
+                   `ENABLE,
+                   `REG_ADDR_W'h1,
                    `ENABLE_,
                    `WORD_DATA_W'h4
                   );
+            ctrl_tb(`DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `WORD_DATA_W'h0
+                   );
         end
         # STEP begin
             $display("\n========= Clock 5 ========");
@@ -439,7 +583,8 @@ module cpu_test;
                  );
 
             /******** SW   r1, r0(1024) ID Stage Test Output ********/
-            id_tb(`ENABLE,
+            id_tb(`DISABLE,                       // ld_hazard
+                  `ENABLE,
                   `ALU_OP_ADD,
                   `WORD_DATA_W'h0,
                   `WORD_DATA_W'h400,
@@ -452,7 +597,9 @@ module cpu_test;
                  );
 
             /******** ADDI r3, r0, 13  EX Stage Test Output ********/
-            ex_tb(`MEM_OP_NOP,
+            ex_tb(`WORD_DATA_W'h400,
+                  `ENABLE,
+                  `MEM_OP_NOP,
                   `WORD_DATA_W'h0,
                   `REG_ADDR_W'h3,
                   `ENABLE_,
@@ -460,12 +607,24 @@ module cpu_test;
                  );
 
             /******** ADDI r2, r0, 9  MEM Stage Test Output ********/
-            mem_tb(`REG_ADDR_W'h2,
+            mem_tb(`WORD_DATA_W'hd,
+                    `ENABLE,
+                   `REG_ADDR_W'h2,
                    `ENABLE_,
                    `WORD_DATA_W'h9
                   );
 
             $display("WB Stage ...");
+            ctrl_tb(`DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `WORD_DATA_W'h0
+                   );
         end
         # STEP begin
             $display("\n========= Clock 6 ========");
@@ -477,7 +636,8 @@ module cpu_test;
                  );
 
             /******** SW   r2, r0(1028) ID Stage Test Output ********/
-            id_tb(`ENABLE,
+            id_tb(`DISABLE,                       // ld_hazard
+                  `ENABLE,
                   `ALU_OP_ADD,
                   `WORD_DATA_W'h0,
                   `WORD_DATA_W'h404,
@@ -490,7 +650,9 @@ module cpu_test;
                  );
 
             /******** SW   r1, r0(1024)  EX Stage Test Output ********/
-            ex_tb(`MEM_OP_SW,
+            ex_tb(`WORD_DATA_W'h404,
+                  `ENABLE,
+                  `MEM_OP_SW,
                   `WORD_DATA_W'h4,
                   `REG_ADDR_W'h0,
                   `DISABLE_,
@@ -498,12 +660,24 @@ module cpu_test;
                  );
 
             /******** ADDI r3, r0, 13  MEM Stage Test Output ********/
-            mem_tb(`REG_ADDR_W'h3,
-                   `ENABLE_,
-                   `WORD_DATA_W'hd
-                  );
+             mem_tb(`WORD_DATA_W'h0,
+                    `ENABLE,
+                    `REG_ADDR_W'h3,
+                    `ENABLE_,
+                    `WORD_DATA_W'hd
+                   );
 
             $display("WB Stage ...");
+            ctrl_tb(`DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `WORD_DATA_W'h0
+                   );
         end
         # STEP begin
             $display("\n========= Clock 7 ========");
@@ -515,7 +689,8 @@ module cpu_test;
                  );
 
             /******** LW   r4, r0(1024) ID Stage Test Output ********/
-            id_tb(`ENABLE,
+            id_tb(`DISABLE,                       // ld_hazard
+                  `ENABLE,
                   `ALU_OP_ADD,
                   `WORD_DATA_W'h0,
                   `WORD_DATA_W'h400,
@@ -528,7 +703,9 @@ module cpu_test;
                  );
 
             /******** SW   r2, r0(1028)  EX Stage Test Output ********/
-            ex_tb(`MEM_OP_SW,
+            ex_tb(`WORD_DATA_W'h400,
+                  `ENABLE,
+                  `MEM_OP_SW,
                   `WORD_DATA_W'h9,
                   `REG_ADDR_W'h4,
                   `DISABLE_,
@@ -536,12 +713,25 @@ module cpu_test;
                  );
 
             /******** SW   r1, r0(1024)  MEM Stage Test Output ********/
-            mem_tb(`REG_ADDR_W'h0,
+            mem_tb(`WORD_DATA_W'h0,
+                   `ENABLE,
+                   `REG_ADDR_W'h0,
                    `DISABLE_,
                    `WORD_DATA_W'h0
                   );
 
             $display("WB Stage ...");
+            ctrl_tb(`DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `WORD_DATA_W'h0
+                   );
         end
         # STEP begin
             $display("\n========= Clock 8 ========");
@@ -553,20 +743,23 @@ module cpu_test;
                  );
 
             /******** LW   r5, r0(1028) ID Stage Test Output ********/
-            id_tb(`ENABLE,
-                  `ALU_OP_ADD,
-                  `WORD_DATA_W'h0,
-                  `WORD_DATA_W'h404,
-                  `MEM_OP_LW,
-                  `WORD_DATA_W'h0,
-                  `REG_ADDR_W'h5,
-                  `ENABLE_,
-                  `EX_OUT_ALU,
-                  `WORD_DATA_W'h20
+            id_tb(`DISABLE,                       // ld_hazard
+                  `ENABLE,                        // id_en
+                  `ALU_OP_ADD,                    // id_alu_op
+                  `WORD_DATA_W'h0,                // id_alu_in_0
+                  `WORD_DATA_W'h404,              // id_alu_in_1
+                  `MEM_OP_LW,                     // id_mem_op
+                  `WORD_DATA_W'h0,                // id_mem_wr_data
+                  `REG_ADDR_W'h5,                 // id_dst_addr
+                  `ENABLE_,                       // id_gpr_we_
+                  `EX_OUT_ALU,                    // id_gpr_mux_ex
+                  `WORD_DATA_W'h20                // id_gpr_wr_data 
                  );
 
             /******** LW   r4, r0(1024)  EX Stage Test Output ********/
-            ex_tb(`MEM_OP_LW,
+            ex_tb(`WORD_DATA_W'h404,
+                  `ENABLE,
+                  `MEM_OP_LW,
                   `WORD_DATA_W'h0,
                   `REG_ADDR_W'h4,
                   `ENABLE_,
@@ -574,12 +767,24 @@ module cpu_test;
                  );
 
             /******** SW   r2, r0(1028)  MEM Stage Test Output ********/
-            mem_tb(`REG_ADDR_W'h4,
+            mem_tb(`WORD_DATA_W'h4,
+                   `ENABLE,
+                   `REG_ADDR_W'h4,
                    `DISABLE_,
                    `WORD_DATA_W'h0
                   );
 
             $display("WB Stage ...");
+            ctrl_tb(`DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `WORD_DATA_W'h0
+                   );
         end
         # STEP begin
             $display("\n========= Clock 9 ========");
@@ -591,7 +796,8 @@ module cpu_test;
                  );
 
             /******** NOP               ID Stage Test Output ********/
-            id_tb(`ENABLE,
+            id_tb(`DISABLE,                       // ld_hazard
+                  `ENABLE,
                   `ALU_OP_NOP,
                   `WORD_DATA_W'h0,
                   `WORD_DATA_W'h0,
@@ -604,7 +810,9 @@ module cpu_test;
                  );
 
             /******** LW   r5, r0(1028)  EX Stage Test Output ********/
-            ex_tb(`MEM_OP_LW,
+            ex_tb(`WORD_DATA_W'h0,
+                  `ENABLE,
+                  `MEM_OP_LW,
                   `WORD_DATA_W'h0,
                   `REG_ADDR_W'h5,
                   `ENABLE_,
@@ -612,12 +820,24 @@ module cpu_test;
                  );
 
             /******** LW   r4, r0(1024)  MEM Stage Test Output ********/
-            mem_tb(`REG_ADDR_W'h4,
+            mem_tb(`WORD_DATA_W'h9,
+                   `ENABLE,
+                   `REG_ADDR_W'h4,
                    `ENABLE_,
                    `WORD_DATA_W'h4
                   );
 
             $display("WB Stage ...");
+            ctrl_tb(`DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `WORD_DATA_W'h0
+                   );
         end
         # STEP begin
             $display("\n========= Clock 10 ========");
@@ -629,7 +849,8 @@ module cpu_test;
                  );
 
             /******** NOP               ID Stage Test Output ********/
-            id_tb(`ENABLE,
+            id_tb(`DISABLE,                       // ld_hazard
+                  `ENABLE,
                   `ALU_OP_NOP,
                   `WORD_DATA_W'h0,
                   `WORD_DATA_W'h0,
@@ -642,7 +863,9 @@ module cpu_test;
                  );
 
             /******** NOP                 EX Stage Test Output ********/
-            ex_tb(`MEM_OP_NOP,
+            ex_tb(`WORD_DATA_W'h0,
+                  `ENABLE,
+                  `MEM_OP_NOP,
                   `WORD_DATA_W'h0,
                   `REG_ADDR_W'h0,
                   `DISABLE_,
@@ -650,12 +873,24 @@ module cpu_test;
                  );
 
             /******** LW   r5, r0(1028)  MEM Stage Test Output ********/
-            mem_tb(`REG_ADDR_W'h5,
+            mem_tb(`WORD_DATA_W'h0,
+                   `ENABLE,
+                   `REG_ADDR_W'h5,
                    `ENABLE_,
                    `WORD_DATA_W'h9
                   );
 
             $display("WB Stage ...");
+            ctrl_tb(`DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `WORD_DATA_W'h0
+                   );
         end
         # STEP begin
             $display("\n========= Clock 11 ========");
@@ -667,7 +902,8 @@ module cpu_test;
                  );
 
             /******** ADD  r6, r4, r5 ID Stage Test Output ********/
-            id_tb(`ENABLE,
+            id_tb(`DISABLE,                       // ld_hazard
+                  `ENABLE,
                   `ALU_OP_ADD,
                   `WORD_DATA_W'h4,
                   `WORD_DATA_W'h9,
@@ -680,7 +916,9 @@ module cpu_test;
                  );
 
             /******** NOP                 EX Stage Test Output ********/
-            ex_tb(`MEM_OP_NOP,
+            ex_tb(`WORD_DATA_W'hd,
+                  `ENABLE,
+                  `MEM_OP_NOP,
                   `WORD_DATA_W'h0,
                   `REG_ADDR_W'h0,
                   `DISABLE_,
@@ -688,12 +926,24 @@ module cpu_test;
                  );
 
             /******** NOP  MEM Stage Test Output ********/
-            mem_tb(`REG_ADDR_W'h0,
+            mem_tb(`WORD_DATA_W'h0,
+                   `ENABLE,
+                   `REG_ADDR_W'h0,
                    `DISABLE_,
                    `WORD_DATA_W'h0
                   );
 
             $display("WB Stage ...");
+            ctrl_tb(`DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `WORD_DATA_W'h0
+                   );
         end
         # STEP begin
             $display("\n========= Clock 12 ========");
@@ -705,7 +955,8 @@ module cpu_test;
                  );
 
             /******** NOP ID Stage Test Output ********/
-            id_tb(`ENABLE,
+            id_tb(`DISABLE,                       // ld_hazard
+                  `ENABLE,
                   `ALU_OP_NOP,
                   `WORD_DATA_W'h0,
                   `WORD_DATA_W'h0,
@@ -718,7 +969,9 @@ module cpu_test;
                  );
 
             /******** ADD  r6, r4, r5  EX Stage Test Output ********/
-            ex_tb(`MEM_OP_NOP,
+            ex_tb(`WORD_DATA_W'h0,
+                  `ENABLE,
+                  `MEM_OP_NOP,
                   `WORD_DATA_W'h9,
                   `REG_ADDR_W'h6,
                   `ENABLE_,
@@ -726,12 +979,24 @@ module cpu_test;
                  );
 
             /******** NOP  MEM Stage Test Output ********/
-            mem_tb(`REG_ADDR_W'h0,
+            mem_tb(`WORD_DATA_W'hd,
+                   `ENABLE,
+                   `REG_ADDR_W'h0,
                    `DISABLE_,
                    `WORD_DATA_W'h0
                   );
 
             $display("WB Stage ...");
+            ctrl_tb(`DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `WORD_DATA_W'h0
+                   );
         end
         # STEP begin
             $display("\n========= Clock 13 ========");
@@ -743,7 +1008,8 @@ module cpu_test;
                  );
 
             /******** NOP ID Stage Test Output ********/
-            id_tb(`ENABLE,
+            id_tb(`DISABLE,                       // ld_hazard
+                  `ENABLE,
                   `ALU_OP_NOP,
                   `WORD_DATA_W'h0,
                   `WORD_DATA_W'h0,
@@ -756,7 +1022,9 @@ module cpu_test;
                  );
 
             /******** NOP  EX Stage Test Output ********/
-            ex_tb(`MEM_OP_NOP,
+            ex_tb(`WORD_DATA_W'h0,
+                  `ENABLE,
+                  `MEM_OP_NOP,
                   `WORD_DATA_W'h0,
                   `REG_ADDR_W'h0,
                   `DISABLE_,
@@ -764,12 +1032,24 @@ module cpu_test;
                  );
 
             /******** ADD  r6, r4, r5  MEM Stage Test Output ********/
-            mem_tb(`REG_ADDR_W'h6,
+                mem_tb(`WORD_DATA_W'h0,
+                      `ENABLE,
+                   `REG_ADDR_W'h6,
                    `ENABLE_,
                    `WORD_DATA_W'hd
                   );
 
             $display("WB Stage ...");
+            ctrl_tb(`DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `WORD_DATA_W'h0
+                   );
         end
         # STEP begin
             $display("\n========= Clock 14 ======== ");
@@ -781,7 +1061,8 @@ module cpu_test;
                  );
 
             /******** NOP ID Stage Test Output ********/
-            id_tb(`ENABLE,
+            id_tb(`DISABLE,                       // ld_hazard
+                  `ENABLE,
                   `ALU_OP_NOP,
                   `WORD_DATA_W'h0,
                   `WORD_DATA_W'h0,
@@ -794,7 +1075,9 @@ module cpu_test;
                  );
 
             /******** NOP  EX Stage Test Output ********/
-            ex_tb(`MEM_OP_NOP,
+            ex_tb(`WORD_DATA_W'h0,
+                  `ENABLE,
+                  `MEM_OP_NOP,
                   `WORD_DATA_W'h0,
                   `REG_ADDR_W'h0,
                   `DISABLE_,
@@ -802,12 +1085,25 @@ module cpu_test;
                  );
 
             /******** NOP  MEM Stage Test Output ********/
-            mem_tb(`REG_ADDR_W'h0,
+            mem_tb(`WORD_DATA_W'h0,
+                   `ENABLE,
+                   `REG_ADDR_W'h0,
                    `DISABLE_,
                    `WORD_DATA_W'h0
                   );
 
             $display("WB Stage ...");
+
+            ctrl_tb(`DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `DISABLE,
+                    `WORD_DATA_W'h0
+                   );
 
             $finish;
         end
@@ -816,7 +1112,7 @@ module cpu_test;
     /******** Output Waveform ********/
     initial begin
        $dumpfile("cpu.vcd");
-       $dumpvars(0,if_stage, spm, id_stage, gpr);
+       $dumpvars(0,if_stage, id_stage, ex_stage, mem_stall, ctrl ,gpr);
     end
 
 endmodule

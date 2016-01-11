@@ -14,7 +14,7 @@ MEM_STAGE_OBJS = mem_stage_test.v ../cpu/mem_stage.v ../cpu/bus_if.v   ../cpu/me
 CPU_OBJS = cpu_test.v ../cpu/if_stage.v ../cpu/if_reg.v ../cpu/bus_if.v ../cpu/spm.v    \
 					  ../cpu/dpram_sim.v ../cpu/gpr.v ../cpu/id_stage.v ../cpu/id_reg.v \
 					  ../cpu/decoder.v ../cpu/ex_stage.v ../cpu/ex_reg.v ../cpu/alu.v   \
-					  ../cpu/mem_stage.v ../cpu/mem_reg.v ../cpu/mem_ctrl.v
+					  ../cpu/mem_stage.v ../cpu/mem_reg.v ../cpu/mem_ctrl.v ../cpu/ctrl.v
 
 # CC specifies which compiler we're using
 CC = iverilog
