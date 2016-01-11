@@ -34,6 +34,9 @@ module id_reg (
 	input                       gpr_mux_mem, // 通用寄存器输入选通信号
 	input [`WORD_DATA_BUS]      gpr_wr_data, // ID 阶段输出的 gpr 输入值
 	//input  [`IsaExpBus]  exp_code,	   	// 异常代码
+	/********** 寄存器控制信号 **********/
+	input 				   	    stall,		   	// 停顿
+	input 				   	    flush,		   	// 刷新
 	/********** IF/ID 直接输入 **********/
 	input                       if_en, // 流水线有效信号
 	/********** ID/EX寄存器输出信号 **********/
@@ -55,10 +58,6 @@ module id_reg (
 	output reg [`WORD_DATA_BUS] id_gpr_wr_data   // ID 阶段输出的 gpr 输入值6
 	//output reg  [`IsaExpBus]  id_exp_code	   	// 异常代码
 );
-
-	/********** 寄存器控制信号 **********/
-	wire 				   	stall = `DISABLE;		   	// 停顿
-	wire 				   	flush = `DISABLE;		   	// 刷新
 
 	/********** 寄存器操作 **********/
 	always @(posedge clk or reset) begin

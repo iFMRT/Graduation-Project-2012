@@ -24,8 +24,8 @@ module if_stage(
     input                   stall,          // Stall
     input                   flush,          // Flush
     input  [`WORD_DATA_BUS] new_pc,         // New value of program counter
-    input                   br_taken,       // Branch taken
-    input  [`WORD_DATA_BUS] br_addr,        // Branch target
+    // input                   br_taken,       // Branch taken
+    // input  [`WORD_DATA_BUS] br_addr,        // Branch target
     // output                  busy,           // Busy Signal
     /******** IF/ID Pipeline Register ********/
     output [`WORD_DATA_BUS] if_pc,          // Program counter
@@ -56,14 +56,19 @@ module if_stage(
     );
 
     if_reg if_reg(
+        /******** Clock & Rest ********/
         .clk          (clk),                  // Clk
         .reset        (reset),                // Reset
+        /******** Read Instruction ********/
+        .insn         (insn),                 // Reading instruction
+
         .stall        (stall),                // Stall
         .flush        (flush),                // Flush
-        .br_taken     (br_taken),             // Branch taken
         .new_pc       (new_pc),               // New value of program counter
-        .br_addr      (br_addr),              // Branch target
-        .insn         (insn),                 // Reading instruction
+
+        // .br_taken     (br_taken),             // Branch taken
+        // .br_addr      (br_addr),              // Branch target
+        
         .if_pc        (if_pc),                // Program counter
         .if_pc_plus4  (if_pc_plus4),          // Next PC
         .if_insn      (if_insn),              // Instruction

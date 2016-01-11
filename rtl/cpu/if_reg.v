@@ -14,23 +14,26 @@
 `include "isa.h"
 
 module if_reg(
-    input  clk,                         // Clk
-    input  reset,                       // Reset
-    input  stall,                       // Stall
-    input  flush,                       // Flush
-    input  br_taken,                    // Branch taken
-    input  [`WORD_DATA_BUS] new_pc,     // New value of program counter
-    input  [`WORD_DATA_BUS] br_addr,    // Branch target
-    input  [`WORD_DATA_BUS] insn,       // Reading instruction
-    output reg[`WORD_DATA_BUS] if_pc,   // Program counter
-    output [`WORD_DATA_BUS] if_pc_plus4,// Next PC
-    output reg[`WORD_DATA_BUS] if_insn, // Instruction
-    output reg if_en                    // Effective mark of pipeline
-);
+    /******** Clock & Rest ********/
+    input                       clk,         // Clk
+    input                       reset,       // Reset
+    /******** Read Instruction ********/
+    input      [`WORD_DATA_BUS] insn,        // Reading instruction
 
+    input                       stall,       // Stall
+    input                       flush,       // Flush
+    input      [`WORD_DATA_BUS] new_pc,      // New value of program counter
+    // input  br_taken,                    // Branch taken
+    // input  [`WORD_DATA_BUS] br_addr,    // Branch target
+
+    output reg [`WORD_DATA_BUS] if_pc,       // Program counter
+    output     [`WORD_DATA_BUS] if_pc_plus4, // Next PC
+    output reg [`WORD_DATA_BUS] if_insn,     // Instruction
+    output reg                  if_en        // Effective mark of pipeline
+);
     assign if_pc_plus4 = if_pc + `WORD_DATA_W'd4;
 
-    always @(posedge clk) begin
+    always @(posedge clk) begin    
         if (reset == `ENABLE) begin
             /******** Reset ********/
             if_pc   <= #1 `WORD_DATA_W'h0;
@@ -44,11 +47,11 @@ module if_reg(
                     if_pc   <= #1 new_pc;
                     if_insn <= #1 `ISA_NOP;
                     if_en   <= #1 `DISABLE;
-                end else if (br_taken == `ENABLE) begin
-                    /* Branch taken */
-                    if_pc   <= #1 br_addr;
-                    if_insn <= #1 insn;
-                    if_en   <= #1 `ENABLE;
+                // end else if (br_taken == `ENABLE) begin
+                //     /* Branch taken */
+                //     if_pc   <= #1 br_addr;
+                //     if_insn <= #1 insn;
+                //     if_en   <= #1 `ENABLE;
                 end else begin
                     /* Next PC */
                     if_pc   <= #1 if_pc_plus4;

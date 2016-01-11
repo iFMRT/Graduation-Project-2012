@@ -12,23 +12,29 @@
 module ex_stage (
     input                   clk,
     input                   reset,
+    // Pipeline Control Signal
+    input                   stall,
+    input                   flush,
 
-    input [`ALU_OP_BUS]     alu_op,
-    input [`WORD_DATA_BUS]  alu_in0,
-    input [`WORD_DATA_BUS]  alu_in1,
+    output [`WORD_DATA_BUS] fwd_data,   
 
-    // input [`WORD_DATA_BUS]  cmp_in0,
-    // input [`WORD_DATA_BUS]  cmp_in1,
-    // input [`CMP_OP_B]       cmp_op,
+    input  wire             id_en,
+    input [`ALU_OP_BUS]     id_alu_op,
+    input [`WORD_DATA_BUS]  id_alu_in_0,
+    input [`WORD_DATA_BUS]  id_alu_in_1,
+
+    // input [`WORD_DATA_BUS]  id_cmp_in0,
+    // input [`WORD_DATA_BUS]  id_cmp_in1,
+    // input [`CMP_OP_B]       id_cmp_op,
 
     input [`MEM_OP_BUS]     id_mem_op,
     input [`WORD_DATA_BUS]  id_mem_wr_data,
     input [`REG_ADDR_BUS]   id_dst_addr, // bypass input
     input                   id_gpr_we_,
 
-    input                   id_gpr_mux_mem,
     input [`EX_OUT_SEL_BUS] ex_out_sel,
 
+    output wire             ex_en, 
     output [`MEM_OP_BUS]    ex_mem_op,
     output [`WORD_DATA_BUS] ex_mem_wr_data,
     output [`REG_ADDR_BUS]  ex_dst_addr, // bypass output
@@ -46,32 +52,33 @@ module ex_stage (
     /* internal signles ==============================================*/
     wire [`WORD_DATA_BUS] alu_out;
     wire        cmp_out;
-    reg  [`WORD_DATA_BUS] ex_out_in;
+    reg  [`WORD_DATA_BUS] ex_out_inner;
 
+    assign fwd_data = alu_out;
     /* input logic ===================================================*/
 
 
     /* computation ===================================================*/
     alu alu_i (
-        .arg0 (alu_in0),
-        .arg1 (alu_in1),
-        .op   (alu_op),
+        .arg0 (id_alu_in_0),
+        .arg1 (id_alu_in_1),
+        .op   (id_alu_op),
         .val  (alu_out)
     );
 
     // cmp #(32) cmp_i (
-    //  .arg0 (cmp_in0),
-    //  .arg1 (cmp_in1),
-    //  .op   (cmp_op),
-    //  .true (cmp_out)
+    //  .arg0 (id_cmp_in0),
+    //  .arg1 (id_cmp_in1),
+    //  .op   (id_cmp_op),
+    //  .true (id_cmp_out)
     // );
 
     /* output logic ==================================================*/
     always @(*) begin
         case(ex_out_sel)
-            `EX_OUT_ALU : ex_out_in = alu_out;
-            // `EX_OUT_CMP : ex_out_in = {31'b0, cmp_out};
-            // `EX_OUT_PCN : ex_out_in = pc_next;
+            `EX_OUT_ALU : ex_out_inner = alu_out;
+            // `EX_OUT_CMP : ex_out_inner = {31'b0, cmp_out};
+            // `EX_OUT_PCN : ex_out_inner = pc_next;
         endcase
     end
 
@@ -80,19 +87,26 @@ module ex_stage (
 
     /* ex_stage reg ==================================================*/
     ex_reg ex_reg_i (
-        .clk            (clk           ),
-        .reset            (reset           ),
-        .ex_out_in      (ex_out_in     ),  // ex_stage out
-        .ex_out         (ex_out        ),
-        .id_dst_addr    (id_dst_addr),  // bypass out
-        .id_gpr_we_     (id_gpr_we_    ),
-        .id_gpr_mux_mem (id_gpr_mux_mem),
-        .id_mem_op      (id_mem_op     ),
+        .clk            (clk),
+        .reset          (reset),
+        // Inner Output
+        .ex_out_inner   (ex_out_inner),    // ex_stage out
+        // Pipeline Control Signal
+        .stall          (stall),
+        .flush          (flush),
+        // ID/EX Pipeline Register
+        .id_en          (id_en),
+        .id_mem_op      (id_mem_op),
         .id_mem_wr_data (id_mem_wr_data),
+        .id_dst_addr    (id_dst_addr),     // bypass out
+        .id_gpr_we_     (id_gpr_we_),
+        // EX/MEM Pipeline Register
+        .ex_en          (ex_en),
         .ex_dst_addr    (ex_dst_addr),
-        .ex_gpr_we_     (ex_gpr_we_    ),
-        .ex_mem_op      (ex_mem_op     ),
-        .ex_mem_wr_data (ex_mem_wr_data)
+        .ex_gpr_we_     (ex_gpr_we_),
+        .ex_mem_op      (ex_mem_op),
+        .ex_mem_wr_data (ex_mem_wr_data),
+        .ex_out         (ex_out)
     );
 
 endmodule
