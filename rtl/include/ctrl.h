@@ -23,7 +23,13 @@
 	`define INSN_RC				11:7
 	`define INSN_F3				14:12
 	`define INSN_F7				31:25
-	`define INS_OP_B			6:0
-	`define INS_F3_B			2:0
-	`define INS_F7_B			6:0
+	`define INS_OP_BUS			6:0
+	`define INS_F3_BUS			2:0
+	`define INS_F7_BUS			6:0
+
+	`define FWD_CTRL_BUS        1:0
+	`define FWD_CTRL_NONE 		2'h0
+	`define FWD_CTRL_EX 		2'h1
+	`define FWD_CTRL_MEM 		2'h2
+
 `endif
