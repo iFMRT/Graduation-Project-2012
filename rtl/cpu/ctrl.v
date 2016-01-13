@@ -1,36 +1,73 @@
 /*
  -- ============================================================================
  -- FILE NAME   : ctrl.v
- -- DESCRIPTION : 控制模块
+ -- DESCRIPTION : Control Module
  -- ----------------------------------------------------------------------------
  -- Date：2015/12/29
  -- ============================================================================
 */
 
-/********** General header file **********/
+/********** Header file **********/
+`include "isa.h"
+`include "alu.h"
+`include "cmp.h"
+`include "ctrl.h"
 `include "stddef.h"
+`include "cpu.h"
+`include "mem.h"
+`include "ex_stage.h"
 
 /********** module **********/
 module ctrl (
     /********* pipeline control signals ********/
     //  State of Pipeline
 //  input  wire                   if_busy,      // IF busy mark
-    input  wire                   ld_hazard,    // load hazard mark
 //  input  wire                   br_hazard,    // branch hazard mark
 //  input  wire                   br_flag,      // branch instruction flag
 //  input  wire                   mem_busy,     // MEM busy mark
-    // 延迟信号
-    output wire                   if_stall,     // IF stage stall
-    output wire                   id_stall,     // ID stage stall
-    output wire                   ex_stall,     // EX stage stall
-    output wire                   mem_stall,    // MEM stage stall
-    // 刷新信号
-    output wire                   if_flush,     // IF stage flush
-    output wire                   id_flush,     // ID stage flush
-    output wire                   ex_flush,     // EX stage flush
-    output wire                   mem_flush,    // MEM stage flush
-    output wire  [`WORD_DATA_W]   new_pc        // New program counter
+
+    /********** Data Forward **********/
+    input      [1:0]             src_reg_used,
+    // LOAD Hazard
+    input wire                   id_en,          // Pipeline Register enable
+    input wire [`REG_ADDR_BUS]   id_dst_addr,    // GPR write address
+    input wire                   id_gpr_we_,     // GPR write enable
+    input wire [`MEM_OP_BUS]     id_mem_op,      // Mem operation
+
+    input wire [`INS_OP_BUS]     op, 
+    input wire [`REG_ADDR_BUS]   ra_addr,
+    input wire [`REG_ADDR_BUS]   rb_addr,
+    // LOAD STORE Forward
+    input wire [`REG_ADDR_BUS]   id_ra_addr,
+    input wire [`REG_ADDR_BUS]   id_rb_addr,
+
+    input wire                   ex_en,          // Pipeline Register enable
+    input wire [`REG_ADDR_BUS]   ex_dst_addr,    // GPR write address
+    input wire                   ex_gpr_we_,     // GPR write enable
+    input wire [`MEM_OP_BUS]     ex_mem_op,      // Mem operation
+
+    // Stall Signal
+    output wire                  if_stall,     // IF stage stall
+    output wire                  id_stall,     // ID stage stall
+    output wire                  ex_stall,     // EX stage stall
+    output wire                  mem_stall,    // MEM stage stall
+    // Flush Signal
+    output wire                  if_flush,     // IF stage flush
+    output wire                  id_flush,     // ID stage flush
+    output wire                  ex_flush,     // EX stage flush
+    output wire                  mem_flush,    // MEM stage flush
+    output wire [`WORD_DATA_BUS] new_pc,        // New program counter
+
+    // Forward from EX stage
+
+    /********** Forward Output **********/
+    output reg [`FWD_CTRL_BUS]   ra_fwd_ctrl,
+    output reg [`FWD_CTRL_BUS]   rb_fwd_ctrl,
+    output reg                   ex_ra_fwd_en,
+    output reg                   ex_rb_fwd_en
 );
+
+    reg     ld_hazard;       // LOAD hazard
 
     /********** pipeline control **********/
     // stall
@@ -64,4 +101,97 @@ module ctrl (
 
 //     flush  = `DISABLE;
 //  end
+
+    /********** Forward **********/
+    always @(*) begin
+        /* Forward Ra */
+        if( (id_en           == `ENABLE)  &&
+            (id_gpr_we_      == `ENABLE_) &&
+            (src_reg_used[0] == 1'b1)     &&   // use ra register
+            (id_dst_addr     == ra_addr)
+        ) begin
+
+            ra_fwd_ctrl = `FWD_CTRL_EX;   // Forward from EX stage
+
+        end else if (
+            (ex_en           == `ENABLE)  &&
+            (ex_gpr_we_      == `ENABLE_) &&
+            (src_reg_used[0] == 1'b1)     &&   // use ra register
+            (ex_dst_addr     == ra_addr)
+        ) begin
+
+            ra_fwd_ctrl = `FWD_CTRL_MEM;       // Forward from MEM stage
+
+        end else if (                         
+            /* LOAD in MEM and STORE in EX may need forward */
+            (ex_en           == `ENABLE)  &&
+            (ex_gpr_we_      == `ENABLE_) &&
+            (ex_mem_op[3]    == 1'b1)     &&  // Check LOAD  in MEM, LOAD  Mem Op 1XXX
+            (id_mem_op[3:2]  == 2'b01)    &&  // Check STORE in MEM, STORE Mem Op 01XX
+            (ex_dst_addr     == id_ra_addr)
+        ) begin
+
+            ex_ra_fwd_en = `ENABLE;
+
+        end else begin
+
+            ra_fwd_ctrl = `FWD_CTRL_NONE; // Don't need hazard
+
+        end
+
+        /* Forward Rb */
+        if ((id_en           == `ENABLE)    &&
+            (id_gpr_we_      == `ENABLE_)   &&
+            (src_reg_used[1] == 1'b1)       &&  // use rb register
+            (id_dst_addr     == rb_addr)
+        ) begin
+
+            rb_fwd_ctrl = `FWD_CTRL_EX;   // Forward from EX stage
+
+        end else if (
+            (ex_en           == `ENABLE)    &&
+            (ex_gpr_we_      == `ENABLE_)   &&
+            (src_reg_used[1] == 1'b1)       &&  // use rb register
+            (ex_dst_addr     == rb_addr)
+        ) begin
+
+            rb_fwd_ctrl = `FWD_CTRL_MEM;  // Forward from MEM stage
+
+        end else if (                         
+            /* LOAD in MEM and STORE in EX may need forward */
+            (ex_en           == `ENABLE)  &&
+            (ex_gpr_we_      == `ENABLE_) &&
+            (ex_mem_op[3]    == 1'b1)     &&  // Check LOAD  in MEM, LOAD  Mem Op 1XXX
+            (id_mem_op[3:2]  == 2'b01)    &&  // Check STORE in EX, STORE Mem Op 01XX
+            (ex_dst_addr     == id_rb_addr)
+        ) begin
+
+            ex_rb_fwd_en = `ENABLE;
+
+        end else begin
+
+            rb_fwd_ctrl  = `FWD_CTRL_NONE ;    // Don't need hazard
+
+        end
+    end
+
+    // /********** Check Load hazard **********/
+    always @(*) begin
+        if ((id_en        == `ENABLE)         &&
+            (id_gpr_we_   == `ENABLE_)        &&   // load must enable id_gpr_we_
+            (id_mem_op[3] == 1'b1)            &&   // Check load in EX
+            (op           != `ISA_OP_ST)      &&   // store in ID no need stall
+            (
+                ( (src_reg_used[0] == 1'b1) && (id_dst_addr == ra_addr) ) ||
+                ( (src_reg_used[1] == 1'b1) && (id_dst_addr == rb_addr) ) 
+            )
+                  
+        ) begin 
+
+            ld_hazard = `ENABLE;  // Need Load hazard
+        end else begin
+            ld_hazard = `DISABLE; // Don't nedd Load hazard
+        end
+    end
+
 endmodule
