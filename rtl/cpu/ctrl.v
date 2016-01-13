@@ -104,6 +104,10 @@ module ctrl (
 
     /********** Forward **********/
     always @(*) begin
+        /* Default Value */
+        ex_ra_fwd_en = `DISABLE;
+        ex_rb_fwd_en = `DISABLE;
+        
         /* Forward Ra */
         if( (id_en           == `ENABLE)  &&
             (id_gpr_we_      == `ENABLE_) &&
@@ -135,7 +139,7 @@ module ctrl (
 
         end else begin
 
-            ra_fwd_ctrl = `FWD_CTRL_NONE; // Don't need hazard
+            ra_fwd_ctrl = `FWD_CTRL_NONE; // Don't need forward
 
         end
 
@@ -170,7 +174,7 @@ module ctrl (
 
         end else begin
 
-            rb_fwd_ctrl  = `FWD_CTRL_NONE ;    // Don't need hazard
+            rb_fwd_ctrl  = `FWD_CTRL_NONE ;    // Don't need forward
 
         end
     end

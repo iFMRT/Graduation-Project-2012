@@ -20,26 +20,15 @@ module decoder (
     input wire [`WORD_DATA_BUS]  if_insn,        // Instruction
     input wire                   if_en,          // Pipeline data enable
 
+    
+    /********** Two Operand **********/
+    input wire [`WORD_DATA_BUS]  ra_data,        // The first operand
+    input wire [`WORD_DATA_BUS]  rb_data,        // The two operand
     /********** GPR Interface **********/
     input wire [`WORD_DATA_BUS]  gpr_rd_data_0,  // Read data 0
     input wire [`WORD_DATA_BUS]  gpr_rd_data_1,  // Read data 1
     output wire [`REG_ADDR_BUS]  gpr_rd_addr_0,  // Read address 0
     output wire [`REG_ADDR_BUS]  gpr_rd_addr_1,  // Read address 1
-
-    /********** 数据转发 **********/
-    // LOAD Hazard
-    input wire                   id_en,          // Pipeline Register enable
-    input wire [`REG_ADDR_BUS]   id_dst_addr,    // GPR write address
-    input wire                   id_gpr_we_,     // GPR write enable
-    input wire [`MEM_OP_BUS]     id_mem_op,      // Mem operation
-
-    // 来自EX 阶段的数据转发
-    input wire                   ex_en,          // Pipeline Register enable
-    input wire [`REG_ADDR_BUS]   ex_dst_addr,    // GPR write address
-    input wire                   ex_gpr_we_,     // GPR write enable
-    input wire [`WORD_DATA_BUS]  ex_fwd_data,    // 数据转发
-    // 来自MEM阶段的数据转发
-    input wire [`WORD_DATA_BUS]  mem_fwd_data,   // 数据转发
 
     /********** 解码结果 **********/
     output reg [`ALU_OP_BUS]      alu_op,         // ALU 操作
@@ -50,6 +39,7 @@ module decoder (
 //  output reg [`WORD_DATA_BUS]   cmp_in_1,       // CMP 输入 1
 //  output reg                    br_taken,       // 跳转成立
 //  output reg                    br_flag,        // 分支标志位
+   
     output reg [`MEM_OP_BUS]      mem_op,         // Mem operation
     output wire [`WORD_DATA_BUS]  mem_wr_data,    // mem 写入数据
     output reg  [`EX_OUT_SEL_BUS] gpr_mux_ex,     // ex 阶段的 gpr 写入信号选通
@@ -57,15 +47,19 @@ module decoder (
     output wire [`REG_ADDR_BUS]   dst_addr,       // 通用寄存器写入地址
     output reg                    gpr_we_,        // 通用寄存器写入操作
     // 第一阶段不考虑 output reg   [`IsaExpBus]     exp_code,      // 异常代码
-    output reg                    ld_hazard       // LOAD hazard
+
+    output wire [`INS_OP_BUS]     op,             // 操作码
+    output wire [`REG_ADDR_BUS]   ra_addr,    
+    output wire [`REG_ADDR_BUS]   rb_addr, 
+    output reg  [1:0]             src_reg_used
 );
 
     /********** 指令字段 **********/
-    wire [`INS_OP_B]        op      = if_insn[`INSN_OP];    // 操作码
-    wire [`REG_ADDR_BUS]    ra_addr = if_insn[`INSN_RA];    // Ra 地址
-    wire [`REG_ADDR_BUS]    rb_addr = if_insn[`INSN_RB];    // Rb 地址
-    wire [`INS_F3_B]        funct3  = if_insn[`INSN_F3];    // funct3
-    wire [`INS_F7_B]        funct7  = if_insn[`INSN_F7];    // funct7
+    assign           op      = if_insn[`INSN_OP] ;
+    assign           ra_addr = if_insn[`INSN_RA];    // Ra 地址
+    assign           rb_addr = if_insn[`INSN_RB];    // Rb 地址
+    wire [`INS_F3_BUS] funct3  = if_insn[`INSN_F3];    // funct3
+    wire [`INS_F7_BUS] funct7  = if_insn[`INSN_F7];    // funct7
 
     /********** 立即数 **********/
     // U 格式立即数处理
@@ -80,86 +74,20 @@ module decoder (
     wire [`WORD_DATA_BUS] imm_b  = {{20{if_insn[31]}},if_insn[7],if_insn[30:25],if_insn[11:8],1'b0};
     // J 格式立即数处理
     wire [`WORD_DATA_BUS] imm_j  = {{12{if_insn[31]}},if_insn[19:12],if_insn[20],if_insn[30:21],1'b0};
-    /********** 两个操作数 **********/
-    reg         [`WORD_DATA_BUS]    ra_data;                        // 第一个操作数
-    reg         [`WORD_DATA_BUS]    rb_data;                        // 第二个操作数
+    
 
+   
+    /********** Source Register Used State **********/
+     
     assign mem_wr_data      = rb_data;
     assign gpr_rd_addr_0    = ra_addr;
     assign gpr_rd_addr_1    = rb_addr;
     assign dst_addr         = if_insn[`INSN_RC];    // Rc 地址
 
-    /********** 转发 **********/
-    always @(*) begin
-        /* 关于 Ra 的转发 */
-        if ((id_en       == `ENABLE)  &&
-            (id_gpr_we_  == `ENABLE_) &&
-            (id_dst_addr == ra_addr)
-        ) begin
-
-            ra_data = ex_fwd_data;   // 来自 EX 阶段的转发
-
-        end else if (
-            (ex_en       == `ENABLE)  &&
-            (ex_gpr_we_  == `ENABLE_) &&
-            (ex_dst_addr == ra_addr)
-        ) begin
-
-            ra_data = mem_fwd_data;  // 来自 MEM 阶段的转发
-
-        end else begin
-
-            ra_data = gpr_rd_data_0; // 没有发生流水线hazard
-
-        end
-
-        /* 关于 Rb 的转发*/
-        if ((id_en       == `ENABLE)    &&
-            (id_gpr_we_  == `ENABLE_)   &&
-            (op          != `ISA_OP_LD) &&  // ISA_OP_LD without rb
-            (id_dst_addr == rb_addr)
-        ) begin
-
-            rb_data = ex_fwd_data;   // 来自 EX 阶段的转发
-        end else if (
-            (ex_en       == `ENABLE)  &&
-            (ex_gpr_we_  == `ENABLE_) &&
-            (op          != `ISA_OP_LD) &&  // ISA_OP_LD without rb
-            (ex_dst_addr == rb_addr)
-        ) begin
-
-            rb_data = mem_fwd_data;  // 来自 MEM 阶段的转发
-
-        end else begin
-
-            rb_data = gpr_rd_data_1; // 没有发生流水线hazard
-
-        end
-    end
-
-    // /********** Load hazard的检测 **********/
-    always @(*) begin
-        if ((id_en      == `ENABLE)         &&
-            (id_gpr_we_ == `ENABLE_)        &&   // load must enable id_gpr_we_
-            (id_mem_op  != `MEM_OP_NOP)
-        ) begin
-            if (op == `ISA_OP_LD) begin
-                if (id_dst_addr == ra_addr) begin
-                    ld_hazard = `ENABLE;  // 存在 Load hazard
-                end
-            end else if ( (id_dst_addr == ra_addr) ||
-                          (id_dst_addr == rb_addr)
-            ) begin
-                ld_hazard = `ENABLE;  // 存在 Load hazard
-            end
-        end else begin
-            ld_hazard = `DISABLE; // 不存在 Load hazard
-        end
-    end
-
     /********** 指令译码 **********/
     always @(*) begin
         /* 初始值 */
+        src_reg_used = 2'b00;
         alu_op      =   `ALU_OP_NOP;
         // cmp_op      =   `CMP_OP_NOP;
         alu_in_0    =   ra_data;
@@ -182,6 +110,7 @@ module decoder (
                 end
             /* I格式 */
                 `ISA_OP_LD: begin // LD指令
+                    src_reg_used   = 2'b01;        // do not use rb
                     case(funct3)
                         `ISA_OP_LD_LB: begin       //LB指令
                             alu_op  = `ALU_OP_ADD;
@@ -289,6 +218,7 @@ module decoder (
                 // end
                 `ISA_OP_ALS   : begin
                     /* R 格式 */
+                    src_reg_used   = 2'b11;        // use ra and rb
                     case(funct3)
                         `ISA_OP_ALS_AS: begin
                             if (
@@ -350,11 +280,13 @@ module decoder (
                 end
                 // /* U 格式 */
                 // `ISA_OP_LUI  : begin // LUI 指令
+                //     src_reg_used   = 2'b00;        // do not use ra and rb
                 //     gpr_we_     = `DISABLE_;// 选通imm_u作为结果
                 //     gpr_wr_data = imm_u;
                 //     gpr_mux_ex  = `EX_ID_PCN;
                 // end
                 // `ISA_OP_AUIPC  : begin // LUIPC 指令
+                //     src_reg_used   = 2'b00;        // do not use ra and rb
                 //     alu_op      = `ALU_OP_ADD;
                 //     alu_in_0    = if_pc;
                 //     alu_in_1    = imm_u;
@@ -362,6 +294,7 @@ module decoder (
                 // end
                 /* S 格式 */
                 `ISA_OP_ST  : begin // SW 命令
+                    src_reg_used   = 2'b11;        // use ra and rb
                     case(funct3)
                         `ISA_OP_ST_SB   : begin
                             alu_op   = `ALU_OP_ADD;
@@ -385,6 +318,7 @@ module decoder (
                 end
                 // /* B 格式 */
                 // `ISA_OP_BR    : begin //
+                //     src_reg_used   = 2'b11;        // use ra and rb
                 //     case(funct3)
                 //         `ISA_OP_BR_BEQ: begin
                 //             alu_op   = `ALU_OP_ADD;
@@ -435,6 +369,7 @@ module decoder (
                 // end
                 /* J 格式 */
                 // `ISA_OP_JAL  : begin // JAL指令
+                //     src_reg_used   = 2'b00;        // do not use ra and rb
                 //     alu_op      = `ALU_OP_ADD;
                 //     alu_in_0    = if_pc;
                 //     alu_in_1    = imm_j;

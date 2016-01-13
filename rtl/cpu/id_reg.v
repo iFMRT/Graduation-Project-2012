@@ -22,6 +22,8 @@ module id_reg (
 	// input  [2:0]			cmp_op, 		// CMP 操作
 	input [`WORD_DATA_BUS]      alu_in_0, // ALU 输入 0
 	input [`WORD_DATA_BUS]      alu_in_1, // ALU 输入 1
+	input [`REG_ADDR_BUS]       ra_addr,
+	input [`REG_ADDR_BUS]       rb_addr,
 	// input  [`WORD_DATA_BUS] 			cmp_in_0,	   	// CMP 输入 0
 	// input  [`WORD_DATA_BUS] 			cmp_in_1,	   	// CMP 输入 1
 	// input  				br_taken,		// 跳转成立
@@ -45,6 +47,9 @@ module id_reg (
 	// output reg  [2:0] 			id_cmp_op, 		// CMP 操作
 	output reg [`WORD_DATA_BUS] id_alu_in_0, // ALU 输入 0
 	output reg [`WORD_DATA_BUS] id_alu_in_1, // ALU 输入 1
+	output reg [`REG_ADDR_BUS]  id_ra_addr,
+	output reg [`REG_ADDR_BUS]  id_rb_addr,
+
 	// output reg	[`WORD_DATA_BUS] 			id_cmp_in_0,	// CMP 输入 0
 	// output reg	[`WORD_DATA_BUS] 			id_cmp_in_1,	// CMP 输入 1
 	// output reg  				id_br_taken,	// 跳转成立
@@ -68,6 +73,8 @@ module id_reg (
 			// id_cmp_op	   <= #1 `CMP_OP_NOP;
 			id_alu_in_0	   <= #1 `WORD_DATA_W'h0;
 			id_alu_in_1	   <= #1 `WORD_DATA_W'h0;
+			id_ra_addr     <= #1 `REG_ADDR_W'h0;
+			id_rb_addr     <= #1 `REG_ADDR_W'h0;
 			// id_cmp_in_0	   <= #1 `WORD_DATA_W'h0;
 			// id_cmp_in_1	   <= #1 `WORD_DATA_W'h0;
 			// id_br_taken    <= #1 `DISABLE;
@@ -89,6 +96,8 @@ module id_reg (
 					// id_cmp_op	   <= #1 `CMP_OP_NOP;
 					id_alu_in_0	   <= #1 `WORD_DATA_W'h0;
 					id_alu_in_1	   <= #1 `WORD_DATA_W'h0;
+					id_ra_addr     <= #1 `REG_ADDR_W'h0;
+					id_rb_addr     <= #1 `REG_ADDR_W'h0;
 					// id_cmp_in_0	   <= #1 `WORD_DATA_W'h0;
 					// id_cmp_in_1	   <= #1 `WORD_DATA_W'h0;
 					// id_br_taken    <= #1 `DISABLE;
@@ -106,6 +115,8 @@ module id_reg (
 				   	// id_cmp_op	   <= #1 cmp_op;
 				   	id_alu_in_0	   <= #1 alu_in_0;
 				   	id_alu_in_1	   <= #1 alu_in_1;
+				   	id_ra_addr     <= #1 ra_addr;
+				   	id_rb_addr     <= #1 rb_addr;
 				   	// id_cmp_in_0	   <= #1 cmp_in_0;
 				   	// id_cmp_in_1	   <= #1 cmp_in_1;
 				   	// id_br_taken    <= #1 br_taken;

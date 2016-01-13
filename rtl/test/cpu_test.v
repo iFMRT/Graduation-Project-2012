@@ -21,6 +21,7 @@ module cpu_test;
     wire [`WORD_DATA_BUS]      if_insn;        // Instruction
     wire                       if_en;          //  Pipeline data enable
     // ID/EX Pipeline  Register
+    wire      [1:0]            src_reg_used;
     wire [`WORD_DATA_BUS]      id_pc;          // Program count
     wire                       id_en;          //  Pipeline data enable
     wire [`ALU_OP_BUS]         id_alu_op;      // ALU operation
@@ -30,8 +31,16 @@ module cpu_test;
     wire [`WORD_DATA_BUS]      id_mem_wr_data; // Memory Write data
     wire [`REG_ADDR_BUS]       id_dst_addr;    // GPRWrite  address
     wire                       id_gpr_we_;     // GPRWrite enable
-    output [`EX_OUT_SEL_BUS]   id_gpr_mux_ex;
-    output [`WORD_DATA_BUS]    id_gpr_wr_data;
+    wire [`EX_OUT_SEL_BUS]     id_gpr_mux_ex;
+    wire [`WORD_DATA_BUS]      id_gpr_wr_data;
+
+    wire [`INS_OP_BUS]         op; 
+    wire [`REG_ADDR_BUS]       ra_addr;
+    wire [`REG_ADDR_BUS]       rb_addr;
+    // LOAD STORE Forward
+    wire [`REG_ADDR_BUS]       id_ra_addr;
+    wire [`REG_ADDR_BUS]       id_rb_addr;
+
     // EX/MEM Pipeline  Register
     wire [`MEM_OP_BUS]         ex_mem_op;      // Memory operation
     wire [`WORD_DATA_BUS]      ex_mem_wr_data; // Memory Write data
@@ -58,6 +67,12 @@ module cpu_test;
     // reg [`WORD_DATA_BUS]       br_addr;        // Branch  address
     // reg                        br_taken;       // Branch taken
     wire                       ld_hazard;      // Hazard
+
+    /********** Forward Control **********/
+    wire [`FWD_CTRL_BUS]        ra_fwd_ctrl;
+    wire [`FWD_CTRL_BUS]        rb_fwd_ctrl;
+    wire                        ex_ra_fwd_en;
+    wire                        ex_rb_fwd_en;
 
     /********** General Purpose Register Signal **********/
     wire [`WORD_DATA_BUS]      gpr_rd_data_0;  // Read data 0
@@ -141,23 +156,35 @@ module cpu_test;
         /*********  Pipeline Control Signal *********/
         .stall          (id_stall),         // Stall 
         .flush          (id_flush),         // Flush
-        .ld_hazard      (ld_hazard),        // Hazard
+        
+        /********** Forward Signal **********/
+        .ra_fwd_ctrl    (ra_fwd_ctrl),     
+        .rb_fwd_ctrl    (rb_fwd_ctrl),      
+
         /********** IF/ID Pipeline  Register **********/
         .if_pc          (if_pc),            // Program count
         .if_pc_plus4    (if_pc_plus4),      // Jump adn link return address
         .if_insn        (if_insn),          // Instruction
         .if_en          (if_en),            // Pipeline data enable
+
         /********** ID/EX Pipeline  Register **********/
         .id_en          (id_en),            // Pipeline data enable
         .id_alu_op      (id_alu_op),        // ALU operation
         .id_alu_in_0    (id_alu_in_0),      // ALU input 0
         .id_alu_in_1    (id_alu_in_1),      // ALU input 1
+        .id_ra_addr     (id_ra_addr),
+        .id_rb_addr     (id_rb_addr),
         .id_mem_op      (id_mem_op),        // Memory operation
         .id_mem_wr_data (id_mem_wr_data),   // Memory Write data
         .id_dst_addr    (id_dst_addr),      // GPRWrite  address
         .id_gpr_we_     (id_gpr_we_),       // GPRWrite enable
         .id_gpr_mux_ex  (id_gpr_mux_ex),
-        .id_gpr_wr_data (id_gpr_wr_data)
+        .id_gpr_wr_data (id_gpr_wr_data),
+
+        .op             (op),
+        .ra_addr        (ra_addr),
+        .rb_addr        (rb_addr),
+        .src_reg_used   (src_reg_used)
     );
 
     /********** EX Stage **********/
@@ -181,6 +208,12 @@ module cpu_test;
         .id_dst_addr    (id_dst_addr),      // General purpose RegisterWrite  address
         .id_gpr_we_     (id_gpr_we_),       // General purpose RegisterWrite enable
         .ex_out_sel     (id_gpr_mux_ex),
+
+        // Forward Data From MEM Stage 
+        .ex_ra_fwd_en   (ex_ra_fwd_en),
+        .ex_rb_fwd_en   (ex_rb_fwd_en),
+        .mem_fwd_data   (mem_fwd_data),    // MEM Stage
+
          /********** EX/MEM Pipeline  Register **********/
         .ex_en          (ex_en),  
         .ex_mem_op      (ex_mem_op),        // Memory operation
@@ -223,9 +256,25 @@ module cpu_test;
 
      /********** Control Module **********/
     ctrl ctrl (
+        .src_reg_used   (src_reg_used),
+        .id_en          (id_en),
+        .id_dst_addr    (id_dst_addr),
+        .id_gpr_we_     (id_gpr_we_),
+        .id_mem_op      (id_mem_op),
+
+        .op             (op),
+        .ra_addr        (ra_addr),
+        .rb_addr        (rb_addr),
+
+        .id_ra_addr     (id_ra_addr),
+        .id_rb_addr     (id_rb_addr),
+
+        .ex_en          (ex_en),
+        .ex_dst_addr    (ex_dst_addr),
+        .ex_gpr_we_     (ex_gpr_we_),
+        .ex_mem_op      (ex_mem_op),
+
         /**********  Pipeline Control Signal **********/
-        //  Pipeline Status
-        .ld_hazard      (ld_hazard),        // Load hazard
         // Stall  Signal
         .if_stall       (if_stall),         // IF Stage Stall 
         .id_stall       (id_stall),         // ID Stage Stall 
@@ -236,7 +285,12 @@ module cpu_test;
         .id_flush       (id_flush),         // ID StageFlush
         .ex_flush       (ex_flush),         // EX StageFlush
         .mem_flush      (mem_flush),        // MEM StageFlush
-        .new_pc         (new_pc)
+        .new_pc         (new_pc),
+
+        .ra_fwd_ctrl    (ra_fwd_ctrl),
+        .rb_fwd_ctrl    (rb_fwd_ctrl),
+        .ex_ra_fwd_en   (ex_ra_fwd_en),
+        .ex_rb_fwd_en   (ex_rb_fwd_en)
     );
 
     /********** General purpose Register **********/
@@ -294,7 +348,6 @@ module cpu_test;
     endtask
 
     task id_tb;
-        input                   _ld_hazard;
         input                   _id_en;          //  Pipeline data enable
         input [`ALU_OP_BUS]     _id_alu_op;      // ALU operation
         input [`WORD_DATA_BUS]  _id_alu_in_0;    // ALU input 0
@@ -307,8 +360,7 @@ module cpu_test;
         input [`WORD_DATA_BUS]  _id_gpr_wr_data;
 
         begin
-            if( (ld_hazard      == _ld_hazard)      &&
-                (id_en          == _id_en)          &&
+            if( (id_en          == _id_en)          &&
                 (id_alu_op      == _id_alu_op)      &&
                 (id_alu_in_0    == _id_alu_in_0)    &&
                 (id_alu_in_1    == _id_alu_in_1)    &&
@@ -454,8 +506,7 @@ module cpu_test;
                  );
 
             /******** ADDI r1, r0, 4 ID Stage Test Output ********/
-            id_tb(`DISABLE,                       // ld_hazard
-                  `ENABLE,                       // id_en
+            id_tb(`ENABLE,                       // id_en
                   `ALU_OP_ADD,                   // id_alu_op
                   `WORD_DATA_W'h0,               // id_alu_in_0
                   `WORD_DATA_W'h4,               // id_alu_in_1
@@ -488,8 +539,7 @@ module cpu_test;
                  );
 
             /********ADDI r2 r0, 9  ID Stage Test Output ********/
-            id_tb(`DISABLE,                       // ld_hazard
-                  `ENABLE,                       // id_en
+            id_tb(`ENABLE,                       // id_en
                   `ALU_OP_ADD,                   // id_alu_op
                   `WORD_DATA_W'h0,               // id_alu_in_0
                   `WORD_DATA_W'h9,               // id_alu_in_1
@@ -532,8 +582,7 @@ module cpu_test;
                  );
 
             /******** ADDI r3, r0, 13 ID Stage Test Output ********/
-            id_tb(`DISABLE,                       // ld_hazard
-                  `ENABLE,
+            id_tb(`ENABLE,
                   `ALU_OP_ADD,
                   `WORD_DATA_W'h0,
                   `WORD_DATA_W'hd,
@@ -583,8 +632,7 @@ module cpu_test;
                  );
 
             /******** SW   r1, r0(1024) ID Stage Test Output ********/
-            id_tb(`DISABLE,                       // ld_hazard
-                  `ENABLE,
+            id_tb(`ENABLE,
                   `ALU_OP_ADD,
                   `WORD_DATA_W'h0,
                   `WORD_DATA_W'h400,
@@ -636,8 +684,7 @@ module cpu_test;
                  );
 
             /******** SW   r2, r0(1028) ID Stage Test Output ********/
-            id_tb(`DISABLE,                       // ld_hazard
-                  `ENABLE,
+            id_tb(`ENABLE,
                   `ALU_OP_ADD,
                   `WORD_DATA_W'h0,
                   `WORD_DATA_W'h404,
@@ -689,8 +736,7 @@ module cpu_test;
                  );
 
             /******** LW   r4, r0(1024) ID Stage Test Output ********/
-            id_tb(`DISABLE,                       // ld_hazard
-                  `ENABLE,
+            id_tb(`ENABLE,
                   `ALU_OP_ADD,
                   `WORD_DATA_W'h0,
                   `WORD_DATA_W'h400,
@@ -743,8 +789,7 @@ module cpu_test;
                  );
 
             /******** LW   r5, r0(1028) ID Stage Test Output ********/
-            id_tb(`DISABLE,                       // ld_hazard
-                  `ENABLE,                        // id_en
+            id_tb(`ENABLE,                        // id_en
                   `ALU_OP_ADD,                    // id_alu_op
                   `WORD_DATA_W'h0,                // id_alu_in_0
                   `WORD_DATA_W'h404,              // id_alu_in_1
@@ -796,8 +841,7 @@ module cpu_test;
                  );
 
             /******** NOP               ID Stage Test Output ********/
-            id_tb(`DISABLE,                       // ld_hazard
-                  `ENABLE,
+            id_tb(`ENABLE,
                   `ALU_OP_NOP,
                   `WORD_DATA_W'h0,
                   `WORD_DATA_W'h0,
@@ -849,8 +893,7 @@ module cpu_test;
                  );
 
             /******** NOP               ID Stage Test Output ********/
-            id_tb(`DISABLE,                       // ld_hazard
-                  `ENABLE,
+            id_tb(`ENABLE,
                   `ALU_OP_NOP,
                   `WORD_DATA_W'h0,
                   `WORD_DATA_W'h0,
@@ -902,8 +945,7 @@ module cpu_test;
                  );
 
             /******** ADD  r6, r4, r5 ID Stage Test Output ********/
-            id_tb(`DISABLE,                       // ld_hazard
-                  `ENABLE,
+            id_tb(`ENABLE,
                   `ALU_OP_ADD,
                   `WORD_DATA_W'h4,
                   `WORD_DATA_W'h9,
@@ -955,8 +997,7 @@ module cpu_test;
                  );
 
             /******** NOP ID Stage Test Output ********/
-            id_tb(`DISABLE,                       // ld_hazard
-                  `ENABLE,
+            id_tb(`ENABLE,
                   `ALU_OP_NOP,
                   `WORD_DATA_W'h0,
                   `WORD_DATA_W'h0,
@@ -1008,8 +1049,7 @@ module cpu_test;
                  );
 
             /******** NOP ID Stage Test Output ********/
-            id_tb(`DISABLE,                       // ld_hazard
-                  `ENABLE,
+            id_tb(`ENABLE,
                   `ALU_OP_NOP,
                   `WORD_DATA_W'h0,
                   `WORD_DATA_W'h0,
@@ -1061,8 +1101,7 @@ module cpu_test;
                  );
 
             /******** NOP ID Stage Test Output ********/
-            id_tb(`DISABLE,                       // ld_hazard
-                  `ENABLE,
+            id_tb(`ENABLE,
                   `ALU_OP_NOP,
                   `WORD_DATA_W'h0,
                   `WORD_DATA_W'h0,
