@@ -143,11 +143,12 @@ module decoder (
                             gpr_we_ = `ENABLE_;
                         end
                         default       : begin // 未定义命令
-                            $display("error");
+                            $display("ISA LD OP error");
                         end
                     endcase
                 end
                 `ISA_OP_ALSI  : begin // Arithmetic Logic Shift Immediate
+                    src_reg_used   = 2'b01;        // do not use rb
                     case(funct3)
                         `ISA_OP_ALSI_ADDI :begin   //  ADDI 指令
                             alu_op      = `ALU_OP_ADD;
@@ -191,7 +192,7 @@ module decoder (
                                 alu_in_1    = imm_ir;
                                 gpr_we_     = `ENABLE_;
                             end else begin // 未定义命令
-                                $display("error");
+                                $display("SRI error");
                             end
                         end
                         `ISA_OP_ALSI_ORI: begin   // ORI 指令
@@ -205,11 +206,12 @@ module decoder (
                             gpr_we_     = `ENABLE_;
                         end
                         default       : begin // 未定义命令
-                            $display("error");
+                            $display("ISA_OP_ALSI error");
                         end
                     endcase
                 end
                 // `ISA_OP_JALR      : begin // JALR指令
+                //     src_reg_used   = 2'b01;        // do not use rb
                 //     alu_op      = `ALU_OP_ADD;
                 //     alu_in_1    = imm_i;
                 //     gpr_we_     = `ENABLE_;
@@ -230,7 +232,7 @@ module decoder (
                                 alu_op   = `ALU_OP_SUB;
                                 gpr_we_  = `ENABLE_;
                             end else begin // 未定义命令
-                                $display("error");
+                                $display("AS error");
                             end
                         end
                         `ISA_OP_ALS_SLL: begin
@@ -261,9 +263,9 @@ module decoder (
                                 alu_op      = `ALU_OP_SRA;
                                 gpr_we_     = `ENABLE_;
                             end
-                                 else begin // 未定义命令
-                                     $display("error");
-                                 end
+                            else begin // 未定义命令
+                                $display("SR error");
+                            end
                         end
                         `ISA_OP_ALS_OR: begin
                             alu_op      = `ALU_OP_OR;
@@ -274,7 +276,7 @@ module decoder (
                             gpr_we_     = `ENABLE_;
                         end
                         default       : begin // 未定义命令
-                            $display("error");
+                            $display("AS error");
                         end
                     endcase
                 end
@@ -312,7 +314,7 @@ module decoder (
                             mem_op   = `MEM_OP_SW;
                         end
                         default       : begin // 未定义命令
-                            $display("error");
+                            $display("ISA_OP_ST error");
                         end
                     endcase
                 end
@@ -379,7 +381,7 @@ module decoder (
                 // end
                 /* 其它命令 */
                 default       : begin // 未定义命令
-                    $display("error");
+                    $display("OP error");
                 end
             endcase
         end
