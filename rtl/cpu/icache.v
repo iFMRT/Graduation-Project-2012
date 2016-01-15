@@ -35,15 +35,15 @@ module icache(
     /********* reset *********/
     always @(posedge rst) begin
         if (rst == `ENABLE) begin
-            cpu_data   <= 32'b0;
-            miss_stall <= `DISABLE;
-            cache_rw   <= `READ;
-            tag_wd     <= 20'b0;
-            index      <= 8'b0;
-            mem_addr   <= 28'b0;
-            mem_rw     <= `READ;
-            offset     <= 2'b0;
-            hit_read   <= `DISABLE;
+            cpu_data   = 32'b0;
+            miss_stall = `DISABLE;
+            cache_rw   = `READ;
+            tag_wd     = 20'b0;
+            index      = 8'b0;
+            mem_addr   = 28'b0;
+            mem_rw     = `READ;
+            offset     = 2'b0;
+            hit_read   = `DISABLE;
         end
     end
     /********* control *********/
