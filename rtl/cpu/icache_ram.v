@@ -18,9 +18,9 @@ module tag_ram(
     );
     reg         [20:0]  ram_tag[255:0];
 
-    assign rd = ram_tag[a];
+    assign rd = (we_ == `ENABLE_) ? wd : ram_tag[a];
     always @(posedge clk) 
-        if (we == `WRITE) begin
+        if (we == `ENABLE_) begin
             ram_tag[a]<={1'b1,wd};
         end
 endmodule
@@ -37,8 +37,8 @@ module data_ram(
     );
     reg     [127:0] ram_data[255:0];
 
-    assign rd = ram_data[a];
+    assign rd = (we_ == `ENABLE_) ? wd : ram_data[a];
     always @(posedge clk) 
-        if (we == `WRITE) 
+        if (we == `ENABLE_) 
             ram_data[a]<=wd;
 endmodule
