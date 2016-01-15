@@ -104,10 +104,6 @@ module ctrl (
 
     /********** Forward **********/
     always @(*) begin
-        /* Default Value */
-        ex_ra_fwd_en = `DISABLE;
-        ex_rb_fwd_en = `DISABLE;
-        
         /* Forward Ra */
         if( (id_en           == `ENABLE)  &&
             (id_gpr_we_      == `ENABLE_) &&
@@ -126,21 +122,22 @@ module ctrl (
 
             ra_fwd_ctrl = `FWD_CTRL_MEM;       // Forward from MEM stage
 
-        end else if (                         
-            /* LOAD in MEM and STORE in EX may need forward */
-            (ex_en           == `ENABLE)  &&
-            (ex_gpr_we_      == `ENABLE_) &&
-            (ex_mem_op[3]    == 1'b1)     &&  // Check LOAD  in MEM, LOAD  Mem Op 1XXX
-            (id_mem_op[3:2]  == 2'b01)    &&  // Check STORE in MEM, STORE Mem Op 01XX
-            (ex_dst_addr     == id_ra_addr)
-        ) begin
-
-            ex_ra_fwd_en = `ENABLE;
-
         end else begin
 
             ra_fwd_ctrl = `FWD_CTRL_NONE; // Don't need forward
 
+        end
+
+        /* LOAD in MEM and STORE in EX may need forward */
+        if ((ex_en           == `ENABLE)  &&
+            (ex_gpr_we_      == `ENABLE_) &&
+            (ex_mem_op[3]    == 1'b1)     &&  // Check LOAD  in MEM, LOAD  Mem Op 1XXX
+            (id_mem_op[3:2]  == 2'b01)    &&  // Check STORE in EX, STORE Mem Op 01XX
+            (ex_dst_addr     == id_ra_addr)
+        ) begin
+            ex_ra_fwd_en = `ENABLE;
+        end else begin
+            ex_ra_fwd_en = `DISABLE;
         end
 
         /* Forward Rb */
@@ -161,22 +158,25 @@ module ctrl (
 
             rb_fwd_ctrl = `FWD_CTRL_MEM;  // Forward from MEM stage
 
-        end else if (                         
-            /* LOAD in MEM and STORE in EX may need forward */
-            (ex_en           == `ENABLE)  &&
-            (ex_gpr_we_      == `ENABLE_) &&
-            (ex_mem_op[3]    == 1'b1)     &&  // Check LOAD  in MEM, LOAD  Mem Op 1XXX
-            (id_mem_op[3:2]  == 2'b01)    &&  // Check STORE in EX, STORE Mem Op 01XX
-            (ex_dst_addr     == id_rb_addr)
-        ) begin
-
-            ex_rb_fwd_en = `ENABLE;
 
         end else begin
 
             rb_fwd_ctrl  = `FWD_CTRL_NONE ;    // Don't need forward
 
         end
+
+        /* LOAD in MEM and STORE in EX may need forward */
+        if ((ex_en           == `ENABLE)  &&
+            (ex_gpr_we_      == `ENABLE_) &&
+            (ex_mem_op[3]    == 1'b1)     &&  // Check LOAD  in MEM, LOAD  Mem Op 1XXX
+            (id_mem_op[3:2]  == 2'b01)    &&  // Check STORE in EX, STORE Mem Op 01XX
+            (ex_dst_addr     == id_rb_addr)
+        ) begin
+            ex_rb_fwd_en = `ENABLE;
+        end else begin
+            ex_rb_fwd_en = `DISABLE;
+        end
+
     end
 
     // /********** Check Load hazard **********/
@@ -184,14 +184,16 @@ module ctrl (
         if ((id_en        == `ENABLE)         &&
             (id_gpr_we_   == `ENABLE_)        &&   // load must enable id_gpr_we_
             (id_mem_op[3] == 1'b1)            &&   // Check load in EX
-            (op           != `ISA_OP_ST)      &&   // store in ID no need stall
+            (
+                (op != `ISA_OP_ST) || 
+                ( (op  == `ISA_OP_ST)  && (id_dst_addr == ra_addr) )         
+            )                                 &&   // store in ID may need stall
             (
                 ( (src_reg_used[0] == 1'b1) && (id_dst_addr == ra_addr) ) ||
                 ( (src_reg_used[1] == 1'b1) && (id_dst_addr == rb_addr) ) 
             )
                   
         ) begin 
-
             ld_hazard = `ENABLE;  // Need Load hazard
         end else begin
             ld_hazard = `DISABLE; // Don't nedd Load hazard
