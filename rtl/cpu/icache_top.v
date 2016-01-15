@@ -20,7 +20,7 @@ module icache_top(
   output        miss_stall  // the signal of stall caused by cache miss
  );
   wire          valid;      // the mark if tag is valid
-  wire [19:0]   tag_rd;     // read data of tag
+  wire [20:0]   tag_rd;     // read data of tag
   wire [19:0]   tag_wd;     // write data of tag
   wire [127:0]  cache_rd;   // read data of cache
   wire [127:0]  cache_wd;   // write data of cache
@@ -42,8 +42,8 @@ module icache_top(
         .cpu_data   (cpu_data),     // read data of CPU
         .miss_stall (miss_stall),   // the signal of stall caused by cache miss
         /*cache part*/
-        .valid      (valid),        // the mark if tag is valid
-        .tag_rd     (tag_rd),       // read data of tag
+        .valid      (tag_rd[20]),   // the mark if tag is valid
+        .tag_rd     (tag_rd[19:0]), // read data of tag
         .cache_rd   (cache_rd),     // read data of cache
         .cache_rw   (cache_rw),     // read / write signal of cache
         .tag_wd     (tag_wd),       // write data of tag
