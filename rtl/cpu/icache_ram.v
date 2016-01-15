@@ -14,16 +14,14 @@ module tag_ram(
     input               we,     // read / write signal of cache
     input       [7:0]   a,      // address of cache
     input       [19:0]  wd,     // write data of tag
-    output      [19:0]  rd,     // read data of tag
-    output reg          valid   // the mark if cache is valid
+    output      [20:0]  rd      // read data of tag
     );
     reg         [20:0]  ram_tag[255:0];
 
-    assign rd = ram_tag[a];
+    assign rd = (we_ == `ENABLE_) ? wd : ram_tag[a];
     always @(posedge clk) 
-        if (we == `WRITE) begin
-            ram_tag[a]<=wd;
-            valid =`ENABLE;
+        if (we == `ENABLE_) begin
+            ram_tag[a]<={1'b1,wd};
         end
 endmodule
 
@@ -39,8 +37,8 @@ module data_ram(
     );
     reg     [127:0] ram_data[255:0];
 
-    assign rd = ram_data[a];
+    assign rd = (we_ == `ENABLE_) ? wd : ram_data[a];
     always @(posedge clk) 
-        if (we == `WRITE) 
+        if (we == `ENABLE_) 
             ram_data[a]<=wd;
 endmodule
