@@ -14,7 +14,7 @@ module cpu_test;
     reg                        clk;            // Clock
     wire                       clk_;           // Reverse Clock
     reg                        reset;          // Asynchronous Reset
-     /**********  Pipeline  Register **********/
+    /**********  Pipeline  Register **********/
     // IF/ID
     wire [`WORD_DATA_BUS]      if_pc;          // Program count
     wire [`WORD_DATA_BUS]      if_pc_plus4;    // Program count
@@ -200,8 +200,8 @@ module cpu_test;
         /********** ID/EX Pipeline  Register **********/
         .id_en          (id_en),
         .id_alu_op      (id_alu_op),        // ALU operation
-        .id_alu_in_0    (id_alu_in_0),       // ALU input 0
-        .id_alu_in_1    (id_alu_in_1),       // ALU input 1
+        .id_alu_in_0    (id_alu_in_0),      // ALU input 0
+        .id_alu_in_1    (id_alu_in_1),      // ALU input 1
 
         .id_mem_op      (id_mem_op),        // Memory operation
         .id_mem_wr_data (id_mem_wr_data),   // Memory Write data
@@ -212,7 +212,7 @@ module cpu_test;
         // Forward Data From MEM Stage 
         .ex_ra_fwd_en   (ex_ra_fwd_en),
         .ex_rb_fwd_en   (ex_rb_fwd_en),
-        .mem_fwd_data   (mem_fwd_data),    // MEM Stage
+        .mem_fwd_data   (mem_fwd_data),     // MEM Stage
 
          /********** EX/MEM Pipeline  Register **********/
         .ex_en          (ex_en),  
@@ -313,19 +313,19 @@ module cpu_test;
     /********** Scratch Pad Memory **********/
     spm spm (
         /********** Clock **********/
-        .clk             (clk_),                      // Clock
+        .clk             (clk_),                        // Clock
         /********** Port A: IF Stage **********/
         .if_spm_addr     (if_spm_addr[`SPM_ADDR_LOC]),  //  address
-        .if_spm_as_      (if_spm_as_),                //  address strobe
-        .if_spm_rw       (if_spm_rw),                 // Read/Write
-        .if_spm_wr_data  (if_spm_wr_data),            //  Write data
-        .if_spm_rd_data  (if_spm_rd_data),            // Read data
+        .if_spm_as_      (if_spm_as_),                  //  address strobe
+        .if_spm_rw       (if_spm_rw),                   // Read/Write
+        .if_spm_wr_data  (if_spm_wr_data),              //  Write data
+        .if_spm_rd_data  (if_spm_rd_data),              // Read data
         /********** Port B: MEM Stage **********/
         .mem_spm_addr    (mem_spm_addr[`SPM_ADDR_LOC]), //  address
-        .mem_spm_as_     (mem_spm_as_),               //  address strobe
-        .mem_spm_rw      (mem_spm_rw),                // Read/Write
-        .mem_spm_wr_data (mem_spm_wr_data),           //  Write data
-        .mem_spm_rd_data (mem_spm_rd_data)            // Read data
+        .mem_spm_as_     (mem_spm_as_),                 //  address strobe
+        .mem_spm_rw      (mem_spm_rw),                  // Read/Write
+        .mem_spm_wr_data (mem_spm_wr_data),             //  Write data
+        .mem_spm_rd_data (mem_spm_rd_data)              // Read data
     );
 
     task if_tb;
@@ -335,10 +335,10 @@ module cpu_test;
         input                  _if_en;
 
         begin
-            if( (if_pc       == _if_pc)        &&
-                (if_pc_plus4 == _if_pc_plus4)  &&
-                (if_insn     == _if_insn)      &&
-                (if_en       == _if_en)
+            if( (if_pc       === _if_pc)        &&
+                (if_pc_plus4 === _if_pc_plus4)  &&
+                (if_insn     === _if_insn)      &&
+                (if_en       === _if_en)
               ) begin
                 $display("IF  Stage Test Succeeded !");
             end else begin
@@ -352,6 +352,8 @@ module cpu_test;
         input [`ALU_OP_BUS]     _id_alu_op;      // ALU operation
         input [`WORD_DATA_BUS]  _id_alu_in_0;    // ALU input 0
         input [`WORD_DATA_BUS]  _id_alu_in_1;    // ALU input 1
+        input [`REG_ADDR_BUS]   _id_ra_addr;
+        input [`REG_ADDR_BUS]   _id_rb_addr;
         input [`MEM_OP_BUS]     _id_mem_op;      // Memory operation
         input [`WORD_DATA_BUS]  _id_mem_wr_data; // Memory Write data
         input [`REG_ADDR_BUS]   _id_dst_addr;    // GPRWrite  address
@@ -359,17 +361,30 @@ module cpu_test;
         input [`EX_OUT_SEL_BUS] _id_gpr_mux_ex;
         input [`WORD_DATA_BUS]  _id_gpr_wr_data;
 
+        input [`INS_OP_BUS]     _op;
+        input [`REG_ADDR_BUS]   _ra_addr;
+        input [`REG_ADDR_BUS]   _rb_addr;
+        input [1:0]             _src_reg_used;
+
         begin
-            if( (id_en          == _id_en)          &&
-                (id_alu_op      == _id_alu_op)      &&
-                (id_alu_in_0    == _id_alu_in_0)    &&
-                (id_alu_in_1    == _id_alu_in_1)    &&
-                (id_mem_op      == _id_mem_op)      &&
-                (id_mem_wr_data == _id_mem_wr_data) &&
-                (id_dst_addr    == _id_dst_addr)    &&
-                (id_gpr_we_     == _id_gpr_we_)     &&
-                (id_gpr_mux_ex  == _id_gpr_mux_ex)  &&
-                (id_gpr_wr_data == _id_gpr_wr_data)
+            if( (id_en          === _id_en)          &&
+                (id_alu_op      === _id_alu_op)      &&
+                (id_alu_in_0    === _id_alu_in_0)    &&
+                (id_alu_in_1    === _id_alu_in_1)    &&
+                (id_ra_addr     === _id_ra_addr)     &&
+                (id_rb_addr     === _id_rb_addr)     &&
+                (id_mem_op      === _id_mem_op)      &&
+                (id_mem_wr_data === _id_mem_wr_data) &&
+                (id_dst_addr    === _id_dst_addr)    &&
+                (id_gpr_we_     === _id_gpr_we_)     &&
+                (id_gpr_mux_ex  === _id_gpr_mux_ex)  &&
+                (id_gpr_wr_data === _id_gpr_wr_data) &&
+
+                (op             === _op)             &&
+                (ra_addr        === _ra_addr)        &&
+                (rb_addr        === _rb_addr)        &&
+                (src_reg_used   === _src_reg_used) 
+
               ) begin
                 $display("ID  Stage Test Succeeded !");
             end else begin
@@ -388,13 +403,13 @@ module cpu_test;
         input [`WORD_DATA_BUS]     _ex_out;         // Operating result
 
         begin
-            if( (ex_fwd_data    == _ex_fwd_data)     &&
-                (ex_en          == _ex_en)           &&
-                (ex_mem_op      == _ex_mem_op)       &&      // Memory operation
-                (ex_mem_wr_data == _ex_mem_wr_data)  &&      // Memory Write data
-                (ex_dst_addr    == _ex_dst_addr)     &&      // General purpose RegisterWrite address
-                (ex_gpr_we_     == _ex_gpr_we_)      &&      // General purpose RegisterWrite enable
-                (ex_out         == _ex_out)                  // Operating result
+            if( (ex_fwd_data    === _ex_fwd_data)     &&
+                (ex_en          === _ex_en)           &&
+                (ex_mem_op      === _ex_mem_op)       &&      // Memory operation
+                (ex_mem_wr_data === _ex_mem_wr_data)  &&      // Memory Write data
+                (ex_dst_addr    === _ex_dst_addr)     &&      // General purpose RegisterWrite address
+                (ex_gpr_we_     === _ex_gpr_we_)      &&      // General purpose RegisterWrite enable
+                (ex_out         === _ex_out)                  // Operating result
               ) begin
                 $display("EX  Stage Test Succeeded !");
             end else begin
@@ -411,11 +426,11 @@ module cpu_test;
         input [`WORD_DATA_BUS]        _mem_out;      // Operating result
 
         begin
-            if( (mem_fwd_data  == _mem_fwd_data)     &&      
-                (mem_en        == _mem_en)           &&      
-                (mem_dst_addr  == _mem_dst_addr)     &&      // Memory operation
-                (mem_gpr_we_   == _mem_gpr_we_)      &&      // Memory Write data
-                (mem_out       == _mem_out)                  // General purpose RegisterWrite address
+            if( (mem_fwd_data  === _mem_fwd_data)     &&      
+                (mem_en        === _mem_en)           &&      
+                (mem_dst_addr  === _mem_dst_addr)     &&      // Memory operation
+                (mem_gpr_we_   === _mem_gpr_we_)      &&      // Memory Write data
+                (mem_out       === _mem_out)                  // General purpose RegisterWrite address
               ) begin
                 $display("MEM Stage Test Succeeded !");
             end else begin
@@ -435,18 +450,29 @@ module cpu_test;
         input                   _ex_flush;     // EX stage flush
         input                   _mem_flush;    // MEM stage flush
 
-        input [`WORD_DATA_BUS]  _new_pc;
+        input  [`WORD_DATA_BUS] _new_pc;
+
+        /********** Forward Output **********/
+        input [`FWD_CTRL_BUS]  _ra_fwd_ctrl;
+        input [`FWD_CTRL_BUS]  _rb_fwd_ctrl;
+        input                  _ex_ra_fwd_en;
+        input                  _ex_rb_fwd_en;
 
         begin
-            if( (if_stall  == _if_stall)     &&      
-                (id_stall  == _id_stall)     &&      
-                (ex_stall  == _ex_stall)     &&
-                (mem_stall == _mem_stall)    &&
-                (if_flush  == _if_flush)     &&
-                (id_flush  == _id_flush)     &&
-                (ex_flush  == _ex_flush)     &&
-                (mem_flush == _mem_flush)    &&
-                (new_pc    == _new_pc)
+            if( (if_stall     === _if_stall)     &&      
+                (id_stall     === _id_stall)     &&      
+                (ex_stall     === _ex_stall)     &&
+                (mem_stall    === _mem_stall)    &&
+                (if_flush     === _if_flush)     &&
+                (id_flush     === _id_flush)     &&
+                (ex_flush     === _ex_flush)     &&
+                (mem_flush    === _mem_flush)    &&
+                (new_pc       === _new_pc)       &&
+
+                (ra_fwd_ctrl  === _ra_fwd_ctrl)  &&
+                (rb_fwd_ctrl  === _rb_fwd_ctrl)  &&
+                (ex_ra_fwd_en === _ex_ra_fwd_en) &&
+                (ex_rb_fwd_en === _ex_rb_fwd_en) 
               ) begin
                 $display("Ctrl      Test Succeeded !");
             end else begin
@@ -472,678 +498,918 @@ module cpu_test;
                   `DISABLE                      // if_en
                   );
 
-            // Case: read the word 0x41a4d9 from address 0x154
-            /******** Read a Word(align) Test Input ********/
             reset          <= `DISABLE;
         end
         # STEP begin
             $display("\n========= Clock 1 ========");
             /******** ADDI r1, r0, 4 IF Stage Test Output ********/
-            if_tb(`WORD_DATA_W'h4,               // if_pc
-                  `WORD_DATA_W'h8,               // if_pc_plus4
-                  `WORD_DATA_W'h400093,          // if_insn
-                  `ENABLE
+            if_tb(`WORD_DATA_W'h4,              // if_pc
+                  `WORD_DATA_W'h8,              // if_pc_plus4
+                  `WORD_DATA_W'h400093,         // if_insn
+                  `ENABLE                       // if_en
                  );
 
-            ctrl_tb(`DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `WORD_DATA_W'h0
+            ctrl_tb(`DISABLE,                   // if_stall                                    
+                    `DISABLE,                   // id_stall
+                    `DISABLE,                   // ex_stall
+                    `DISABLE,                   // mem_stall
+                    `DISABLE,                   // if_flush
+                    `DISABLE,                   // id_flush
+                    `DISABLE,                   // ex_flush
+                    `DISABLE,                   // mem_flush
+                    `WORD_DATA_W'h0,            // new_pc
+
+                    `FWD_CTRL_NONE,             // ra_fwd_ctrl
+                    `FWD_CTRL_NONE,             // rb_fwd_ctrl
+                    `DISABLE,                   // ex_ra_fwd_en
+                    `DISABLE                    // ex_rb_fwd_en
                    );
         end
         # STEP begin
             $display("\n========= Clock 2 ========");
-            /******** ADDI r2 r0, 9 IF Stage Test Output ********/
-            if_tb(`WORD_DATA_W'h8,               // if_pc
-                  `WORD_DATA_W'hc,               // if_pc_plus4
-                  `WORD_DATA_W'h900113,          // if_insn
-                  `ENABLE
+            /******** ADDI r2 r1, 8 IF Stage Test Output ********/
+            if_tb(`WORD_DATA_W'h8,              // if_pc
+                  `WORD_DATA_W'hc,              // if_pc_plus4
+                  `WORD_DATA_W'h808113,         // if_insn
+                  `ENABLE                       // if_en
                  );
 
             /******** ADDI r1, r0, 4 ID Stage Test Output ********/
-            id_tb(`ENABLE,                       // id_en
-                  `ALU_OP_ADD,                   // id_alu_op
-                  `WORD_DATA_W'h0,               // id_alu_in_0
-                  `WORD_DATA_W'h4,               // id_alu_in_1
-                  `MEM_OP_NOP,                   // id_mem_op
-                  `WORD_DATA_W'h0,               // id_mem_wr_data
-                  `REG_ADDR_W'h1,                // id_dst_addr
-                  `ENABLE_,                      // id_gpr_we_
-                  `EX_OUT_ALU,                   // id_gpr_mux_ex
-                  `WORD_DATA_W'h8                // id_gpr_wr_data
+            id_tb(`ENABLE,                      // id_en
+                  `ALU_OP_ADD,                  // id_alu_op
+                  `WORD_DATA_W'h0,              // id_alu_in_0
+                  `WORD_DATA_W'h4,              // id_alu_in_1
+                  `REG_ADDR_W'h0,               // id_ra_addr 
+                  `REG_ADDR_W'h4,               // id_rb_addr
+                  `MEM_OP_NOP,                  // id_mem_op
+                  `WORD_DATA_W'h0,              // id_mem_wr_data
+                  `REG_ADDR_W'h1,               // id_dst_addr
+                  `ENABLE_,                     // id_gpr_we_
+                  `EX_OUT_ALU,                  // id_gpr_mux_ex
+                  `WORD_DATA_W'h8,              // id_gpr_wr_data
+
+                  `ISA_OP_ALSI,                 // op 
+                  `REG_ADDR_W'h1,               // ra_addr
+                  `REG_ADDR_W'h8,               // rb_addr
+                  2'b01                         // src_reg_used
                  );
 
-             ctrl_tb(`DISABLE,
-                     `DISABLE,
-                     `DISABLE,
-                     `DISABLE,
-                     `DISABLE,
-                     `DISABLE,
-                     `DISABLE,
-                     `DISABLE,
-                     `WORD_DATA_W'h0
+            ctrl_tb(`DISABLE,                   // if_stall
+                    `DISABLE,                   // id_stall
+                    `DISABLE,                   // ex_stall
+                    `DISABLE,                   // mem_stall
+                    `DISABLE,                   // if_flush
+                    `DISABLE,                   // id_flush
+                    `DISABLE,                   // ex_flush
+                    `DISABLE,                   // mem_flush
+                    `WORD_DATA_W'h0,            // new_pc
+
+                     
+                    `FWD_CTRL_EX,               // ra_fwd_ctrl
+                    `FWD_CTRL_NONE,             // rb_fwd_ctrl
+                    `DISABLE,                   // ex_ra_fwd_en
+                    `DISABLE                    // ex_rb_fwd_en
                     );
         end
         # STEP begin
             $display("\n========= Clock 3 ========");
-            /******** ADDI r3 r0, 13 IF Stage Test Output ********/
-            if_tb(`WORD_DATA_W'hc,               // if_pc
-                  `WORD_DATA_W'h10,              // if_pc_plus4
-                  `WORD_DATA_W'hd00193,          // if_insn
-                  `ENABLE
+            /******** SW   r2, r0(1024) IF Stage Test Output ********/
+            if_tb(`WORD_DATA_W'hc,              // if_pc
+                  `WORD_DATA_W'h10,             // if_pc_plus4
+                  `WORD_DATA_W'h40202023,       // if_insn
+                  `ENABLE                       // if_en
                  );
 
-            /********ADDI r2 r0, 9  ID Stage Test Output ********/
-            id_tb(`ENABLE,                       // id_en
-                  `ALU_OP_ADD,                   // id_alu_op
-                  `WORD_DATA_W'h0,               // id_alu_in_0
-                  `WORD_DATA_W'h9,               // id_alu_in_1
-                  `MEM_OP_NOP,                   // id_mem_op
-                  `WORD_DATA_W'h0,
-                  `REG_ADDR_W'h2,
-                  `ENABLE_,
-                  `EX_OUT_ALU,
-                  `WORD_DATA_W'hc
+            /******** ADDI r2 r1, 8  ID Stage Test Output ********/
+            id_tb(
+                  `ENABLE,                      // id_en
+                  `ALU_OP_ADD,                  // id_alu_op
+                  `WORD_DATA_W'h4,              // id_alu_in_0
+                  `WORD_DATA_W'h8,              // id_alu_in_1
+                  `REG_ADDR_W'h1,               // id_ra_addr 
+                  `REG_ADDR_W'h8,               // id_rb_addr
+                  `MEM_OP_NOP,                  // id_mem_op
+                  `WORD_DATA_W'h0,              // id_mem_wr_data          
+                  `REG_ADDR_W'h2,               // id_dst_addr 
+                  `ENABLE_,                     // id_gpr_we_
+                  `EX_OUT_ALU,                  // id_gpr_mux_ex
+                  `WORD_DATA_W'hc,              // id_gpr_wr_data
+
+                  `ISA_OP_ST,                   // op 
+                  `REG_ADDR_W'h0,               // ra_addr
+                  `REG_ADDR_W'h2,               // rb_addr
+                  2'b11                         // src_reg_used
                  );
 
             /******** ADDI r1, r0, 4 EX Stage Test Output ********/
-            ex_tb(`WORD_DATA_W'h9,
-                  `ENABLE,
-                  `MEM_OP_NOP,
-                  `WORD_DATA_W'h0,
-                  `REG_ADDR_W'h1,
-                  `ENABLE_,
-                  `WORD_DATA_W'h4
+            ex_tb(`WORD_DATA_W'hc,              // ex_fwd_data
+                  `ENABLE,                      // ex_en
+                  `MEM_OP_NOP,                  // ex_mem_op
+                  `WORD_DATA_W'h0,              // ex_mem_wr_data
+                  `REG_ADDR_W'h1,               // ex_dst_addr
+                  `ENABLE_,                     // ex_gpr_we_
+                  `WORD_DATA_W'h4               // ex_out
                  );
 
-            ctrl_tb(`DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `WORD_DATA_W'h0
-                   );
+            ctrl_tb(`DISABLE,                   // if_stall
+                    `DISABLE,                   // id_stall
+                    `DISABLE,                   // ex_stall
+                    `DISABLE,                   // mem_stall
+                    `DISABLE,                   // if_flush
+                    `DISABLE,                   // id_flush
+                    `DISABLE,                   // ex_flush
+                    `DISABLE,                   // mem_flush
+                    `WORD_DATA_W'h0,            // new_pc
+
+                     
+                    `FWD_CTRL_NONE,             // ra_fwd_ctrl
+                    `FWD_CTRL_EX,               // rb_fwd_ctrl
+                    `DISABLE,                   // ex_ra_fwd_en
+                    `DISABLE                    // ex_rb_fwd_en
+                    );
         end
         # STEP begin
             $display("\n========= Clock 4 ========");
-            /******** SW   r1, r0(1024) IF Stage Test Output ********/
-            if_tb(`WORD_DATA_W'h10,
-                  `WORD_DATA_W'h14,
-                  `WORD_DATA_W'h40102023,
-                  `ENABLE
+            /******** LW   r3, r0(1024) IF Stage Test Output ********/
+            if_tb(`WORD_DATA_W'h10,              // if_pc
+                  `WORD_DATA_W'h14,              // if_pc_plus4
+                  `WORD_DATA_W'h40002183,        // if_insn
+                  `ENABLE                        // if_en
                  );
 
-            /******** ADDI r3, r0, 13 ID Stage Test Output ********/
-            id_tb(`ENABLE,
-                  `ALU_OP_ADD,
-                  `WORD_DATA_W'h0,
-                  `WORD_DATA_W'hd,
-                  `MEM_OP_NOP,
-                  `WORD_DATA_W'h0,
-                  `REG_ADDR_W'h3,
-                  `ENABLE_,
-                  `EX_OUT_ALU,
-                  `WORD_DATA_W'h10
+            /******** SW   r2, r0(1024) ID Stage Test Output ********/
+            id_tb(`ENABLE,                       // id_en
+                  `ALU_OP_ADD,                   // id_alu_op
+                  `WORD_DATA_W'h0,               // id_alu_in_0
+                  `WORD_DATA_W'h400,             // id_alu_in_1
+                  `REG_ADDR_W'h0,                // id_ra_addr 
+                  `REG_ADDR_W'h2,                // id_rb_addr
+                  `MEM_OP_SW,                    // id_mem_op
+                  `WORD_DATA_W'hc,               // id_mem_wr_data
+                  `REG_ADDR_W'h0,                // id_dst_addr
+                  `DISABLE_,                     // id_gpr_we_
+                  `EX_OUT_ALU,                   // id_gpr_mux_ex
+                  `WORD_DATA_W'h10,              // id_gpr_wr_data
+
+                  `ISA_OP_LD,                    // op 
+                  `REG_ADDR_W'h0,                // ra_addr
+                  `REG_ADDR_W'h0,                // rb_addr
+                  2'b01                          // src_reg_used
                  );
 
-            /******** ADDI r2, r0, 9  EX Stage Test Output ********/
-            ex_tb(`WORD_DATA_W'hd,
-                  `ENABLE,
-                  `MEM_OP_NOP,
-                  `WORD_DATA_W'h0,
-                  `REG_ADDR_W'h2,
-                  `ENABLE_,
-                  `WORD_DATA_W'h9
+            /******** ADDI r2, r1, 8  EX Stage Test Output ********/
+            ex_tb(`WORD_DATA_W'h400,              // ex_fwd_data
+                  `ENABLE,                        // ex_en
+                  `MEM_OP_NOP,                    // ex_mem_op
+                  `WORD_DATA_W'h0,                // ex_mem_wr_data
+                  `REG_ADDR_W'h2,                 // ex_dst_addr
+                  `ENABLE_,                       // ex_gpr_we_
+                  `WORD_DATA_W'hc                 // ex_out
                  );
 
             /******** ADDI r1, r0, 4  MEM Stage Test Output ********/
-            mem_tb(`WORD_DATA_W'h9,
-                   `ENABLE,
-                   `REG_ADDR_W'h1,
-                   `ENABLE_,
-                   `WORD_DATA_W'h4
+            mem_tb(`WORD_DATA_W'hc,               // mem_fwd_data
+                   `ENABLE,                       // mem_en
+                   `REG_ADDR_W'h1,                // mem_dst_addr
+                   `ENABLE_,                      // mem_gpr_we_
+                   `WORD_DATA_W'h4                // mem_out
                   );
-            ctrl_tb(`DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `WORD_DATA_W'h0
-                   );
+
+            ctrl_tb(`DISABLE,                     // if_stall
+                    `DISABLE,                     // id_stall
+                    `DISABLE,                     // ex_stall
+                    `DISABLE,                     // mem_stall
+                    `DISABLE,                     // if_flush
+                    `DISABLE,                     // id_flush
+                    `DISABLE,                     // ex_flush
+                    `DISABLE,                     // mem_flush
+                    `WORD_DATA_W'h0,              // new_pc
+
+                     
+                    `FWD_CTRL_NONE,               // ra_fwd_ctrl
+                    `FWD_CTRL_NONE,               // rb_fwd_ctrl
+                    `DISABLE,                     // ex_ra_fwd_en
+                    `DISABLE                      // ex_rb_fwd_en
+                    );
         end
         # STEP begin
             $display("\n========= Clock 5 ========");
-            /******** SW   r2, r0(1028) IF Stage Test Output ********/
-            if_tb(`WORD_DATA_W'h14,
-                  `WORD_DATA_W'h18,
-                  `WORD_DATA_W'h40202223,
-                  `ENABLE
+            /******** add  r4, r2, r3 IF Stage Test Output ********/
+            if_tb(`WORD_DATA_W'h14,               // if_pc
+                  `WORD_DATA_W'h18,               // if_pc_plus4
+                  `WORD_DATA_W'h310233,           // if_insn
+                  `ENABLE                         // if_en
                  );
 
-            /******** SW   r1, r0(1024) ID Stage Test Output ********/
+            /******** LW   r3, r0(1024) ID Stage Test Output ********/
             id_tb(`ENABLE,
                   `ALU_OP_ADD,
                   `WORD_DATA_W'h0,
                   `WORD_DATA_W'h400,
-                  `MEM_OP_SW,
-                  `WORD_DATA_W'h4,
-                  `REG_ADDR_W'h0,
-                  `DISABLE_,
-                  `EX_OUT_ALU,
-                  `WORD_DATA_W'h14
-                 );
-
-            /******** ADDI r3, r0, 13  EX Stage Test Output ********/
-            ex_tb(`WORD_DATA_W'h400,
-                  `ENABLE,
-                  `MEM_OP_NOP,
+                  `REG_ADDR_W'h0,                 // id_ra_addr 
+                  `REG_ADDR_W'h0,                 // id_rb_addr
+                  `MEM_OP_LW,
                   `WORD_DATA_W'h0,
                   `REG_ADDR_W'h3,
                   `ENABLE_,
-                  `WORD_DATA_W'hd
+                  `EX_OUT_ALU,
+                  `WORD_DATA_W'h14,
+
+                  `ISA_OP_ALS,                    // op 
+                  `REG_ADDR_W'h2,                 // ra_addr
+                  `REG_ADDR_W'h3,                 // rb_addr
+                  2'b11                           // src_reg_used
                  );
 
-            /******** ADDI r2, r0, 9  MEM Stage Test Output ********/
-            mem_tb(`WORD_DATA_W'hd,
-                    `ENABLE,
-                   `REG_ADDR_W'h2,
-                   `ENABLE_,
-                   `WORD_DATA_W'h9
+            /******** SW   r2, r0(1024)  EX Stage Test Output ********/
+            ex_tb(`WORD_DATA_W'h400,              // ex_fwd_data
+                  `ENABLE,                        // ex_en
+                  `MEM_OP_SW,                     // ex_mem_op
+                  `WORD_DATA_W'hc,                // ex_mem_wr_data
+                  `REG_ADDR_W'h0,                 // ex_dst_addr
+                  `DISABLE_,                      // ex_gpr_we_
+                  `WORD_DATA_W'h400               // ex_out
+                 );
+
+            /******** ADDI r2, r1, 8  MEM Stage Test Output ********/
+            mem_tb(`WORD_DATA_W'h0,               // mem_fwd_data
+                   `ENABLE,                       // mem_en
+                   `REG_ADDR_W'h2,                // mem_dst_addr
+                   `ENABLE_,                      // mem_gpr_we_
+                   `WORD_DATA_W'hc                // mem_out
                   );
 
             $display("WB Stage ...");
-            ctrl_tb(`DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `WORD_DATA_W'h0
-                   );
+            
+            ctrl_tb(`ENABLE,                      // if_stall
+                    `DISABLE,                     // id_stall
+                    `DISABLE,                     // ex_stall
+                    `DISABLE,                     // mem_stall
+
+                    `DISABLE,                     // if_flush
+                    `ENABLE,                      // id_flush
+                    `DISABLE,                     // ex_flush
+                    `DISABLE,                     // mem_flush
+                    `WORD_DATA_W'h0,              // new_pc
+
+                     
+                    `FWD_CTRL_NONE,               // ra_fwd_ctrl
+                    `FWD_CTRL_EX,                 // rb_fwd_ctrl
+                    `DISABLE,                     // ex_ra_fwd_en
+                    `DISABLE                      // ex_rb_fwd_en
+                    );
         end
         # STEP begin
             $display("\n========= Clock 6 ========");
-            /******** LW    r4, r0(1024) IF Stage Test Output ********/
-            if_tb(`WORD_DATA_W'h18,
-                  `WORD_DATA_W'h1c,
-                  `WORD_DATA_W'h40002203,
-                  `ENABLE
+            /******** add  r4, r2, r3 IF Stage Test Output ********/
+            /******** Hold the same value as clock 5 due to Stall ********/
+            if_tb(`WORD_DATA_W'h14,               // if_pc
+                  `WORD_DATA_W'h18,               // if_pc_plus4
+                  `WORD_DATA_W'h310233,           // if_insn
+                  `ENABLE                         // if_en
                  );
 
-            /******** SW   r2, r0(1028) ID Stage Test Output ********/
-            id_tb(`ENABLE,
-                  `ALU_OP_ADD,
-                  `WORD_DATA_W'h0,
-                  `WORD_DATA_W'h404,
-                  `MEM_OP_SW,
-                  `WORD_DATA_W'h9,
-                  `REG_ADDR_W'h4,
-                  `DISABLE_,
-                  `EX_OUT_ALU,
-                  `WORD_DATA_W'h18
+            /******** NOP due to Stall ID Stage Test Output ********/
+            id_tb(`DISABLE,                       // id_en
+                  `ALU_OP_NOP,                    // id_alu_op
+                  `WORD_DATA_W'h0,                // id_alu_in_0
+                  `WORD_DATA_W'h0,                // id_alu_in_1
+                  `REG_ADDR_W'h0,                 // id_ra_addr 
+                  `REG_ADDR_W'h0,                 // id_rb_addr
+                  `MEM_OP_NOP,                    // id_mem_op
+                  `WORD_DATA_W'h0,                // id_mem_wr_data
+                  `REG_ADDR_W'h0,                 // id_dst_addr
+                  `DISABLE_,                      // id_gpr_we_
+                  `EX_OUT_ALU,                    // id_gpr_mux_ex
+                  `WORD_DATA_W'h00,               // id_gpr_wr_data
+
+                  `ISA_OP_ALS,                    // op 
+                  `REG_ADDR_W'h2,                 // ra_addr
+                  `REG_ADDR_W'h3,                 // rb_addr
+                  2'b11                           // src_reg_used
                  );
 
-            /******** SW   r1, r0(1024)  EX Stage Test Output ********/
-            ex_tb(`WORD_DATA_W'h404,
-                  `ENABLE,
-                  `MEM_OP_SW,
-                  `WORD_DATA_W'h4,
-                  `REG_ADDR_W'h0,
-                  `DISABLE_,
-                  `WORD_DATA_W'h400
+            // /******** LW   r3, r0(1024)  EX Stage Test Output ********/
+            ex_tb(`WORD_DATA_W'h0,                // ex_fwd_data
+                  `ENABLE,                        // ex_en
+                  `MEM_OP_LW,                     // ex_mem_op
+                  `WORD_DATA_W'h0,                // ex_mem_wr_data
+                  `REG_ADDR_W'h3,                 // ex_dst_addr
+                  `ENABLE_,                       // ex_gpr_we_
+                  `WORD_DATA_W'h400               // ex_out
                  );
 
-            /******** ADDI r3, r0, 13  MEM Stage Test Output ********/
-             mem_tb(`WORD_DATA_W'h0,
-                    `ENABLE,
-                    `REG_ADDR_W'h3,
-                    `ENABLE_,
-                    `WORD_DATA_W'hd
-                   );
-
-            $display("WB Stage ...");
-            ctrl_tb(`DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `WORD_DATA_W'h0
-                   );
-        end
-        # STEP begin
-            $display("\n========= Clock 7 ========");
-            /******** LW   r5, r0(1028) IF Stage Test Output ********/
-            if_tb(`WORD_DATA_W'h1c,
-                  `WORD_DATA_W'h20,
-                  `WORD_DATA_W'h40402283,
-                  `ENABLE
-                 );
-
-            /******** LW   r4, r0(1024) ID Stage Test Output ********/
-            id_tb(`ENABLE,
-                  `ALU_OP_ADD,
-                  `WORD_DATA_W'h0,
-                  `WORD_DATA_W'h400,
-                  `MEM_OP_LW,
-                  `WORD_DATA_W'h0,
-                  `REG_ADDR_W'h4,
-                  `ENABLE_,
-                  `EX_OUT_ALU,
-                  `WORD_DATA_W'h1c
-                 );
-
-            /******** SW   r2, r0(1028)  EX Stage Test Output ********/
-            ex_tb(`WORD_DATA_W'h400,
-                  `ENABLE,
-                  `MEM_OP_SW,
-                  `WORD_DATA_W'h9,
-                  `REG_ADDR_W'h4,
-                  `DISABLE_,
-                  `WORD_DATA_W'h404
-                 );
-
-            /******** SW   r1, r0(1024)  MEM Stage Test Output ********/
-            mem_tb(`WORD_DATA_W'h0,
-                   `ENABLE,
-                   `REG_ADDR_W'h0,
-                   `DISABLE_,
-                   `WORD_DATA_W'h0
+            /******** SW   r2, r0(1024)  MEM Stage Test Output ********/
+            mem_tb(`WORD_DATA_W'hc,               // mem_fwd_data
+                   `ENABLE,                       // mem_en
+                   `REG_ADDR_W'h0,                // mem_dst_addr
+                   `DISABLE_,                     // mem_gpr_we_
+                   `WORD_DATA_W'h0                // mem_out
                   );
 
             $display("WB Stage ...");
-            ctrl_tb(`DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
+            
+            ctrl_tb(`DISABLE,                     // if_stall
+                    `DISABLE,                     // id_stall
+                    `DISABLE,                     // ex_stall
+                    `DISABLE,                     // mem_stall
 
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `WORD_DATA_W'h0
-                   );
+                    `DISABLE,                     // if_flush
+                    `DISABLE,                     // id_flush
+                    `DISABLE,                     // ex_flush
+                    `DISABLE,                     // mem_flush
+                    `WORD_DATA_W'h0,              // new_pc
+
+                    `FWD_CTRL_NONE,               // ra_fwd_ctrl
+                    `FWD_CTRL_MEM,                // rb_fwd_ctrl
+                    `DISABLE,                     // ex_ra_fwd_en
+                    `DISABLE                      // ex_rb_fwd_en
+                    );
+        end
+        # STEP begin
+            $display("\n========= Clock 7 ========");
+            /******** LW   r5, r0(1024) IF Stage Test Output ********/
+            if_tb(`WORD_DATA_W'h18,               // if_pc
+                  `WORD_DATA_W'h1c,               // if_pc_plus4
+                  `WORD_DATA_W'h40002283,         // if_insn
+                  `ENABLE                         // if_en
+                 );
+
+            /******** add  r4, r2, r3 ID Stage Test Output ********/
+            id_tb(`ENABLE,                        // id_en
+                  `ALU_OP_ADD,                    // id_alu_op
+                  `WORD_DATA_W'hc,                // id_alu_in_0
+                  `WORD_DATA_W'hc,                // id_alu_in_1
+                  `REG_ADDR_W'h2,                 // id_ra_addr 
+                  `REG_ADDR_W'h3,                 // id_rb_addr
+                  `MEM_OP_NOP,                    // id_mem_op
+                  `WORD_DATA_W'hc,                // id_mem_wr_data
+                  `REG_ADDR_W'h4,                 // id_dst_addr
+                  `ENABLE_,                       // id_gpr_we_
+                  `EX_OUT_ALU,                    // id_gpr_mux_ex
+                  `WORD_DATA_W'h18,               // id_gpr_wr_data
+
+                  `ISA_OP_LD,                     // op 
+                  `REG_ADDR_W'h0,                 // ra_addr
+                  `REG_ADDR_W'h0,                 // rb_addr
+                  2'b01                           // src_reg_used
+                 );
+
+            /******** NOP due to Stall EX Stage Test Output ********/
+            ex_tb(`WORD_DATA_W'h18,               // ex_fwd_data
+                  `DISABLE,                       // ex_en
+                  `MEM_OP_NOP,                    // ex_mem_op
+                  `WORD_DATA_W'h0,                // ex_mem_wr_data
+                  `REG_ADDR_W'h0,                 // ex_dst_addr
+                  `DISABLE_,                      // ex_gpr_we_
+                  `WORD_DATA_W'h0                 // ex_out
+                 );
+
+            /******** LW   r3, r0(1024)  MEM Stage Test Output ********/
+            mem_tb(`WORD_DATA_W'h0,               // mem_fwd_data
+                   `ENABLE,                       // mem_en
+                   `REG_ADDR_W'h3,                // mem_dst_addr
+                   `ENABLE_,                      // mem_gpr_we_
+                   `WORD_DATA_W'hc                // mem_out
+                  );
+
+            $display("WB Stage ...");
+            ctrl_tb(`DISABLE,                     // if_stall
+                    `DISABLE,                     // id_stall
+                    `DISABLE,                     // ex_stall
+                    `DISABLE,                     // mem_stall
+
+                    `DISABLE,                     // if_flush
+                    `DISABLE,                     // id_flush
+                    `DISABLE,                     // ex_flush
+                    `DISABLE,                     // mem_flush
+                    `WORD_DATA_W'h0,              // new_pc
+
+                    `FWD_CTRL_NONE,               // ra_fwd_ctrl
+                    `FWD_CTRL_NONE,               // rb_fwd_ctrl
+                    `DISABLE,                     // ex_ra_fwd_en
+                    `DISABLE                      // ex_rb_fwd_en
+                    );
         end
         # STEP begin
             $display("\n========= Clock 8 ========");
-            /******** NOP            IF Stage Test Output ********/
-            if_tb(`WORD_DATA_W'h20,
-                  `WORD_DATA_W'h24,
-                  `WORD_DATA_W'h0,
+            /******** SW   r5, r0(1028) IF Stage Test Output ********/
+            if_tb(`WORD_DATA_W'h1c,               // 
+                  `WORD_DATA_W'h20,
+                  `WORD_DATA_W'h40502223,
                   `ENABLE
                  );
 
-            /******** LW   r5, r0(1028) ID Stage Test Output ********/
+            /******** LW   r5, r0(1024) ID Stage Test Output ********/
             id_tb(`ENABLE,                        // id_en
                   `ALU_OP_ADD,                    // id_alu_op
                   `WORD_DATA_W'h0,                // id_alu_in_0
-                  `WORD_DATA_W'h404,              // id_alu_in_1
+                  `WORD_DATA_W'h400,              // id_alu_in_1
+                  `REG_ADDR_W'h0,                 // id_ra_addr 
+                  `REG_ADDR_W'h0,                 // id_rb_addr
                   `MEM_OP_LW,                     // id_mem_op
                   `WORD_DATA_W'h0,                // id_mem_wr_data
                   `REG_ADDR_W'h5,                 // id_dst_addr
                   `ENABLE_,                       // id_gpr_we_
                   `EX_OUT_ALU,                    // id_gpr_mux_ex
-                  `WORD_DATA_W'h20                // id_gpr_wr_data 
+                  `WORD_DATA_W'h1c,               // id_gpr_wr_data
+
+                  `ISA_OP_ST,                     // op 
+                  `REG_ADDR_W'h0,                 // ra_addr
+                  `REG_ADDR_W'h5,                 // rb_addr
+                  2'b11                           // src_reg_used
                  );
 
-            /******** LW   r4, r0(1024)  EX Stage Test Output ********/
-            ex_tb(`WORD_DATA_W'h404,
-                  `ENABLE,
-                  `MEM_OP_LW,
-                  `WORD_DATA_W'h0,
-                  `REG_ADDR_W'h4,
-                  `ENABLE_,
-                  `WORD_DATA_W'h400
+            /******* add  r4, r2, r3 EX Stage Test Output *******/
+            ex_tb(`WORD_DATA_W'h400,              // ex_fwd_data
+                  `ENABLE,                        // ex_en
+                  `MEM_OP_NOP,                    // ex_mem_op
+                  `WORD_DATA_W'hc,                // ex_mem_wr_data
+                  `REG_ADDR_W'h4,                 // ex_dst_addr
+                  `ENABLE_,                       // ex_gpr_we_
+                  `WORD_DATA_W'h18                // ex_out
                  );
 
-            /******** SW   r2, r0(1028)  MEM Stage Test Output ********/
-            mem_tb(`WORD_DATA_W'h4,
-                   `ENABLE,
-                   `REG_ADDR_W'h4,
-                   `DISABLE_,
-                   `WORD_DATA_W'h0
+            /******** NOP due to Stall MEM Stage Test Output ********/
+            mem_tb(`WORD_DATA_W'h18,              // mem_fwd_data
+                   `DISABLE,                      // mem_en
+                   `REG_ADDR_W'h0,                // mem_dst_addr
+                   `DISABLE_,                     // mem_gpr_we_
+                   `WORD_DATA_W'h0                // mem_out
                   );
 
-            $display("WB Stage ...");
-            ctrl_tb(`DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `WORD_DATA_W'h0
-                   );
+            ctrl_tb(`DISABLE,                     // if_stall
+                    `DISABLE,                     // id_stall
+                    `DISABLE,                     // ex_stall
+                    `DISABLE,                     // mem_stall
+
+                    `DISABLE,                     // if_flush
+                    `DISABLE,                     // id_flush
+                    `DISABLE,                     // ex_flush
+                    `DISABLE,                     // mem_flush
+                    `WORD_DATA_W'h0,              // new_pc
+
+                    `FWD_CTRL_NONE,               // ra_fwd_ctrl
+                    `FWD_CTRL_EX,                 // rb_fwd_ctrl
+                    `DISABLE,                     // ex_ra_fwd_en
+                    `DISABLE                      // ex_rb_fwd_en
+                    );
         end
         # STEP begin
             $display("\n========= Clock 9 ========");
-            /******** NOP IF Stage Test Output ********/
-            if_tb(`WORD_DATA_W'h24,
-                  `WORD_DATA_W'h28,
-                  `WORD_DATA_W'h0,
-                  `ENABLE
+            /******** LW   r6, r5(1024) IF Stage Test Output ********/
+            if_tb(`WORD_DATA_W'h20,               // if_pc
+                  `WORD_DATA_W'h24,               // if_pc_plus4
+                  `WORD_DATA_W'h4002a303,         // if_insn
+                  `ENABLE                         // if_en
                  );
 
-            /******** NOP               ID Stage Test Output ********/
-            id_tb(`ENABLE,
-                  `ALU_OP_NOP,
-                  `WORD_DATA_W'h0,
-                  `WORD_DATA_W'h0,
-                  `MEM_OP_NOP,
-                  `WORD_DATA_W'h0,
-                  `REG_ADDR_W'h0,
-                  `DISABLE_,
-                  `EX_OUT_ALU,
-                  `WORD_DATA_W'h24
+            /******** SW   r5, r0(1028)  ID Stage Test Output ********/
+            id_tb(`ENABLE,                        // id_en
+                  `ALU_OP_ADD,                    // id_alu_op
+                  `WORD_DATA_W'h0,                // id_alu_in_0
+                  `WORD_DATA_W'h404,              // id_alu_in_1
+                  `REG_ADDR_W'h0,                 // id_ra_addr 
+                  `REG_ADDR_W'h5,                 // id_rb_addr
+                  `MEM_OP_SW,                     // id_mem_op
+                  `WORD_DATA_W'h400,              // id_mem_wr_data
+                  `REG_ADDR_W'h4,                 // id_dst_addr
+                  `DISABLE_,                      // id_gpr_we_
+                  `EX_OUT_ALU,                    // id_gpr_mux_ex
+                  `WORD_DATA_W'h20,               // id_gpr_wr_data
+
+                  `ISA_OP_LD,                     // op 
+                  `REG_ADDR_W'h5,                 // ra_addr
+                  `REG_ADDR_W'h0,                 // rb_addr
+                  2'b01                           // src_reg_used
                  );
 
-            /******** LW   r5, r0(1028)  EX Stage Test Output ********/
-            ex_tb(`WORD_DATA_W'h0,
-                  `ENABLE,
-                  `MEM_OP_LW,
-                  `WORD_DATA_W'h0,
-                  `REG_ADDR_W'h5,
-                  `ENABLE_,
-                  `WORD_DATA_W'h404
+            /******** LW   r5, r0(1024) EX Stage Test Output ********/
+            ex_tb(`WORD_DATA_W'h404,              // ex_fwd_data
+                  `ENABLE,                        // ex_en
+                  `MEM_OP_LW,                     // ex_mem_op
+                  `WORD_DATA_W'h0,                // ex_mem_wr_data
+                  `REG_ADDR_W'h5,                 // ex_dst_addr
+                  `ENABLE_,                       // ex_gpr_we_
+                  `WORD_DATA_W'h400               // ex_out
                  );
 
-            /******** LW   r4, r0(1024)  MEM Stage Test Output ********/
-            mem_tb(`WORD_DATA_W'h9,
-                   `ENABLE,
-                   `REG_ADDR_W'h4,
-                   `ENABLE_,
-                   `WORD_DATA_W'h4
+            /******** add  r4, r2, r3 MEM Stage Test Output ********/
+            mem_tb(`WORD_DATA_W'hc,               // mem_fwd_data
+                   `ENABLE,                       // mem_en
+                   `REG_ADDR_W'h4,                // mem_dst_addr
+                   `ENABLE_,                      // mem_gpr_we_
+                   `WORD_DATA_W'h18               // mem_out
                   );
 
             $display("WB Stage ...");
-            ctrl_tb(`DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `WORD_DATA_W'h0
+            
+            ctrl_tb(`DISABLE,                     // if_stall
+                    `DISABLE,                     // id_stall
+                    `DISABLE,                     // ex_stall
+                    `DISABLE,                     // mem_stall
+
+                    `DISABLE,                     // if_flush
+                    `DISABLE,                     // id_flush
+                    `DISABLE,                     // ex_flush
+                    `DISABLE,                     // mem_flush
+                    `WORD_DATA_W'h0,              // new_pc
+
+                    `FWD_CTRL_MEM,                // ra_fwd_ctrl
+                    `FWD_CTRL_NONE,               // rb_fwd_ctrl
+                    `DISABLE,                     // ex_ra_fwd_en
+                    `ENABLE                       // ex_rb_fwd_en
                    );
         end
         # STEP begin
             $display("\n========= Clock 10 ========");
-            /******** ADD  r6, r4, r5 IF Stage Test Output ********/
-            if_tb(`WORD_DATA_W'h28,
-                  `WORD_DATA_W'h2c,
-                  `WORD_DATA_W'h520333,
-                  `ENABLE
+            /******** SW   r6, r6(1024) IF Stage Test Output ********/
+            if_tb(`WORD_DATA_W'h24,               // if_pc
+                  `WORD_DATA_W'h28,               // if_pc_plus4
+                  `WORD_DATA_W'h40632023,         // if_insn
+                  `ENABLE                         // if_en
                  );
 
-            /******** NOP               ID Stage Test Output ********/
-            id_tb(`ENABLE,
-                  `ALU_OP_NOP,
-                  `WORD_DATA_W'h0,
-                  `WORD_DATA_W'h0,
-                  `MEM_OP_NOP,
-                  `WORD_DATA_W'h0,
-                  `REG_ADDR_W'h0,
-                  `DISABLE_,
-                  `EX_OUT_ALU,
-                  `WORD_DATA_W'h28
+            /******** LW   r6, r5(1024) ID Stage Test Output ********/
+            id_tb(`ENABLE,                        // id_en
+                  `ALU_OP_ADD,                    // id_alu_op
+                  `WORD_DATA_W'hc,                // id_alu_in_0
+                  `WORD_DATA_W'h400,              // id_alu_in_1
+                  `REG_ADDR_W'h5,                 // id_ra_addr 
+                  `REG_ADDR_W'h0,                 // id_rb_addr
+                  `MEM_OP_LW,                     // id_mem_op
+                  `WORD_DATA_W'h0,                // id_mem_wr_data
+                  `REG_ADDR_W'h6,                 // id_dst_addr
+                  `ENABLE_,                       // id_gpr_we_
+                  `EX_OUT_ALU,                    // id_gpr_mux_ex
+                  `WORD_DATA_W'h24,               // id_gpr_wr_data
+
+                  `ISA_OP_ST,                     // op 
+                  `REG_ADDR_W'h6,                 // ra_addr
+                  `REG_ADDR_W'h6,                 // rb_addr
+                  2'b11                           // src_reg_used
+                 );
+            /******** SW   r5, r0(1028) EX Stage Test Output ********/
+            ex_tb(`WORD_DATA_W'h40c,              // ex_fwd_data
+                  `ENABLE,                        // ex_en
+                  `MEM_OP_SW,                     // ex_mem_op
+                  `WORD_DATA_W'hc,                // ex_mem_wr_data
+                  `REG_ADDR_W'h4,                 // ex_dst_addr
+                  `DISABLE_,                      // ex_gpr_we_
+                  `WORD_DATA_W'h404               // ex_out
                  );
 
-            /******** NOP                 EX Stage Test Output ********/
-            ex_tb(`WORD_DATA_W'h0,
-                  `ENABLE,
-                  `MEM_OP_NOP,
-                  `WORD_DATA_W'h0,
-                  `REG_ADDR_W'h0,
-                  `DISABLE_,
-                  `WORD_DATA_W'h0
-                 );
-
-            /******** LW   r5, r0(1028)  MEM Stage Test Output ********/
-            mem_tb(`WORD_DATA_W'h0,
-                   `ENABLE,
-                   `REG_ADDR_W'h5,
-                   `ENABLE_,
-                   `WORD_DATA_W'h9
+            /******** LW   r5, r0(1024) MEM Stage Test Output ********/
+            mem_tb(`WORD_DATA_W'h0,               // mem_fwd_data
+                   `ENABLE,                       // mem_en
+                   `REG_ADDR_W'h5,                // mem_dst_addr
+                   `ENABLE_,                      // mem_gpr_we_
+                   `WORD_DATA_W'hc                // mem_out
                   );
 
             $display("WB Stage ...");
-            ctrl_tb(`DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `WORD_DATA_W'h0
+
+            ctrl_tb(`ENABLE,                      // if_stall
+                    `DISABLE,                     // id_stall
+                    `DISABLE,                     // ex_stall
+                    `DISABLE,                     // mem_stall
+
+                    `DISABLE,                     // if_flush
+                    `ENABLE,                      // id_flush
+                    `DISABLE,                     // ex_flush
+                    `DISABLE,                     // mem_flush
+                    `WORD_DATA_W'h0,              // new_pc
+
+                    `FWD_CTRL_EX,                 // ra_fwd_ctrl
+                    `FWD_CTRL_EX,                 // rb_fwd_ctrl
+                    `DISABLE,                     // ex_ra_fwd_en
+                    `DISABLE                      // ex_rb_fwd_en
                    );
         end
         # STEP begin
             $display("\n========= Clock 11 ========");
-            /******** NOP              IF Stage Test Output ********/
-            if_tb(`WORD_DATA_W'h2c,
-                  `WORD_DATA_W'h30,
-                  `WORD_DATA_W'h0,
-                  `ENABLE
+            /******** SW   r6, r6(1024) IF Stage Test Output ********/
+            if_tb(`WORD_DATA_W'h24,               // if_pc
+                  `WORD_DATA_W'h28,               // if_pc_plus4
+                  `WORD_DATA_W'h40632023,         // if_insn
+                  `ENABLE                         // if_en
                  );
 
-            /******** ADD  r6, r4, r5 ID Stage Test Output ********/
-            id_tb(`ENABLE,
-                  `ALU_OP_ADD,
-                  `WORD_DATA_W'h4,
-                  `WORD_DATA_W'h9,
-                  `MEM_OP_NOP,
-                  `WORD_DATA_W'h9,
-                  `REG_ADDR_W'h6,
-                  `ENABLE_,
-                  `EX_OUT_ALU,
-                  `WORD_DATA_W'h2c
+            /******** NOP due to Stall ID Stage Test Output ********/
+            id_tb(`DISABLE,                       // id_en
+                  `ALU_OP_NOP,                    // id_alu_op
+                  `WORD_DATA_W'h0,                // id_alu_in_0
+                  `WORD_DATA_W'h0,                // id_alu_in_1
+                  `REG_ADDR_W'h0,                 // id_ra_addr 
+                  `REG_ADDR_W'h0,                 // id_rb_addr
+                  `MEM_OP_NOP,                    // id_mem_op
+                  `WORD_DATA_W'h0,                // id_mem_wr_data
+                  `REG_ADDR_W'h0,                 // id_dst_addr
+                  `DISABLE_,                      // id_gpr_we_
+                  `EX_OUT_ALU,                    // id_gpr_mux_ex
+                  `WORD_DATA_W'h0,                // id_gpr_wr_data
+
+                  `ISA_OP_ST,                     // op 
+                  `REG_ADDR_W'h6,                 // ra_addr
+                  `REG_ADDR_W'h6,                 // rb_addr
+                  2'b11                           // src_reg_used
+                 );
+            /******** LW   r6, r5(1024) EX Stage Test Output ********/
+            ex_tb(`WORD_DATA_W'h0,                // ex_fwd_data
+                  `ENABLE,                        // ex_en
+                  `MEM_OP_LW,                     // ex_mem_op
+                  `WORD_DATA_W'h0,                // ex_mem_wr_data
+                  `REG_ADDR_W'h6,                 // ex_dst_addr
+                  `ENABLE_,                       // ex_gpr_we_
+                  `WORD_DATA_W'h40c               // ex_out
                  );
 
-            /******** NOP                 EX Stage Test Output ********/
-            ex_tb(`WORD_DATA_W'hd,
-                  `ENABLE,
-                  `MEM_OP_NOP,
-                  `WORD_DATA_W'h0,
-                  `REG_ADDR_W'h0,
-                  `DISABLE_,
-                  `WORD_DATA_W'h0
-                 );
-
-            /******** NOP  MEM Stage Test Output ********/
-            mem_tb(`WORD_DATA_W'h0,
-                   `ENABLE,
-                   `REG_ADDR_W'h0,
-                   `DISABLE_,
-                   `WORD_DATA_W'h0
+            /******** SW   r5, r0(1028) MEM Stage Test Output ********/
+            mem_tb(`WORD_DATA_W'hx,               // mem_fwd_data
+                   `ENABLE,                       // mem_en
+                   `REG_ADDR_W'h4,                // mem_dst_addr
+                   `DISABLE_,                     // mem_gpr_we_
+                   `WORD_DATA_W'h0                // mem_out
                   );
 
             $display("WB Stage ...");
-            ctrl_tb(`DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `WORD_DATA_W'h0
+
+            ctrl_tb(`DISABLE,                     // if_stall
+                    `DISABLE,                     // id_stall
+                    `DISABLE,                     // ex_stall
+                    `DISABLE,                     // mem_stall
+
+                    `DISABLE,                     // if_flush
+                    `DISABLE,                     // id_flush
+                    `DISABLE,                     // ex_flush
+                    `DISABLE,                     // mem_flush
+                    `WORD_DATA_W'h0,              // new_pc
+
+                    `FWD_CTRL_MEM,                // ra_fwd_ctrl
+                    `FWD_CTRL_MEM,                // rb_fwd_ctrl
+                    `DISABLE,                     // ex_ra_fwd_en
+                    `DISABLE                      // ex_rb_fwd_en
                    );
         end
         # STEP begin
             $display("\n========= Clock 12 ========");
-            /******** NOP              IF Stage Test Output ********/
-            if_tb(`WORD_DATA_W'h30,
-                  `WORD_DATA_W'h34,
-                  `WORD_DATA_W'h0,
-                  `ENABLE
+            /******** NOP IF Stage Test Output ********/
+            if_tb(`WORD_DATA_W'h28,               // if_pc
+                  `WORD_DATA_W'h2c,               // if_pc_plus4
+                  `WORD_DATA_W'h0,                // if_insn
+                  `ENABLE                         // if_en
                  );
 
-            /******** NOP ID Stage Test Output ********/
-            id_tb(`ENABLE,
-                  `ALU_OP_NOP,
-                  `WORD_DATA_W'h0,
-                  `WORD_DATA_W'h0,
-                  `MEM_OP_NOP,
-                  `WORD_DATA_W'h0,
-                  `REG_ADDR_W'h0,
-                  `DISABLE_,
-                  `EX_OUT_ALU,
-                  `WORD_DATA_W'h30
+            /******** SW   r6, r6(1024) ID Stage Test Output ********/
+            id_tb(`ENABLE,                        // id_en
+                  `ALU_OP_ADD,                    // id_alu_op
+                  `WORD_DATA_W'hx,                // id_alu_in_0
+                  `WORD_DATA_W'h400,              // id_alu_in_1
+                  `REG_ADDR_W'h6,                 // id_ra_addr 
+                  `REG_ADDR_W'h6,                 // id_rb_addr
+                  `MEM_OP_SW,                     // id_mem_op
+                  `WORD_DATA_W'hx,                // id_mem_wr_data
+                  `REG_ADDR_W'h0,                 // id_dst_addr
+                  `DISABLE_,                      // id_gpr_we_
+                  `EX_OUT_ALU,                    // id_gpr_mux_ex
+                  `WORD_DATA_W'h28,               // id_gpr_wr_data
+
+                  `ISA_OP_NOP,                    // op 
+                  `REG_ADDR_W'h0,                 // ra_addr
+                  `REG_ADDR_W'h0,                 // rb_addr
+                  2'b00                           // src_reg_used
+                 );
+            /******** NOP due to Stall EX Stage Test Output ********/
+            ex_tb(`WORD_DATA_W'hx,                // ex_fwd_data
+                  `DISABLE,                       // ex_en
+                  `MEM_OP_NOP,                    // ex_mem_op
+                  `WORD_DATA_W'h0,                // ex_mem_wr_data
+                  `REG_ADDR_W'h0,                 // ex_dst_addr
+                  `DISABLE_,                      // ex_gpr_we_
+                  `WORD_DATA_W'h0                 // ex_out
                  );
 
-            /******** ADD  r6, r4, r5  EX Stage Test Output ********/
-            ex_tb(`WORD_DATA_W'h0,
-                  `ENABLE,
-                  `MEM_OP_NOP,
-                  `WORD_DATA_W'h9,
-                  `REG_ADDR_W'h6,
-                  `ENABLE_,
-                  `WORD_DATA_W'hd
-                 );
-
-            /******** NOP  MEM Stage Test Output ********/
-            mem_tb(`WORD_DATA_W'hd,
-                   `ENABLE,
-                   `REG_ADDR_W'h0,
-                   `DISABLE_,
-                   `WORD_DATA_W'h0
+            /******** LW   r6, r5(1024) MEM Stage Test Output ********/
+            mem_tb(`WORD_DATA_W'h0,               // mem_fwd_data
+                   `ENABLE,                       // mem_en
+                   `REG_ADDR_W'h6,                // mem_dst_addr
+                   `ENABLE_,                      // mem_gpr_we_
+                   `WORD_DATA_W'hx                // mem_out
                   );
 
             $display("WB Stage ...");
-            ctrl_tb(`DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `WORD_DATA_W'h0
+
+            ctrl_tb(`DISABLE,                     // if_stall
+                    `DISABLE,                     // id_stall
+                    `DISABLE,                     // ex_stall
+                    `DISABLE,                     // mem_stall
+
+                    `DISABLE,                     // if_flush
+                    `DISABLE,                     // id_flush
+                    `DISABLE,                     // ex_flush
+                    `DISABLE,                     // mem_flush
+                    `WORD_DATA_W'h0,              // new_pc
+
+                    `FWD_CTRL_NONE,               // ra_fwd_ctrl
+                    `FWD_CTRL_NONE,               // rb_fwd_ctrl
+                    `DISABLE,                     // ex_ra_fwd_en
+                    `DISABLE                      // ex_rb_fwd_en
                    );
         end
         # STEP begin
             $display("\n========= Clock 13 ========");
-            /******** NOP              IF Stage Test Output ********/
-            if_tb(`WORD_DATA_W'h34,
-                  `WORD_DATA_W'h38,
-                  `WORD_DATA_W'h0,
-                  `ENABLE
+            /******** NOP IF Stage Test Output ********/
+            if_tb(`WORD_DATA_W'h2c,               // if_pc
+                  `WORD_DATA_W'h30,               // if_pc_plus4
+                  `WORD_DATA_W'h0,                // if_insn
+                  `ENABLE                         // if_en
                  );
 
-            /******** NOP ID Stage Test Output ********/
-            id_tb(`ENABLE,
-                  `ALU_OP_NOP,
-                  `WORD_DATA_W'h0,
-                  `WORD_DATA_W'h0,
-                  `MEM_OP_NOP,
-                  `WORD_DATA_W'h0,
-                  `REG_ADDR_W'h0,
-                  `DISABLE_,
-                  `EX_OUT_ALU,
-                  `WORD_DATA_W'h34
+            /********  NOP ID Stage Test Output ********/
+            id_tb(`ENABLE,                        // id_en
+                  `ALU_OP_NOP,                    // id_alu_op
+                  `WORD_DATA_W'h0,                // id_alu_in_0
+                  `WORD_DATA_W'h0,                // id_alu_in_1
+                  `REG_ADDR_W'h0,                 // id_ra_addr 
+                  `REG_ADDR_W'h0,                 // id_rb_addr
+                  `MEM_OP_NOP,                    // id_mem_op
+                  `WORD_DATA_W'h0,                // id_mem_wr_data
+                  `REG_ADDR_W'h0,                 // id_dst_addr
+                  `DISABLE_,                      // id_gpr_we_
+                  `EX_OUT_ALU,                    // id_gpr_mux_ex
+                  `WORD_DATA_W'h2c,               // id_gpr_wr_data
+
+                  `ISA_OP_NOP,                    // op 
+                  `REG_ADDR_W'h0,                 // ra_addr
+                  `REG_ADDR_W'h0,                 // rb_addr
+                  2'b00                           // src_reg_used
+                 );
+            /******** SW   r6, r6(1024) EX Stage Test Output ********/
+            ex_tb(`WORD_DATA_W'h0,                // ex_fwd_data
+                  `ENABLE,                        // ex_en
+                  `MEM_OP_SW,                     // ex_mem_op
+                  `WORD_DATA_W'hx,                // ex_mem_wr_data
+                  `REG_ADDR_W'h0,                 // ex_dst_addr
+                  `DISABLE_,                      // ex_gpr_we_
+                  `WORD_DATA_W'hx                 // ex_out
                  );
 
-            /******** NOP  EX Stage Test Output ********/
-            ex_tb(`WORD_DATA_W'h0,
-                  `ENABLE,
-                  `MEM_OP_NOP,
-                  `WORD_DATA_W'h0,
-                  `REG_ADDR_W'h0,
-                  `DISABLE_,
-                  `WORD_DATA_W'h0
-                 );
-
-            /******** ADD  r6, r4, r5  MEM Stage Test Output ********/
-                mem_tb(`WORD_DATA_W'h0,
-                      `ENABLE,
-                   `REG_ADDR_W'h6,
-                   `ENABLE_,
-                   `WORD_DATA_W'hd
+            /******** NOP due to Stall MEM Stage Test Output ********/
+            mem_tb(`WORD_DATA_W'h0,               // mem_fwd_data
+                   `DISABLE,                      // mem_en
+                   `REG_ADDR_W'h0,                // mem_dst_addr
+                   `DISABLE_,                     // mem_gpr_we_
+                   `WORD_DATA_W'h0                // mem_out
                   );
 
             $display("WB Stage ...");
-            ctrl_tb(`DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `WORD_DATA_W'h0
+
+            ctrl_tb(`DISABLE,                     // if_stall
+                    `DISABLE,                     // id_stall
+                    `DISABLE,                     // ex_stall
+                    `DISABLE,                     // mem_stall
+
+                    `DISABLE,                     // if_flush
+                    `DISABLE,                     // id_flush
+                    `DISABLE,                     // ex_flush
+                    `DISABLE,                     // mem_flush
+                    `WORD_DATA_W'h0,              // new_pc
+
+                    `FWD_CTRL_NONE,               // ra_fwd_ctrl
+                    `FWD_CTRL_NONE,               // rb_fwd_ctrl
+                    `DISABLE,                     // ex_ra_fwd_en
+                    `DISABLE                      // ex_rb_fwd_en
                    );
         end
         # STEP begin
-            $display("\n========= Clock 14 ======== ");
-            /******** NOP              IF Stage Test Output ********/
-            if_tb(`WORD_DATA_W'h38,
-                  `WORD_DATA_W'h3c,
-                  `WORD_DATA_W'h0,
-                  `ENABLE
+            $display("\n========= Clock 14 ========");
+            /******** NOP IF Stage Test Output ********/
+            if_tb(`WORD_DATA_W'h30,               // if_pc
+                  `WORD_DATA_W'h34,               // if_pc_plus4
+                  `WORD_DATA_W'h0,                // if_insn
+                  `ENABLE                         // if_en
                  );
 
-            /******** NOP ID Stage Test Output ********/
-            id_tb(`ENABLE,
-                  `ALU_OP_NOP,
-                  `WORD_DATA_W'h0,
-                  `WORD_DATA_W'h0,
-                  `MEM_OP_NOP,
-                  `WORD_DATA_W'h0,
-                  `REG_ADDR_W'h0,
-                  `DISABLE_,
-                  `EX_OUT_ALU,
-                  `WORD_DATA_W'h38
+            /********  NOP ID Stage Test Output ********/
+            id_tb(`ENABLE,                        // id_en
+                  `ALU_OP_NOP,                    // id_alu_op
+                  `WORD_DATA_W'h0,                // id_alu_in_0
+                  `WORD_DATA_W'h0,                // id_alu_in_1
+                  `REG_ADDR_W'h0,                 // id_ra_addr 
+                  `REG_ADDR_W'h0,                 // id_rb_addr
+                  `MEM_OP_NOP,                    // id_mem_op
+                  `WORD_DATA_W'h0,                // id_mem_wr_data
+                  `REG_ADDR_W'h0,                 // id_dst_addr
+                  `DISABLE_,                      // id_gpr_we_
+                  `EX_OUT_ALU,                    // id_gpr_mux_ex
+                  `WORD_DATA_W'h30,               // id_gpr_wr_data
+
+                  `ISA_OP_NOP,                    // op 
+                  `REG_ADDR_W'h0,                 // ra_addr
+                  `REG_ADDR_W'h0,                 // rb_addr
+                  2'b00                           // src_reg_used
+                 );
+            /******** NOP EX Stage Test Output ********/
+            ex_tb(`WORD_DATA_W'h0,                // ex_fwd_data
+                  `ENABLE,                        // ex_en
+                  `MEM_OP_NOP,                    // ex_mem_op
+                  `WORD_DATA_W'h0,                // ex_mem_wr_data
+                  `REG_ADDR_W'h0,                 // ex_dst_addr
+                  `DISABLE_,                      // ex_gpr_we_
+                  `WORD_DATA_W'h0                 // ex_out
                  );
 
-            /******** NOP  EX Stage Test Output ********/
-            ex_tb(`WORD_DATA_W'h0,
-                  `ENABLE,
-                  `MEM_OP_NOP,
-                  `WORD_DATA_W'h0,
-                  `REG_ADDR_W'h0,
-                  `DISABLE_,
-                  `WORD_DATA_W'h0
-                 );
-
-            /******** NOP  MEM Stage Test Output ********/
-            mem_tb(`WORD_DATA_W'h0,
-                   `ENABLE,
-                   `REG_ADDR_W'h0,
-                   `DISABLE_,
-                   `WORD_DATA_W'h0
+            /******** SW   r6, r6(1024) MEM Stage Test Output ********/
+            mem_tb(`WORD_DATA_W'h0,               // mem_fwd_data
+                   `ENABLE,                       // mem_en
+                   `REG_ADDR_W'h0,                // mem_dst_addr
+                   `DISABLE_,                     // mem_gpr_we_
+                   `WORD_DATA_W'h0                // mem_out
                   );
 
             $display("WB Stage ...");
 
-            ctrl_tb(`DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `DISABLE,
-                    `WORD_DATA_W'h0
-                   );
+            ctrl_tb(`DISABLE,                     // if_stall
+                    `DISABLE,                     // id_stall
+                    `DISABLE,                     // ex_stall
+                    `DISABLE,                     // mem_stall
 
+                    `DISABLE,                     // if_flush
+                    `DISABLE,                     // id_flush
+                    `DISABLE,                     // ex_flush
+                    `DISABLE,                     // mem_flush
+                    `WORD_DATA_W'h0,              // new_pc
+
+                    `FWD_CTRL_NONE,               // ra_fwd_ctrl
+                    `FWD_CTRL_NONE,               // rb_fwd_ctrl
+                    `DISABLE,                     // ex_ra_fwd_en
+                    `DISABLE                      // ex_rb_fwd_en
+                   );
+        end
+        # STEP begin
+            $display("\n========= Clock 15 ========");
+            /******** NOP IF Stage Test Output ********/
+            if_tb(`WORD_DATA_W'h34,               // if_pc
+                  `WORD_DATA_W'h38,               // if_pc_plus4
+                  `WORD_DATA_W'h0,                // if_insn
+                  `ENABLE                         // if_en
+                 );
+
+            /********  NOP ID Stage Test Output ********/
+            id_tb(`ENABLE,                        // id_en
+                  `ALU_OP_NOP,                    // id_alu_op
+                  `WORD_DATA_W'h0,                // id_alu_in_0
+                  `WORD_DATA_W'h0,                // id_alu_in_1
+                  `REG_ADDR_W'h0,                 // id_ra_addr 
+                  `REG_ADDR_W'h0,                 // id_rb_addr
+                  `MEM_OP_NOP,                    // id_mem_op
+                  `WORD_DATA_W'h0,                // id_mem_wr_data
+                  `REG_ADDR_W'h0,                 // id_dst_addr
+                  `DISABLE_,                      // id_gpr_we_
+                  `EX_OUT_ALU,                    // id_gpr_mux_ex
+                  `WORD_DATA_W'h34,               // id_gpr_wr_data
+
+                  `ISA_OP_NOP,                    // op 
+                  `REG_ADDR_W'h0,                 // ra_addr
+                  `REG_ADDR_W'h0,                 // rb_addr
+                  2'b00                           // src_reg_used
+                 );
+            /******** NOP EX Stage Test Output ********/
+            ex_tb(`WORD_DATA_W'h0,                // ex_fwd_data
+                  `ENABLE,                        // ex_en
+                  `MEM_OP_NOP,                    // ex_mem_op
+                  `WORD_DATA_W'h0,                // ex_mem_wr_data
+                  `REG_ADDR_W'h0,                 // ex_dst_addr
+                  `DISABLE_,                      // ex_gpr_we_
+                  `WORD_DATA_W'h0                 // ex_out
+                 );
+
+            /******** NOP MEM Stage Test Output ********/
+            mem_tb(`WORD_DATA_W'h0,               // mem_fwd_data
+                   `ENABLE,                       // mem_en
+                   `REG_ADDR_W'h0,                // mem_dst_addr
+                   `DISABLE_,                     // mem_gpr_we_
+                   `WORD_DATA_W'h0                // mem_out
+                  );
+
+            $display("WB Stage ...");
+
+            ctrl_tb(`DISABLE,                     // if_stall
+                    `DISABLE,                     // id_stall
+                    `DISABLE,                     // ex_stall
+                    `DISABLE,                     // mem_stall
+
+                    `DISABLE,                     // if_flush
+                    `DISABLE,                     // id_flush
+                    `DISABLE,                     // ex_flush
+                    `DISABLE,                     // mem_flush
+                    `WORD_DATA_W'h0,              // new_pc
+
+                    `FWD_CTRL_NONE,               // ra_fwd_ctrl
+                    `FWD_CTRL_NONE,               // rb_fwd_ctrl
+                    `DISABLE,                     // ex_ra_fwd_en
+                    `DISABLE                      // ex_rb_fwd_en
+                   );
             $finish;
         end
     end
@@ -1151,7 +1417,7 @@ module cpu_test;
     /******** Output Waveform ********/
     initial begin
        $dumpfile("cpu.vcd");
-       $dumpvars(0,if_stage, id_stage, ex_stage, mem_stall, ctrl ,gpr);
+       $dumpvars(0,if_stage, id_stage, ex_stage, mem_stage, ctrl ,gpr, spm);
     end
 
 endmodule
