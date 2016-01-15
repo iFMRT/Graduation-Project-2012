@@ -58,32 +58,32 @@ module icache(
     always @(*) begin
         if (rst == `DISABLE) begin
             if ( rw == `READ && tag_rd == if_addr[31:12] && valid == `ENABLE ) begin
-                hit_read <=  `ENABLE;
+                hit_read =  `ENABLE;
             end else begin
-                hit_read <= `DISABLE;
+                hit_read = `DISABLE;
             end 
             
             if ( hit_read == `DISABLE ) begin
-                mem_addr   <= if_addr[31:4];
-                mem_rw     <= rw;
-                miss_stall <= `ENABLE;
-                cache_rw   <= `WRITE;
+                mem_addr   = if_addr[31:4];
+                mem_rw     = rw;
+                miss_stall = `ENABLE;
+                cache_rw   = `WRITE;
             end
             else begin
-                cache_rw   <= `READ;
-                miss_stall <= `DISABLE;
+                cache_rw   = `READ;
+                miss_stall = `DISABLE;
                 case(offset)
                     2'd0:begin
-                        cpu_data <= cache_rd[31:0];
+                        cpu_data = cache_rd[31:0];
                     end
                     2'd1:begin
-                        cpu_data <= cache_rd[63:32];
+                        cpu_data = cache_rd[63:32];
                     end
                     2'd2:begin
-                        cpu_data <= cache_rd[95:64];
+                        cpu_data = cache_rd[95:64];
                     end
                     2'd3:begin
-                        cpu_data <= cache_rd[127:96];
+                        cpu_data = cache_rd[127:96];
                     end
                 endcase
             end  
