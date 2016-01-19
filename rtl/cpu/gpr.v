@@ -27,16 +27,20 @@ module gpr (
 );
 
     /********** 内部信号 **********/
-    reg [`WORD_DATA_BUS]            gpr [`REG_LIST];        // 寄存器序列
-    integer                         i;                  // 初始化用迭代器
+    wire [`WORD_DATA_BUS]     rd_data_0_tmp;          // 临时读取的数据
+    wire [`WORD_DATA_BUS]     rd_data_1_tmp;          // 临时读取的数据
+    reg  [`WORD_DATA_BUS]     gpr [`REG_LIST];        // 寄存器序列
+    integer                   i;                      // 初始化用迭代器
+
+    assign rd_data_0 = (rd_addr_0 != 0) ? rd_data_0_tmp : 0;
+    assign rd_data_1 = (rd_addr_1 != 0) ? rd_data_1_tmp : 0;
 
     /********** 读取访问 (先读后写) **********/
     // 读取端口 0
-    assign rd_data_0 = ((we_ == `ENABLE_) && (wr_addr == rd_addr_0)) ? wr_data : gpr[rd_addr_0];
-    // assign rd_data_0 = gpr[rd_addr_0];
+    assign rd_data_0_tmp = ((we_ == `ENABLE_) && (wr_addr == rd_addr_0)) ? wr_data : gpr[rd_addr_0];
+
     // 读取端口 1
-    assign rd_data_1 = ((we_ == `ENABLE_) && (wr_addr == rd_addr_1)) ? wr_data : gpr[rd_addr_1];
-    // assign rd_data_1 = gpr[rd_addr_1];
+    assign rd_data_1_tmp = ((we_ == `ENABLE_) && (wr_addr == rd_addr_1)) ? wr_data : gpr[rd_addr_1];
 
     /********** 写入访问 **********/
     always @ (posedge clk or reset) begin
@@ -47,7 +51,7 @@ module gpr (
             end
         end
         else if (we_ == `ENABLE_) begin
-            // 写入访问 
+            // 写入访问
             gpr[wr_addr] <= #1 wr_data;
         end
     end
