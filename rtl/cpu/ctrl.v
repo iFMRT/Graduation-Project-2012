@@ -22,7 +22,7 @@ module ctrl (
     /********* pipeline control signals ********/
     //  State of Pipeline
 //  input  wire                   if_busy,      // IF busy mark
-//  input  wire                   br_hazard,    // branch hazard mark
+    input  wire                   br_taken,    // branch hazard mark
 //  input  wire                   br_flag,      // branch instruction flag
 //  input  wire                   mem_busy,     // MEM busy mark
 
@@ -82,15 +82,13 @@ module ctrl (
 //  assign mem_stall = stall;
 
     // flush
-//  assign if_flush  = br_hazard;
     assign if_flush  = `DISABLE;
-    assign id_flush  = ld_hazard;
-//  assign id_flush  = ld_hazard | br_hazard;
+    assign id_flush  = ld_hazard | br_taken;
     assign ex_flush  = `DISABLE;
     assign mem_flush = `DISABLE;
 //  reg    flush;
-//  assign if_flush  = flush | br_hazard;
-//  assign id_flush  = flush | ld_hazard | br_hazard;
+//  assign if_flush  = flush | br_taken;
+//  assign id_flush  = flush | ld_hazard | br_taken;
 //  assign ex_flush  = flush;
 //  assign mem_flush = flush;
 
@@ -108,6 +106,7 @@ module ctrl (
         if( (id_en           == `ENABLE)  &&
             (id_gpr_we_      == `ENABLE_) &&
             (src_reg_used[0] == 1'b1)     &&   // use ra register
+            (ra_addr         != 1'b0)     &&   // r0 always is 0, no need to forward
             (id_dst_addr     == ra_addr)
         ) begin
 
@@ -117,6 +116,7 @@ module ctrl (
             (ex_en           == `ENABLE)  &&
             (ex_gpr_we_      == `ENABLE_) &&
             (src_reg_used[0] == 1'b1)     &&   // use ra register
+            (ra_addr         != 1'b0)     &&   // r0 always is 0, no need to forward
             (ex_dst_addr     == ra_addr)
         ) begin
 
@@ -133,6 +133,7 @@ module ctrl (
             (ex_gpr_we_      == `ENABLE_) &&
             (ex_mem_op[3]    == 1'b1)     &&  // Check LOAD  in MEM, LOAD  Mem Op 1XXX
             (id_mem_op[3:2]  == 2'b01)    &&  // Check STORE in EX, STORE Mem Op 01XX
+            (id_ra_addr      != 1'b0)     &&   // r0 always is 0, no need to forward
             (ex_dst_addr     == id_ra_addr)
         ) begin
             ex_ra_fwd_en = `ENABLE;
@@ -144,6 +145,7 @@ module ctrl (
         if ((id_en           == `ENABLE)    &&
             (id_gpr_we_      == `ENABLE_)   &&
             (src_reg_used[1] == 1'b1)       &&  // use rb register
+            (rb_addr         != 1'b0)     &&   // r0 always is 0, no need to forward
             (id_dst_addr     == rb_addr)
         ) begin
 
@@ -153,6 +155,7 @@ module ctrl (
             (ex_en           == `ENABLE)    &&
             (ex_gpr_we_      == `ENABLE_)   &&
             (src_reg_used[1] == 1'b1)       &&  // use rb register
+            (rb_addr         != 1'b0)     &&   // r0 always is 0, no need to forward
             (ex_dst_addr     == rb_addr)
         ) begin
 
@@ -170,6 +173,7 @@ module ctrl (
             (ex_gpr_we_      == `ENABLE_) &&
             (ex_mem_op[3]    == 1'b1)     &&  // Check LOAD  in MEM, LOAD  Mem Op 1XXX
             (id_mem_op[3:2]  == 2'b01)    &&  // Check STORE in EX, STORE Mem Op 01XX
+            (id_rb_addr      != 1'b0)     &&   // r0 always is 0, no need to forward
             (ex_dst_addr     == id_rb_addr)
         ) begin
             ex_rb_fwd_en = `ENABLE;

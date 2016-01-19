@@ -25,8 +25,6 @@ module decoder (
     input wire [`WORD_DATA_BUS]  ra_data,        // The first operand
     input wire [`WORD_DATA_BUS]  rb_data,        // The two operand
     /********** GPR Interface **********/
-    input wire [`WORD_DATA_BUS]  gpr_rd_data_0,  // Read data 0
-    input wire [`WORD_DATA_BUS]  gpr_rd_data_1,  // Read data 1
     output wire [`REG_ADDR_BUS]  gpr_rd_addr_0,  // Read address 0
     output wire [`REG_ADDR_BUS]  gpr_rd_addr_1,  // Read address 1
 
@@ -37,7 +35,7 @@ module decoder (
     output reg [`WORD_DATA_BUS]   alu_in_1,       // ALU 输入 1
 //  output reg [`WORD_DATA_BUS]   cmp_in_0,       // CMP 输入 0
 //  output reg [`WORD_DATA_BUS]   cmp_in_1,       // CMP 输入 1
-//  output reg                    br_taken,       // 跳转成立
+    output reg                    jump_taken,     // 跳转成立
 //  output reg                    br_flag,        // 分支标志位
    
     output reg [`MEM_OP_BUS]      mem_op,         // Mem operation
@@ -55,9 +53,9 @@ module decoder (
 );
 
     /********** 指令字段 **********/
-    assign           op      = if_insn[`INSN_OP] ;
-    assign           ra_addr = if_insn[`INSN_RA];    // Ra 地址
-    assign           rb_addr = if_insn[`INSN_RB];    // Rb 地址
+    assign             op      = if_insn[`INSN_OP] ;
+    assign             ra_addr = if_insn[`INSN_RA];    // Ra 地址
+    assign             rb_addr = if_insn[`INSN_RB];    // Rb 地址
     wire [`INS_F3_BUS] funct3  = if_insn[`INSN_F3];    // funct3
     wire [`INS_F7_BUS] funct7  = if_insn[`INSN_F7];    // funct7
 
@@ -66,6 +64,8 @@ module decoder (
     wire [`WORD_DATA_BUS] imm_u  = {if_insn[31:12],12'b0};
     // I 格式立即数处理
     wire [`WORD_DATA_BUS] imm_i  = {{20{if_insn[31]}},if_insn[31:20]};
+    // JALR 立即数处理 最低有效位置为 0，相当于原来的立即数加上 PC+4 再把结果置为 0
+    wire [`WORD_DATA_BUS] imm_ijr  = {{20{if_insn[31]}},if_insn[31:21], 1'b0};
     // I 格式右移指令立即数处理
     wire [`WORD_DATA_BUS] imm_ir = {{26{if_insn[31]}},if_insn[24:20]};
     // S 格式立即数处理
@@ -94,7 +94,7 @@ module decoder (
         alu_in_1    =   rb_data;
         // cmp_in_0    =   ra_data;
         // cmp_in_1    =   rb_data;
-        // br_taken    =   `DISABLE;
+        jump_taken    =   `DISABLE;
         // br_flag     =   `DISABLE;
         mem_op      =   `MEM_OP_NOP;
         gpr_we_     =   `DISABLE_;
@@ -210,14 +210,15 @@ module decoder (
                         end
                     endcase
                 end
-                // `ISA_OP_JALR      : begin // JALR指令
-                //     src_reg_used   = 2'b01;        // do not use rb
-                //     alu_op      = `ALU_OP_ADD;
-                //     alu_in_1    = imm_i;
-                //     gpr_we_     = `ENABLE_;
-                //     // br_taken    = `ENABLE;
-                //     gpr_mux_ex  = `EX_ID_PCN; // pc + 4
-                // end
+                `ISA_OP_JALR      : begin // JALR指令
+                    src_reg_used = 2'b01;        // do not use rb
+                    alu_op       = `ALU_OP_ADD;
+                    alu_in_1     = imm_ijr;
+                    gpr_we_      = `ENABLE_;
+                    jump_taken   = `ENABLE;
+                    gpr_mux_ex   = `EX_OUT_PCN; // pc + 4
+                    gpr_wr_data  = if_pc;
+                end
                 `ISA_OP_ALS   : begin
                     /* R 格式 */
                     src_reg_used   = 2'b11;        // use ra and rb
@@ -285,7 +286,7 @@ module decoder (
                 //     src_reg_used   = 2'b00;        // do not use ra and rb
                 //     gpr_we_     = `DISABLE_;// 选通imm_u作为结果
                 //     gpr_wr_data = imm_u;
-                //     gpr_mux_ex  = `EX_ID_PCN;
+                //     gpr_mux_ex  = `EX_OUT_PCN;
                 // end
                 // `ISA_OP_AUIPC  : begin // LUIPC 指令
                 //     src_reg_used   = 2'b00;        // do not use ra and rb
@@ -370,15 +371,16 @@ module decoder (
                 //     endcase
                 // end
                 /* J 格式 */
-                // `ISA_OP_JAL  : begin // JAL指令
-                //     src_reg_used   = 2'b00;        // do not use ra and rb
-                //     alu_op      = `ALU_OP_ADD;
-                //     alu_in_0    = if_pc;
-                //     alu_in_1    = imm_j;
-                //     br_taken    = `ENABLE;
-                //     gpr_we_     = `ENABLE_;
-                //     gpr_mux_ex  = `EX_ID_PCN;
-                // end
+                `ISA_OP_JAL  : begin // JAL
+                    src_reg_used = 2'b00;        // do not use ra and rb
+                    alu_op       = `ALU_OP_ADD;
+                    alu_in_0     = if_pc;
+                    alu_in_1     = imm_j;
+                    jump_taken   = `ENABLE;
+                    gpr_we_      = `ENABLE_;
+                    gpr_mux_ex   = `EX_OUT_PCN;
+                    gpr_wr_data  = if_pc;
+                end
                 /* 其它命令 */
                 default       : begin // 未定义命令
                     $display("OP error");

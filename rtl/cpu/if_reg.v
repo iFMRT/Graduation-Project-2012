@@ -15,16 +15,16 @@
 
 module if_reg(
     /******** Clock & Rest ********/
-    input                       clk,         // Clk
-    input                       reset,       // Reset
+    input                   clk,         // Clk
+    input                   reset,       // Reset
     /******** Read Instruction ********/
-    input      [`WORD_DATA_BUS] insn,        // Reading instruction
+    input  [`WORD_DATA_BUS] insn,        // Reading instruction
 
-    input                       stall,       // Stall
-    input                       flush,       // Flush
-    input      [`WORD_DATA_BUS] new_pc,      // New value of program counter
-    // input  br_taken,                    // Branch taken
-    // input  [`WORD_DATA_BUS] br_addr,    // Branch target
+    input                   stall,       // Stall
+    input                   flush,       // Flush
+    input  [`WORD_DATA_BUS] new_pc,      // New value of program counter
+    input                   br_taken,                    // Branch taken
+    input  [`WORD_DATA_BUS] br_addr,    // Branch target
 
     output reg [`WORD_DATA_BUS] if_pc,       // Program counter
     output     [`WORD_DATA_BUS] if_pc_plus4, // Next PC
@@ -47,11 +47,11 @@ module if_reg(
                     if_pc   <= #1 new_pc;
                     if_insn <= #1 `ISA_NOP;
                     if_en   <= #1 `DISABLE;
-                // end else if (br_taken == `ENABLE) begin
-                //     /* Branch taken */
-                //     if_pc   <= #1 br_addr;
-                //     if_insn <= #1 insn;
-                //     if_en   <= #1 `ENABLE;
+                end else if (br_taken == `ENABLE) begin
+                    /* Branch taken */
+                    if_pc   <= #1 br_addr;
+                    if_insn <= #1 `ISA_NOP;
+                    if_en   <= #1 `DISABLE;
                 end else begin
                     /* Next PC */
                     if_pc   <= #1 if_pc_plus4;

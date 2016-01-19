@@ -43,6 +43,7 @@ module id_stage (
     output [`WORD_DATA_BUS]  id_alu_in_1,   // ALU input 1
     output [`REG_ADDR_BUS]   id_ra_addr,
     output [`REG_ADDR_BUS]   id_rb_addr,
+    output                   id_jump_taken,
     output [`MEM_OP_BUS]     id_mem_op,     // Memory Operation
     output [`WORD_DATA_BUS]  id_mem_wr_data,// Memory write data
     output [`REG_ADDR_BUS]   id_dst_addr,   // GPRwrite address
@@ -59,42 +60,43 @@ module id_stage (
     wire [`ALU_OP_BUS]     alu_op;         // ALU Operation
     wire [`WORD_DATA_BUS]  alu_in_0;       // ALU input 0
     wire [`WORD_DATA_BUS]  alu_in_1;       // ALU input 1
+    wire                   jump_taken;
    
     wire [`MEM_OP_BUS]     mem_op;         // Memory operation
     wire [`WORD_DATA_BUS]  mem_wr_data;    // Memory write data
-    wire [`EX_OUT_SEL_BUS] gpr_mux_ex;     // ex stage gpr write multiplexer
+    wire [`EX_OUT_SEL_BUS] gpr_mux_ex;     // EX stage gpr write multiplexer
     wire [`WORD_DATA_BUS]  gpr_wr_data;    // ID stage output gpr write data
     wire [`REG_ADDR_BUS]   dst_addr;       // GPR write address
     wire                   gpr_we_;        // GPR write enable
 
     /********** Two Operand **********/
-    reg  [`WORD_DATA_BUS] ra_data;               // The first operand
-    reg  [`WORD_DATA_BUS] rb_data;               // The two operand
+    reg  [`WORD_DATA_BUS] ra_data;         // The first operand
+    reg  [`WORD_DATA_BUS] rb_data;         // The two operand
 
     /********** Forward **********/
     always @(*) begin
         /* Forward Ra */
         case (ra_fwd_ctrl)
-            `FWD_CTRL_EX: begin
+            `FWD_CTRL_EX : begin
                 ra_data = ex_fwd_data;   // Forward from EX stage
             end
             `FWD_CTRL_MEM: begin
                 ra_data = mem_fwd_data;  // Forward from MEM stage
             end
-            default: begin
+            default      : begin
                 ra_data = gpr_rd_data_0; // Don't need forward
             end
         endcase
 
         /* Forward Rb */
         case (rb_fwd_ctrl)
-            `FWD_CTRL_EX: begin
+            `FWD_CTRL_EX : begin
                 rb_data = ex_fwd_data;   // Forward from EX stage
             end
             `FWD_CTRL_MEM: begin
                 rb_data = mem_fwd_data;  // Forward from MEM stage
             end
-            default: begin
+            default      : begin
                 rb_data = gpr_rd_data_1; // Don't need forward
             end
         endcase
@@ -117,6 +119,8 @@ module id_stage (
         .alu_op         (alu_op),         // ALU Operation
         .alu_in_0       (alu_in_0),       // ALU input 0
         .alu_in_1       (alu_in_1),       // ALU input 1
+        .jump_taken       (jump_taken),        // Branch taken enable
+
         .mem_op         (mem_op),         // Memory operation
         .mem_wr_data    (mem_wr_data),    // Memory write data
         .gpr_mux_ex     (gpr_mux_ex),     // ex stage gpr write multiplexer
@@ -141,6 +145,8 @@ module id_stage (
         .alu_in_1       (alu_in_1),       // ALU input 1
         .ra_addr        (ra_addr),
         .rb_addr        (rb_addr),
+        .jump_taken       (jump_taken),        // Branch taken enable
+
         .mem_op         (mem_op),         // Memory operation
         .mem_wr_data    (mem_wr_data),    // Memory write data
         .dst_addr       (dst_addr),       // General purpose Register write address
@@ -159,6 +165,8 @@ module id_stage (
         .id_alu_in_1    (id_alu_in_1),    // ALU input 1
         .id_ra_addr     (id_ra_addr),
         .id_rb_addr     (id_rb_addr),
+        .id_jump_taken    (id_jump_taken),        // Branch taken enable
+
         .id_mem_op      (id_mem_op),      // Memory operation
         .id_mem_wr_data (id_mem_wr_data), // Memory write data
         .id_dst_addr    (id_dst_addr),    // General purpose Register write address

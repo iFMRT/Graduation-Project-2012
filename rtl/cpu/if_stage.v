@@ -24,8 +24,8 @@ module if_stage(
     input                   stall,          // Stall
     input                   flush,          // Flush
     input  [`WORD_DATA_BUS] new_pc,         // New value of program counter
-    // input                   br_taken,       // Branch taken
-    // input  [`WORD_DATA_BUS] br_addr,        // Branch target
+    input                   br_taken,       // Branch taken
+    input  [`WORD_DATA_BUS] br_addr,        // Branch target
     // output                  busy,           // Busy Signal
     /******** IF/ID Pipeline Register ********/
     output [`WORD_DATA_BUS] if_pc,          // Program counter
@@ -45,7 +45,7 @@ module if_stage(
         .addr         (if_pc[`WORD_MSB:2]),   // Address
         .as_          (`ENABLE_),             // Address strobe
         .rw           (`READ),                // Read/Write
-        .wr_data       (`WORD_DATA_W'h0),      // Write data
+        .wr_data      (`WORD_DATA_W'h0),      // Write data
         .rd_data      (insn),                 // Read data
         /****** SPM Interface ********/
         .spm_rd_data  (spm_rd_data),          // Address of reading SPM
@@ -66,8 +66,8 @@ module if_stage(
         .flush        (flush),                // Flush
         .new_pc       (new_pc),               // New value of program counter
 
-        // .br_taken     (br_taken),             // Branch taken
-        // .br_addr      (br_addr),              // Branch target
+        .br_taken     (br_taken),             // Branch taken
+        .br_addr      (br_addr),              // Branch target
         
         .if_pc        (if_pc),                // Program counter
         .if_pc_plus4  (if_pc_plus4),          // Next PC

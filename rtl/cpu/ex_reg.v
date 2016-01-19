@@ -3,9 +3,14 @@
  * author  : besky
  * time    : 2015-12-23 19:33:22
  */
-`include "stddef.h"
 `include "isa.h"
+`include "alu.h"
+`include "cmp.h"
 `include "ctrl.h"
+`include "stddef.h"
+`include "cpu.h"
+`include "mem.h"
+`include "ex_stage.h"
 
 module ex_reg (
 	input wire                  clk,
@@ -13,10 +18,10 @@ module ex_reg (
 	// Inner Output
 	input wire [`WORD_DATA_BUS] ex_out_inner,
 	// Pipeline Control Signal
-	input  wire				   stall,		   
-	input  wire				   flush,		   
+	input  wire				    stall,		   
+	input  wire				    flush,		   
 	// ID/EX Pipeline Register 
-	input  wire				   id_en,
+	input  wire				    id_en,
 	input wire [`MEM_OP_BUS]    id_mem_op,
 	input wire [`WORD_DATA_BUS] id_mem_wr_data,
 	input wire [`REG_ADDR_BUS]  id_dst_addr, // bypass input

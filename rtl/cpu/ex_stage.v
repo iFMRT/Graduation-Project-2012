@@ -3,11 +3,15 @@
  * author  : besky
  * time    : 2015-12-21 23:04:59
  */
-`include "stddef.h"
+
 `include "isa.h"
-`include "ex_stage.h"
 `include "alu.h"
 `include "cmp.h"
+`include "ctrl.h"
+`include "stddef.h"
+`include "cpu.h"
+`include "mem.h"
+`include "ex_stage.h"
 
 module ex_stage (
     input                   clk,
@@ -32,6 +36,8 @@ module ex_stage (
 
     input [`EX_OUT_SEL_BUS] ex_out_sel,
 
+    input [`WORD_DATA_BUS] id_gpr_wr_data,
+
     // Forward Data From MEM Stage 
     input                   ex_ra_fwd_en,
     input                   ex_rb_fwd_en,
@@ -45,13 +51,13 @@ module ex_stage (
     output [`REG_ADDR_BUS]  ex_dst_addr, // bypass output
     output                  ex_gpr_we_,
 
-    output [`WORD_DATA_BUS] ex_out
+    output [`WORD_DATA_BUS] ex_out,
 
     // input [`WORD_DATA_BUS]  pc_next, // pc_next = current pc + 1
-    // input                   jump_en, // true - jump to target pc
-    // input                   branch_en, // true - branch instruction
-    // output [`WORD_DATA_BUS] pc_target, // target pc value of branch or jump
-    // output                  branch       // ture - take branch or jump
+    input                   id_jump_taken, // true - jump to target pc
+
+    output [`WORD_DATA_BUS] br_addr, // target pc value of branch or jump
+    output                  br_taken       // ture - take branch or jump
 );
 
     /* internal signles ==============================================*/
@@ -95,15 +101,18 @@ module ex_stage (
                 ex_out_inner = alu_out;
             end
             // `EX_OUT_CMP : ex_out_inner = {31'b0, cmp_out};
-            // `EX_OUT_PCN : ex_out_inner = pc_next;
+            `EX_OUT_PCN : begin
+                ex_out_inner = id_gpr_wr_data;  // When EX_OUT_PCN, it is PC + 4
+            end
             default: begin
                 ex_out_inner = `WORD_DATA_W'h0;
             end
         endcase
     end
 
-    // assign pc_target = alu_out;
-    // assign branch    = cmp_out & branch_en | jump_en;
+    assign br_addr  = alu_out;
+    assign br_taken = id_jump_taken;
+    // assign br_taken = cmp_out | id_jump_taken;
 
     /* ex_stage reg ==================================================*/
     ex_reg ex_reg_i (

@@ -24,9 +24,10 @@ module id_reg (
 	input [`WORD_DATA_BUS]      alu_in_1, // ALU 输入 1
 	input [`REG_ADDR_BUS]       ra_addr,
 	input [`REG_ADDR_BUS]       rb_addr,
+
 	// input  [`WORD_DATA_BUS] 			cmp_in_0,	   	// CMP 输入 0
 	// input  [`WORD_DATA_BUS] 			cmp_in_1,	   	// CMP 输入 1
-	// input  				br_taken,		// 跳转成立
+	input  				        jump_taken,		// 跳转成立
 	// input 				   	br_flag,		// 分支标志位
 	input [`MEM_OP_BUS]         mem_op, // 内存操作
 	input [`WORD_DATA_BUS]      mem_wr_data, // mem 写入数据
@@ -52,7 +53,7 @@ module id_reg (
 
 	// output reg	[`WORD_DATA_BUS] 			id_cmp_in_0,	// CMP 输入 0
 	// output reg	[`WORD_DATA_BUS] 			id_cmp_in_1,	// CMP 输入 1
-	// output reg  				id_br_taken,	// 跳转成立
+	output reg  				id_jump_taken,	// 跳转成立
 	// output reg				   	id_br_flag,	   	// 分支标志位
 	output reg [`MEM_OP_BUS]    id_mem_op, // 存储器操作
 	output reg [`WORD_DATA_BUS] id_mem_wr_data, // 存储器写入数据
@@ -77,7 +78,7 @@ module id_reg (
 			id_rb_addr     <= #1 `REG_ADDR_W'h0;
 			// id_cmp_in_0	   <= #1 `WORD_DATA_W'h0;
 			// id_cmp_in_1	   <= #1 `WORD_DATA_W'h0;
-			// id_br_taken    <= #1 `DISABLE;
+			id_jump_taken    <= #1 `DISABLE;
 			// id_br_flag	   <= #1 `DISABLE;
 			id_mem_op	   <= #1 `MEM_OP_NOP;
 			id_mem_wr_data <= #1 `WORD_DATA_W'h0;
@@ -100,7 +101,7 @@ module id_reg (
 					id_rb_addr     <= #1 `REG_ADDR_W'h0;
 					// id_cmp_in_0	   <= #1 `WORD_DATA_W'h0;
 					// id_cmp_in_1	   <= #1 `WORD_DATA_W'h0;
-					// id_br_taken    <= #1 `DISABLE;
+					id_jump_taken    <= #1 `DISABLE;
 					// id_br_flag	   <= #1 `DISABLE;
 					id_mem_op	   <= #1 `MEM_OP_NOP;
 					id_mem_wr_data <= #1 `WORD_DATA_W'h0;
@@ -119,7 +120,7 @@ module id_reg (
 				   	id_rb_addr     <= #1 rb_addr;
 				   	// id_cmp_in_0	   <= #1 cmp_in_0;
 				   	// id_cmp_in_1	   <= #1 cmp_in_1;
-				   	// id_br_taken    <= #1 br_taken;
+				   	id_jump_taken    <= #1 jump_taken;
 				   	// id_br_flag	   <= #1 br_flag;
 				   	id_mem_op	   <= #1 mem_op;
 				   	id_mem_wr_data <= #1 mem_wr_data;
