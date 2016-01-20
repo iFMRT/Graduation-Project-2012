@@ -1,17 +1,19 @@
 /*
  -- ============================================================================
- -- FILE NAME   : L2_icache.v
- -- DESCRIPTION : 二级指令高速缓存器
+ -- FILE NAME   : L2_cache_ctrl.v
+ -- DESCRIPTION : 二级指令高速缓存器控制
  -- ----------------------------------------------------------------------------
  -- Date:2016/1/16         Coding_by:kippy
  -- ============================================================================
 */
 
+`timescale 1ns/1ps
+
 /********** General header file **********/
 `include "stddef.h"
 `include "icache.h"
 
-module L2_icache(
+module L2_cache_ctrl(
     // read
     input               clk,                // clock
     input               rst,                // reset

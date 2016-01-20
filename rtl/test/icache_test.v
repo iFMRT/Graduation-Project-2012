@@ -567,6 +567,6 @@ module icache_test();
     /********** output wave **********/
     initial begin
         $dumpfile("icache.vcd");
-        $dumpvars(0,icache,tag_ram,data_ram,L2_tag_ram,L2_data_ram,L2_icache);
+        $dumpvars(0,icache_ctrl,tag_ram,data_ram,L2_tag_ram,L2_data_ram,L2_icache_ctrl);
     end
 endmodule 
