@@ -1,7 +1,7 @@
 /*
  -- ============================================================================
- -- FILE NAME   : icache.v
- -- DESCRIPTION : 指令高速缓存器
+ -- FILE NAME   : icache_ctrl.v
+ -- DESCRIPTION : 指令高速缓存器控制
  -- ----------------------------------------------------------------------------
  -- Date:2016/1/15         Coding_by:kippy
  -- ============================================================================
@@ -12,7 +12,7 @@
 /********** General header file **********/
 `include "stddef.h"
 `include "icache.h"
-module icache(
+module icache_ctrl(
     input              clk,           // clock
     input              rst,           // reset
     /* CPU part */
