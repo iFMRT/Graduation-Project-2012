@@ -28,8 +28,8 @@ module if_stage(
     input  [`WORD_DATA_BUS] br_addr,        // Branch target
     // output                  busy,           // Busy Signal
     /******** IF/ID Pipeline Register ********/
-    output [`WORD_DATA_BUS] if_pc,          // Program counter
-    output [`WORD_DATA_BUS] if_pc_plus4,    // Next PC
+    output [`WORD_DATA_BUS] pc,             // Current Program counter
+    output [`WORD_DATA_BUS] if_pc,          // Next PC
     output [`WORD_DATA_BUS] if_insn,        // Instruction
     output                  if_en           // Effective mark of pipeline
 );
@@ -69,8 +69,9 @@ module if_stage(
         .br_taken     (br_taken),             // Branch taken
         .br_addr      (br_addr),              // Branch target
         
-        .if_pc        (if_pc),                // Program counter
-        .if_pc_plus4  (if_pc_plus4),          // Next PC
+        /* Output */
+        .pc           (pc),                   // Current Program counter
+        .if_pc        (if_pc),                // Next PC
         .if_insn      (if_insn),              // Instruction
         .if_en        (if_en)                 // Effective mark of pipeline
     );

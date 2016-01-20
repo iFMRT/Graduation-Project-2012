@@ -8,11 +8,12 @@
 `include "cmp.h"
 
 module cmp #(parameter WIDTH = 32) (
-	input  wire signed [WIDTH-1:0] arg0,
-	input  wire signed [WIDTH-1:0] arg1,
-	input  wire        [`CMP_OP_B] op,
-	output reg                     true
-	);
+	input  wire signed [WIDTH-1:0]   arg0,
+	input  wire signed [WIDTH-1:0]   arg1,
+	input  wire        [`CMP_OP_BUS] op,
+	output reg                       true
+);
+
 	wire [WIDTH-1:0] arg0_u;
 	wire [WIDTH-1:0] arg1_u;
 	assign arg0_u = arg0;

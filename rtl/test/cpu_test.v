@@ -16,8 +16,8 @@ module cpu_test;
     reg                        reset;          // Asynchronous Reset
     /**********  Pipeline  Register **********/
     // IF/ID
-    wire [`WORD_DATA_BUS]      if_pc;          // Program count
-    wire [`WORD_DATA_BUS]      if_pc_plus4;    // Program count
+    wire [`WORD_DATA_BUS]      if_pc;          // Next Program count
+    wire [`WORD_DATA_BUS]      pc;             // Current Program count
     wire [`WORD_DATA_BUS]      if_insn;        // Instruction
     wire                       if_en;          //  Pipeline data enable
     // ID/EX Pipeline  Register
@@ -130,7 +130,7 @@ module cpu_test;
         .br_addr        (br_addr),          // Branch address
         /********** IF/ID Pipeline Register **********/
         .if_pc          (if_pc),            // Program count
-        .if_pc_plus4    (if_pc_plus4),      // Next PC
+        .pc             (pc),      // Next PC
         .if_insn        (if_insn),          // Instruction
         .if_en          (if_en)             // Pipeline data enable
     );
@@ -164,7 +164,7 @@ module cpu_test;
 
         /********** IF/ID Pipeline  Register **********/
         .if_pc          (if_pc),            // Program count
-        .if_pc_plus4    (if_pc_plus4),      // Jump adn link return address
+        .pc             (pc),      // Jump adn link return address
         .if_insn        (if_insn),          // Instruction
         .if_en          (if_en),            // Pipeline data enable
 
@@ -305,18 +305,18 @@ module cpu_test;
     /********** General purpose Register **********/
     gpr gpr (
         /********** Clock & Reset **********/
-        .clk       (clk),                   // Clock
-        .reset     (reset),                 // Asynchronous Reset
+        .clk            (clk),              // Clock
+        .reset          (reset),            // Asynchronous Reset
         /********** Read Port  0 **********/
-        .rd_addr_0 (gpr_rd_addr_0),         // Read  address
-        .rd_data_0 (gpr_rd_data_0),         // Read data
+        .rd_addr_0      (gpr_rd_addr_0),    // Read  address
+        .rd_data_0      (gpr_rd_data_0),    // Read data
         /********** Read Port  1 **********/
-        .rd_addr_1 (gpr_rd_addr_1),         // Read  address
-        .rd_data_1 (gpr_rd_data_1),         // Read data
+        .rd_addr_1      (gpr_rd_addr_1),    // Read  address
+        .rd_data_1      (gpr_rd_data_1),    // Read data
         /********** Write Port  **********/
-        .we_       (mem_gpr_we_),           // Write enable
-        .wr_addr   (mem_dst_addr),          // Write  address
-        .wr_data   (mem_out)                //  Write data
+        .we_            (mem_gpr_we_),      // Write enable
+        .wr_addr        (mem_dst_addr),     // Write  address
+        .wr_data        (mem_out)           //  Write data
     );
 
     /********** Scratch Pad Memory **********/
@@ -339,13 +339,13 @@ module cpu_test;
 
     task if_tb;
         input [`WORD_DATA_BUS] _if_pc;
-        input [`WORD_DATA_BUS] _if_pc_plus4;
+        input [`WORD_DATA_BUS] _pc;
         input [`WORD_DATA_BUS] _if_insn;
         input                  _if_en;
 
         begin
             if( (if_pc       === _if_pc)        &&
-                (if_pc_plus4 === _if_pc_plus4)  &&
+                (pc          === _pc)           &&
                 (if_insn     === _if_insn)      &&
                 (if_en       === _if_en)
               ) begin
@@ -509,18 +509,18 @@ module cpu_test;
         # STEP begin
             /******** Initialize Test Output ********/
             if_tb(`WORD_DATA_W'h0,              // if_pc
-                  `WORD_DATA_W'h4,              // if_pc_plus4
+                  `WORD_DATA_W'h0,              // pc
                   `ISA_NOP,                     // if_insn
                   `DISABLE                      // if_en
                   );
 
-            reset          <= `DISABLE;
+            reset <= `DISABLE;
         end
         # STEP begin
             $display("\n========= Clock 1 ========");
             /******** ADDI r1, r0, 4 IF Stage Test Output ********/
             if_tb(`WORD_DATA_W'h4,              // if_pc
-                  `WORD_DATA_W'h8,              // if_pc_plus4
+                  `WORD_DATA_W'h0,              // pc
                   `WORD_DATA_W'h400093,         // if_insn
                   `ENABLE                       // if_en
                  );
@@ -545,7 +545,7 @@ module cpu_test;
             $display("\n========= Clock 2 ========");
             /******** JAL  r5, 512 IF Stage Test Output ********/
             if_tb(`WORD_DATA_W'h8,              // if_pc
-                  `WORD_DATA_W'hc,              // if_pc_plus4
+                  `WORD_DATA_W'h4,              // pc
                   `WORD_DATA_W'h200002ef,       // if_insn
                   `ENABLE                       // if_en
                  );
@@ -563,7 +563,7 @@ module cpu_test;
                   `REG_ADDR_W'h1,               // id_dst_addr
                   `ENABLE_,                     // id_gpr_we_
                   `EX_OUT_ALU,                  // id_gpr_mux_ex
-                  `WORD_DATA_W'h8,              // id_gpr_wr_data
+                  `WORD_DATA_W'h4,              // id_gpr_wr_data
 
                   `ISA_OP_JAL,                  // op
                   `REG_ADDR_W'h0,               // ra_addr
@@ -591,7 +591,7 @@ module cpu_test;
             $display("\n========= Clock 3 ========");
             /******** ADD  r3, r1, r2 IF Stage Test Output ********/
             if_tb(`WORD_DATA_W'hc,              // if_pc
-                  `WORD_DATA_W'h10,             // if_pc_plus4
+                  `WORD_DATA_W'h8,              // pc
                   `WORD_DATA_W'h2081b3,         // if_insn
                   `ENABLE                       // if_en
                  );
@@ -600,7 +600,7 @@ module cpu_test;
             id_tb(
                   `ENABLE,                      // id_en
                   `ALU_OP_ADD,                  // id_alu_op
-                  `WORD_DATA_W'h8,              // id_alu_in_0
+                  `WORD_DATA_W'h4,              // id_alu_in_0
                   `WORD_DATA_W'h200,            // id_alu_in_1
                   `REG_ADDR_W'h0,               // id_ra_addr
                   `REG_ADDR_W'h0,               // id_rb_addr
@@ -619,14 +619,14 @@ module cpu_test;
                  );
 
             /******** ADDI r1, r0, 4 EX Stage Test Output ********/
-            ex_tb(`WORD_DATA_W'h208,            // ex_fwd_data
+            ex_tb(`WORD_DATA_W'h204,            // ex_fwd_data
                   `ENABLE,                      // ex_en
                   `MEM_OP_NOP,                  // ex_mem_op
                   `WORD_DATA_W'h0,              // ex_mem_wr_data
                   `REG_ADDR_W'h1,               // ex_dst_addr
                   `ENABLE_,                     // ex_gpr_we_
                   `WORD_DATA_W'h4,              // ex_out
-                  `WORD_DATA_W'h208,            // br_addr
+                  `WORD_DATA_W'h204,            // br_addr
                   `ENABLE                       // br_taken
                  );
 
@@ -650,8 +650,8 @@ module cpu_test;
         # STEP begin
             $display("\n========= Clock 4 ========");
             /******** NOP due to Branch IF Stage Test Output ********/
-            if_tb(`WORD_DATA_W'h208,            // if_pc
-                  `WORD_DATA_W'h20c,            // if_pc_plus4
+            if_tb(`WORD_DATA_W'h204,            // if_pc
+                  `WORD_DATA_W'h200,            // pc
                   `WORD_DATA_W'h0,              // if_insn
                   `DISABLE                      // if_en
                  );
@@ -716,8 +716,8 @@ module cpu_test;
         # STEP begin
             $display("\n========= Clock 5 ========");
             /******** ADDI r2, r0, 8 IF Stage Test Output ********/
-            if_tb(`WORD_DATA_W'h20c,            // if_pc
-                  `WORD_DATA_W'h210,            // if_pc_plus4
+            if_tb(`WORD_DATA_W'h208,            // if_pc
+                  `WORD_DATA_W'h204,            // pc
                   `WORD_DATA_W'h800113,         // if_insn
                   `ENABLE                       // if_en
                  );
@@ -735,7 +735,7 @@ module cpu_test;
                   `REG_ADDR_W'h0,
                   `DISABLE_,
                   `EX_OUT_ALU,
-                  `WORD_DATA_W'h20c,
+                  `WORD_DATA_W'h204,
 
                   `ISA_OP_ALSI,                 // op
                   `REG_ADDR_W'h0,               // ra_addr
@@ -785,8 +785,8 @@ module cpu_test;
         # STEP begin
             $display("\n========= Clock 6 ========");
             /******** JALR r0, r5, 0 IF Stage Test Output ********/
-            if_tb(`WORD_DATA_W'h210,            // if_pc
-                  `WORD_DATA_W'h214,            // if_pc_plus4
+            if_tb(`WORD_DATA_W'h20c,            // if_pc
+                  `WORD_DATA_W'h208,            // pc
                   `WORD_DATA_W'h28067,          // if_insn
                   `ENABLE                       // if_en
                  );
@@ -804,7 +804,7 @@ module cpu_test;
                   `REG_ADDR_W'h2,               // id_dst_addr
                   `ENABLE_,                     // id_gpr_we_
                   `EX_OUT_ALU,                  // id_gpr_mux_ex
-                  `WORD_DATA_W'h210,            // id_gpr_wr_data
+                  `WORD_DATA_W'h208,            // id_gpr_wr_data
 
                   `ISA_OP_JALR,                 // op
                   `REG_ADDR_W'h5,               // ra_addr
@@ -854,8 +854,8 @@ module cpu_test;
         # STEP begin
             $display("\n========= Clock 7 ========");
             /******** NOP IF Stage Test Output ********/
-            if_tb(`WORD_DATA_W'h214,            // if_pc
-                  `WORD_DATA_W'h218,            // if_pc_plus4
+            if_tb(`WORD_DATA_W'h210,            // if_pc
+                  `WORD_DATA_W'h20c,            // pc
                   `WORD_DATA_W'h0,              // if_insn
                   `ENABLE                       // if_en
                  );
@@ -873,7 +873,7 @@ module cpu_test;
                   `REG_ADDR_W'h0,               // id_dst_addr
                   `ENABLE_,                     // id_gpr_we_
                   `EX_OUT_PCN,                  // id_gpr_mux_ex
-                  `WORD_DATA_W'h210,            // id_gpr_wr_data
+                  `WORD_DATA_W'h20c,            // id_gpr_wr_data
 
                   `ISA_OP_NOP,                  // op
                   `REG_ADDR_W'h0,               // ra_addr
@@ -924,7 +924,7 @@ module cpu_test;
             $display("\n========= Clock 8 ========");
             /******** NOP due to Branch IF Stage Test Output ********/
             if_tb(`WORD_DATA_W'h8,              //
-                  `WORD_DATA_W'hc,
+                  `WORD_DATA_W'h4,
                   `WORD_DATA_W'h0,
                   `DISABLE
                  );
@@ -951,19 +951,20 @@ module cpu_test;
                  );
 
             /******* JALR r0, r5, 0  EX Stage Test Output *******/
+
             ex_tb(`WORD_DATA_W'h0,              // ex_fwd_data
                   `ENABLE,                      // ex_en
                   `MEM_OP_NOP,                  // ex_mem_op
                   `WORD_DATA_W'h0,              // ex_mem_wr_data
                   `REG_ADDR_W'h0,               // ex_dst_addr
                   `ENABLE_,                     // ex_gpr_we_
-                  `WORD_DATA_W'h210,            // ex_out
+                  `WORD_DATA_W'h20c,            // ex_out
                   `WORD_DATA_W'h0,              // br_addr
                   `DISABLE                      // br_taken
                  );
 
             /******** ADDI r2, r0, 8 MEM Stage Test Output ********/
-            mem_tb(`WORD_DATA_W'h210,           // mem_fwd_data
+            mem_tb(`WORD_DATA_W'h20c,           // mem_fwd_data
                    `ENABLE,                     // mem_en
                    `REG_ADDR_W'h2,              // mem_dst_addr
                    `ENABLE_,                    // mem_gpr_we_
@@ -993,7 +994,7 @@ module cpu_test;
             $display("\n========= Clock 9 ========");
             /******** ADD  r3, r1, r2 IF Stage Test Output ********/
             if_tb(`WORD_DATA_W'hc,              // if_pc
-                  `WORD_DATA_W'h10,             // if_pc_plus4
+                  `WORD_DATA_W'h8,             // pc
                   `WORD_DATA_W'h2081b3,         // if_insn
                   `ENABLE                       // if_en
                  );
@@ -1011,7 +1012,7 @@ module cpu_test;
                   `REG_ADDR_W'h0,               // id_dst_addr
                   `DISABLE_,                    // id_gpr_we_
                   `EX_OUT_ALU,                  // id_gpr_mux_ex
-                  `WORD_DATA_W'hc,              // id_gpr_wr_data
+                  `WORD_DATA_W'h8,              // id_gpr_wr_data
 
                   `ISA_OP_ALS,                  // op
                   `REG_ADDR_W'h1,               // ra_addr
@@ -1036,7 +1037,7 @@ module cpu_test;
                    `ENABLE,                     // mem_en
                    `REG_ADDR_W'h0,              // mem_dst_addr
                    `ENABLE_,                    // mem_gpr_we_
-                   `WORD_DATA_W'h210            // mem_out
+                   `WORD_DATA_W'h20c            // mem_out
                   );
 
             $display("WB Stage ...");
@@ -1062,7 +1063,7 @@ module cpu_test;
             $display("\n========= Clock 10 ========");
             /******** ADD  r4, r3, r0 IF Stage Test Output ********/
             if_tb(`WORD_DATA_W'h10,             // if_pc
-                  `WORD_DATA_W'h14,             // if_pc_plus4
+                  `WORD_DATA_W'h0c,             // pc
                   `WORD_DATA_W'h18233,          // if_insn
                   `ENABLE                       // if_en
                  );
@@ -1080,7 +1081,7 @@ module cpu_test;
                   `REG_ADDR_W'h3,               // id_dst_addr
                   `ENABLE_,                     // id_gpr_we_
                   `EX_OUT_ALU,                  // id_gpr_mux_ex
-                  `WORD_DATA_W'h10,             // id_gpr_wr_data
+                  `WORD_DATA_W'h0c,             // id_gpr_wr_data
 
                   `ISA_OP_ALS,                  // op
                   `REG_ADDR_W'h3,               // ra_addr
@@ -1130,7 +1131,7 @@ module cpu_test;
             $display("\n========= Clock 11 ========");
             /******** NOP IF Stage Test Output ********/
             if_tb(`WORD_DATA_W'h14,             // if_pc
-                  `WORD_DATA_W'h18,             // if_pc_plus4
+                  `WORD_DATA_W'h10,             // pc
                   `WORD_DATA_W'h0,              // if_insn
                   `ENABLE                       // if_en
                  );
@@ -1148,7 +1149,7 @@ module cpu_test;
                   `REG_ADDR_W'h4,               // id_dst_addr
                   `ENABLE_,                     // id_gpr_we_
                   `EX_OUT_ALU,                  // id_gpr_mux_ex
-                  `WORD_DATA_W'h14,             // id_gpr_wr_data
+                  `WORD_DATA_W'h10,             // id_gpr_wr_data
 
                   `ISA_OP_NOP,                  // op
                   `REG_ADDR_W'h0,               // ra_addr
@@ -1198,7 +1199,7 @@ module cpu_test;
             $display("\n========= Clock 12 ========");
             /******** NOP IF Stage Test Output ********/
             if_tb(`WORD_DATA_W'h18,             // if_pc
-                  `WORD_DATA_W'h1c,             // if_pc_plus4
+                  `WORD_DATA_W'h14,             // pc
                   `WORD_DATA_W'h0,              // if_insn
                   `ENABLE                       // if_en
                  );
@@ -1216,7 +1217,7 @@ module cpu_test;
                   `REG_ADDR_W'h0,               // id_dst_addr
                   `DISABLE_,                    // id_gpr_we_
                   `EX_OUT_ALU,                  // id_gpr_mux_ex
-                  `WORD_DATA_W'h18,             // id_gpr_wr_data
+                  `WORD_DATA_W'h14,             // id_gpr_wr_data
 
                   `ISA_OP_NOP,                  // op
                   `REG_ADDR_W'h0,               // ra_addr
@@ -1266,7 +1267,7 @@ module cpu_test;
             $display("\n========= Clock 13 ========");
             /******** NOP IF Stage Test Output ********/
             if_tb(`WORD_DATA_W'h1c,             // if_pc
-                  `WORD_DATA_W'h20,             // if_pc_plus4
+                  `WORD_DATA_W'h18,             // pc
                   `WORD_DATA_W'h0,              // if_insn
                   `ENABLE                       // if_en
                  );
@@ -1284,7 +1285,7 @@ module cpu_test;
                   `REG_ADDR_W'h0,               // id_dst_addr
                   `DISABLE_,                    // id_gpr_we_
                   `EX_OUT_ALU,                  // id_gpr_mux_ex
-                  `WORD_DATA_W'h1c,             // id_gpr_wr_data
+                  `WORD_DATA_W'h18,             // id_gpr_wr_data
 
                   `ISA_OP_NOP,                  // op
                   `REG_ADDR_W'h0,               // ra_addr
@@ -1335,7 +1336,7 @@ module cpu_test;
             $display("\n========= Clock 14 ========");
             /******** NOP IF Stage Test Output ********/
             if_tb(`WORD_DATA_W'h20,             // if_pc
-                  `WORD_DATA_W'h24,             // if_pc_plus4
+                  `WORD_DATA_W'h1c,             // pc
                   `WORD_DATA_W'h0,              // if_insn
                   `ENABLE                       // if_en
                  );
@@ -1353,7 +1354,7 @@ module cpu_test;
                   `REG_ADDR_W'h0,               // id_dst_addr
                   `DISABLE_,                    // id_gpr_we_
                   `EX_OUT_ALU,                  // id_gpr_mux_ex
-                  `WORD_DATA_W'h20,             // id_gpr_wr_data
+                  `WORD_DATA_W'h1c,             // id_gpr_wr_data
 
                   `ISA_OP_NOP,                  // op
                   `REG_ADDR_W'h0,               // ra_addr

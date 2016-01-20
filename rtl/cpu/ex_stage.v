@@ -24,10 +24,9 @@ module ex_stage (
     input [`ALU_OP_BUS]     id_alu_op,
     input [`WORD_DATA_BUS]  id_alu_in_0,
     input [`WORD_DATA_BUS]  id_alu_in_1,
-
-    // input [`WORD_DATA_BUS]  id_cmp_in0,
-    // input [`WORD_DATA_BUS]  id_cmp_in1,
-    // input [`CMP_OP_B]       id_cmp_op,
+    input [`CMP_OP_BUS]     id_cmp_op,
+    input [`WORD_DATA_BUS]  id_cmp_in0,
+    input [`WORD_DATA_BUS]  id_cmp_in1,
 
     input [`MEM_OP_BUS]     id_mem_op,
     input [`WORD_DATA_BUS]  id_mem_wr_data,
@@ -36,7 +35,7 @@ module ex_stage (
 
     input [`EX_OUT_SEL_BUS] ex_out_sel,
 
-    input [`WORD_DATA_BUS] id_gpr_wr_data,
+    input [`WORD_DATA_BUS]  id_gpr_wr_data,
 
     // Forward Data From MEM Stage 
     input                   ex_ra_fwd_en,
@@ -64,7 +63,7 @@ module ex_stage (
     wire [`WORD_DATA_BUS] alu_out;
     wire [`WORD_DATA_BUS] alu_in_0;
     wire [`WORD_DATA_BUS] mem_wr_data;
-    // wire        cmp_out;
+    wire                  cmp_out;
     reg  [`WORD_DATA_BUS] ex_out_inner;
 
     assign fwd_data    = alu_out;
@@ -87,12 +86,12 @@ module ex_stage (
         .val  (alu_out)
     );
 
-    // cmp #(32) cmp_i (
-    //  .arg0 (id_cmp_in0),
-    //  .arg1 (id_cmp_in1),
-    //  .op   (id_cmp_op),
-    //  .true (id_cmp_out)
-    // );
+    cmp #(32) cmp_i (
+     .arg0 (id_cmp_in0),
+     .arg1 (id_cmp_in1),
+     .op   (id_cmp_op),
+     .true (cmp_out)
+    );
 
     /* output logic ==================================================*/
     always @(*) begin
@@ -111,8 +110,7 @@ module ex_stage (
     end
 
     assign br_addr  = alu_out;
-    assign br_taken = id_jump_taken;
-    // assign br_taken = cmp_out | id_jump_taken;
+    assign br_taken = cmp_out | id_jump_taken;
 
     /* ex_stage reg ==================================================*/
     ex_reg ex_reg_i (

@@ -16,7 +16,7 @@
 	`define CMP_OP_GEU        3'o6       // option: >=u greater equal unsigned
 
 	`define CMP_OP_W          3          // option width
-	`define CMP_OP_B          2:0        // option bus
+	`define CMP_OP_BUS          2:0        // option bus
 
 	`define CMP_TRUE          1'b1       // compare result: true
 	`define CMP_FALSE         1'b0       // compare result: false
