@@ -7,6 +7,8 @@
  -- ============================================================================
 */
 
+`timescale 1ns/1ps
+
 /********** General header file **********/
 `include "stddef.h"
 `include "icache.h"
@@ -166,10 +168,10 @@ module icache(
                     irq  <= `DISABLE;
                     if(complete == `ENABLE)begin
                         state <= `L1_ACCESS;
-                        data0_rw  <= #1 rw;
-                        data1_rw  <= #1 rw;                    
-                        tag0_rw   <= #1 rw;
-                        tag1_rw   <= #1 rw;
+                        data0_rw  <= rw;
+                        data1_rw  <= rw;                    
+                        tag0_rw   <= rw;
+                        tag1_rw   <= rw;
                     end else begin
                         state <= `WRITE_IC;
                     end
