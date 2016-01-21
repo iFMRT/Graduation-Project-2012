@@ -6,7 +6,7 @@
 0        // NOP
 0        // NOP
 0        // NOP
-@82      // byte address 520 but the spm is word address
+@81      // byte address 516 but the spm is word address
 800113   // 000000001000_00000_000_00010_0010011  // ADDI r2, r0, 8
 28067    // 000000000000_00101_000_00000_1100111  // JALR r0, r5, 0
 0   	 // NOP

@@ -32,8 +32,8 @@ module id_stage (
     input [`FWD_CTRL_BUS]    rb_fwd_ctrl,
 
     /********** IF/ID Pipeline Register **********/
-    input [`WORD_DATA_BUS]   if_pc,         // Program counter
-    input [`WORD_DATA_BUS]   if_pc_plus4,   // Jump adn link return address
+    input [`WORD_DATA_BUS]   if_pc,         // Next PC
+    input [`WORD_DATA_BUS]   pc,            // Current PC
     input [`WORD_DATA_BUS]   if_insn,       // Instruction
     input                    if_en,         // Pipeline data enable
     /********** ID/EXPipeline  Register  **********/
@@ -41,6 +41,9 @@ module id_stage (
     output [`ALU_OP_BUS]     id_alu_op,     // ALU Operation
     output [`WORD_DATA_BUS]  id_alu_in_0,   // ALU input 0
     output [`WORD_DATA_BUS]  id_alu_in_1,   // ALU input 1
+    output [`CMP_OP_BUS]     id_cmp_op,     // CMP Operation
+    output [`WORD_DATA_BUS]  id_cmp_in_0,   // CMP input 0
+    output [`WORD_DATA_BUS]  id_cmp_in_1,   // CMP input 1
     output [`REG_ADDR_BUS]   id_ra_addr,
     output [`REG_ADDR_BUS]   id_rb_addr,
     output                   id_jump_taken,
@@ -54,12 +57,16 @@ module id_stage (
     output [`INS_OP_BUS]     op,
     output [`REG_ADDR_BUS]   ra_addr,
     output [`REG_ADDR_BUS]   rb_addr,
-    output [1:0]             src_reg_used
+    output [1:0]             src_reg_used  // How many source registers instruction used
 );
 
     wire [`ALU_OP_BUS]     alu_op;         // ALU Operation
     wire [`WORD_DATA_BUS]  alu_in_0;       // ALU input 0
     wire [`WORD_DATA_BUS]  alu_in_1;       // ALU input 1
+    wire [`CMP_OP_BUS]     cmp_op;         // CMP Operation
+    wire [`WORD_DATA_BUS]  cmp_in_0;       // CMP input 0
+    wire [`WORD_DATA_BUS]  cmp_in_1;       // CMP input 1
+
     wire                   jump_taken;
    
     wire [`MEM_OP_BUS]     mem_op;         // Memory operation
@@ -104,13 +111,13 @@ module id_stage (
 
     decoder decoder (
         /********** IF/ID Pipeline Register **********/
-        .if_pc          (if_pc),          // Program counter
-        .if_pc_plus4    (if_pc_plus4),
+        .if_pc          (if_pc),          // Next PC
+        .pc             (pc),             // Current PC
         .if_insn        (if_insn),        // Instruction
         .if_en          (if_en),          // Pipeline data enable
         
-        .ra_data        (ra_data),  // Read data 0
-        .rb_data        (rb_data),  // Read data 1
+        .ra_data        (ra_data),        // Read data 0
+        .rb_data        (rb_data),        // Read data 1
         /********** GPR Interface **********/
         .gpr_rd_addr_0  (gpr_rd_addr_0),  // Read address 0
         .gpr_rd_addr_1  (gpr_rd_addr_1),  // Read address 1
@@ -119,20 +126,22 @@ module id_stage (
         .alu_op         (alu_op),         // ALU Operation
         .alu_in_0       (alu_in_0),       // ALU input 0
         .alu_in_1       (alu_in_1),       // ALU input 1
-        .jump_taken       (jump_taken),        // Branch taken enable
+        .cmp_op         (cmp_op),         // CMP Operation
+        .cmp_in_0       (cmp_in_0),       // CMP input 0
+        .cmp_in_1       (cmp_in_1),       // CMP input 1
+        .jump_taken     (jump_taken),     // Branch taken enable
 
         .mem_op         (mem_op),         // Memory operation
         .mem_wr_data    (mem_wr_data),    // Memory write data
         .gpr_mux_ex     (gpr_mux_ex),     // ex stage gpr write multiplexer
         .gpr_wr_data    (gpr_wr_data),    // ID stage output gpr write data
         .dst_addr       (dst_addr),       // General purpose Register write address
-        .gpr_we_        (gpr_we_),         // General purpose Register write enable
+        .gpr_we_        (gpr_we_),        // General purpose Register write enable
         
         .op             (op),
         .ra_addr        (ra_addr),
         .rb_addr        (rb_addr), 
         .src_reg_used   (src_reg_used)     
-
     );
         
     id_reg id_reg (
@@ -143,9 +152,12 @@ module id_stage (
         .alu_op         (alu_op),         // ALU Operation
         .alu_in_0       (alu_in_0),       // ALU input 0
         .alu_in_1       (alu_in_1),       // ALU input 1
+        .cmp_op         (cmp_op),
+        .cmp_in_0       (cmp_in_0),
+        .cmp_in_1       (cmp_in_1),
         .ra_addr        (ra_addr),
         .rb_addr        (rb_addr),
-        .jump_taken       (jump_taken),        // Branch taken enable
+        .jump_taken     (jump_taken),     // Branch taken enable
 
         .mem_op         (mem_op),         // Memory operation
         .mem_wr_data    (mem_wr_data),    // Memory write data
@@ -163,9 +175,12 @@ module id_stage (
         .id_alu_op      (id_alu_op),      // ALU Operation
         .id_alu_in_0    (id_alu_in_0),    // ALU input 0
         .id_alu_in_1    (id_alu_in_1),    // ALU input 1
+        .id_cmp_op      (id_cmp_op),
+        .id_cmp_in_0    (id_cmp_in_0),
+        .id_cmp_in_1    (id_cmp_in_1),
         .id_ra_addr     (id_ra_addr),
         .id_rb_addr     (id_rb_addr),
-        .id_jump_taken    (id_jump_taken),        // Branch taken enable
+        .id_jump_taken  (id_jump_taken),  // Branch taken enable
 
         .id_mem_op      (id_mem_op),      // Memory operation
         .id_mem_wr_data (id_mem_wr_data), // Memory write data

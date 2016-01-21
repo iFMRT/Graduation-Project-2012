@@ -16,7 +16,7 @@
 module decoder (
     /********** IF/ID Pipeline Register **********/
     input wire [`WORD_DATA_BUS]  if_pc,          // Program counter
-    input wire [`WORD_DATA_BUS]  if_pc_plus4,    // Jump adn link return address
+    input wire [`WORD_DATA_BUS]  pc,    // Jump adn link return address
     input wire [`WORD_DATA_BUS]  if_insn,        // Instruction
     input wire                   if_en,          // Pipeline data enable
 
@@ -30,11 +30,11 @@ module decoder (
 
     /********** 解码结果 **********/
     output reg [`ALU_OP_BUS]      alu_op,         // ALU 操作
-//  output reg [`CMP_OP_B]        cmp_op,         // CMP 操作
     output reg [`WORD_DATA_BUS]   alu_in_0,       // ALU 输入 0
     output reg [`WORD_DATA_BUS]   alu_in_1,       // ALU 输入 1
-//  output reg [`WORD_DATA_BUS]   cmp_in_0,       // CMP 输入 0
-//  output reg [`WORD_DATA_BUS]   cmp_in_1,       // CMP 输入 1
+    output reg [`CMP_OP_BUS]      cmp_op,         // CMP 操作
+    output reg [`WORD_DATA_BUS]   cmp_in_0,       // CMP 输入 0
+    output reg [`WORD_DATA_BUS]   cmp_in_1,       // CMP 输入 1
     output reg                    jump_taken,     // 跳转成立
 //  output reg                    br_flag,        // 分支标志位
    
@@ -88,18 +88,18 @@ module decoder (
     always @(*) begin
         /* 初始值 */
         src_reg_used = 2'b00;
-        alu_op      =   `ALU_OP_NOP;
-        // cmp_op      =   `CMP_OP_NOP;
-        alu_in_0    =   ra_data;
-        alu_in_1    =   rb_data;
-        // cmp_in_0    =   ra_data;
-        // cmp_in_1    =   rb_data;
-        jump_taken    =   `DISABLE;
-        // br_flag     =   `DISABLE;
-        mem_op      =   `MEM_OP_NOP;
-        gpr_we_     =   `DISABLE_;
-        gpr_mux_ex  =   `EX_OUT_ALU;
-        gpr_wr_data = if_pc_plus4;
+        alu_op       = `ALU_OP_NOP;
+        cmp_op       = `CMP_OP_NOP;
+        alu_in_0     = ra_data;
+        alu_in_1     = rb_data;
+        cmp_in_0     = ra_data;
+        cmp_in_1     = rb_data;
+        jump_taken   = `DISABLE;
+        // br_flag   = `DISABLE;
+        mem_op       = `MEM_OP_NOP;
+        gpr_we_      = `DISABLE_;
+        gpr_mux_ex   = `EX_OUT_ALU;
+        gpr_wr_data  = if_pc;
 
         //exp_code = `ISA_EXP_NO_EXP;
         /* 指令类型判别 */
@@ -112,7 +112,7 @@ module decoder (
                 `ISA_OP_LD: begin // LD指令
                     src_reg_used   = 2'b01;        // do not use rb
                     case(funct3)
-                        `ISA_OP_LD_LB: begin       //LB指令
+                        `ISA_OP_LD_LB: begin       // LB指令
                             alu_op  = `ALU_OP_ADD;
                             alu_in_1 = imm_i;
                             mem_op  = `MEM_OP_LB;
@@ -162,14 +162,14 @@ module decoder (
                             gpr_mux_ex  = `EX_OUT_CMP;
                         end
                         `ISA_OP_ALSI_SLTI:begin   // SLTI 指令
-                            // cmp_op      = `CMP_OP_LT;    //这里大概需要一个控制信号，将最后写回寄存器的选通为cmp输出
-                            // cmp_in_1    = imm_i;
+                            cmp_op      = `CMP_OP_LT;    //这里大概需要一个控制信号，将最后写回寄存器的选通为cmp输出
+                            cmp_in_1    = imm_i;
                             gpr_we_     = `ENABLE_;
                             gpr_mux_ex  = `EX_OUT_CMP;
                         end
                         `ISA_OP_ALSI_SLTIU:begin   // SLTIU 指令
-                            // cmp_op      = `CMP_OP_LTU;
-                            // cmp_in_1    = imm_i;
+                            cmp_op      = `CMP_OP_LTU;
+                            cmp_in_1    = imm_i;
                             gpr_we_     = `ENABLE_;
                             gpr_mux_ex  = `EX_OUT_CMP;
                         end
@@ -242,12 +242,12 @@ module decoder (
                             gpr_mux_ex  = `EX_OUT_CMP;
                         end
                         `ISA_OP_ALS_SLT: begin
-                            // cmp_op      = `CMP_OP_LT;
+                            cmp_op      = `CMP_OP_LT;
                             gpr_we_     = `ENABLE_;
                             gpr_mux_ex  = `EX_OUT_CMP;
                         end
                         `ISA_OP_ALS_SLTU: begin
-                            // cmp_op      = `CMP_OP_LTU;
+                            cmp_op      = `CMP_OP_LTU;
                             gpr_we_     = `ENABLE_;
                             gpr_mux_ex  = `EX_OUT_CMP;
                         end
@@ -291,7 +291,7 @@ module decoder (
                 // `ISA_OP_AUIPC  : begin // LUIPC 指令
                 //     src_reg_used   = 2'b00;        // do not use ra and rb
                 //     alu_op      = `ALU_OP_ADD;
-                //     alu_in_0    = if_pc;
+                //     alu_in_0    = pc;
                 //     alu_in_1    = imm_u;
                 //     gpr_we_     = `ENABLE_;
                 // end
@@ -320,61 +320,61 @@ module decoder (
                     endcase
                 end
                 // /* B 格式 */
-                // `ISA_OP_BR    : begin //
-                //     src_reg_used   = 2'b11;        // use ra and rb
-                //     case(funct3)
-                //         `ISA_OP_BR_BEQ: begin
-                //             alu_op   = `ALU_OP_ADD;
-                //             cmp_op   = `CMP_OP_EQ;
-                //             alu_in_0 = if_pc;
-                //             alu_in_1 = imm_b;
-                //             br_flag  = `ENABLE;
-                //         end
-                //         `ISA_OP_BR_BNE: begin
-                //             alu_op   = `ALU_OP_ADD;
-                //             cmp_op   = `CMP_OP_NE;
-                //             alu_in_0 = if_pc;
-                //             alu_in_1 = imm_b;
-                //             br_flag  = `ENABLE;
-                //         end
-                //         `ISA_OP_BR_BLT: begin
-                //             alu_op   = `ALU_OP_ADD;
-                //             cmp_op   = `CMP_OP_LT;
-                //             alu_in_0 = if_pc;
-                //             alu_in_1 = imm_b;
-                //             br_flag  = `ENABLE;
-                //         end
-                //         `ISA_OP_BR_BGE: begin
-                //             alu_op   = `ALU_OP_ADD;
-                //             cmp_op   = `CMP_OP_GE;
-                //             alu_in_0 = if_pc;
-                //             alu_in_1 = imm_b;
-                //             br_flag  = `ENABLE;
-                //         end
-                //         `ISA_OP_BR_BLTU: begin
-                //             alu_op   = `ALU_OP_ADD;
-                //             cmp_op   = `CMP_OP_LTU;
-                //             alu_in_0 = if_pc;
-                //             alu_in_1 = imm_b;
-                //             br_flag  = `ENABLE;
-                //         end
-                //         `ISA_OP_BR_BGEU: begin
-                //             alu_op   = `ALU_OP_ADD;
-                //             cmp_op   = `CMP_OP_GEU;
-                //             alu_in_0 = if_pc;
-                //             alu_in_1 = imm_b;
-                //             br_flag  = `ENABLE;
-                //         end
-                //         default       : begin // 未定义命令
-                //             $display("error");
-                //         end
-                //     endcase
-                // end
+                `ISA_OP_BR    : begin //
+                    src_reg_used   = 2'b11;        // use ra and rb
+                    case(funct3)
+                        `ISA_OP_BR_BEQ: begin
+                            alu_op   = `ALU_OP_ADD;
+                            cmp_op   = `CMP_OP_EQ;
+                            alu_in_0 = pc;
+                            alu_in_1 = imm_b;
+                            // br_flag  = `ENABLE;
+                        end
+                        `ISA_OP_BR_BNE: begin
+                            alu_op   = `ALU_OP_ADD;
+                            cmp_op   = `CMP_OP_NE;
+                            alu_in_0 = pc;
+                            alu_in_1 = imm_b;
+                            // br_flag  = `ENABLE;
+                        end
+                        `ISA_OP_BR_BLT: begin
+                            alu_op   = `ALU_OP_ADD;
+                            cmp_op   = `CMP_OP_LT;
+                            alu_in_0 = pc;
+                            alu_in_1 = imm_b;
+                            // br_flag  = `ENABLE;
+                        end
+                        `ISA_OP_BR_BGE: begin
+                            alu_op   = `ALU_OP_ADD;
+                            cmp_op   = `CMP_OP_GE;
+                            alu_in_0 = pc;
+                            alu_in_1 = imm_b;
+                            // br_flag  = `ENABLE;
+                        end
+                        `ISA_OP_BR_BLTU: begin
+                            alu_op   = `ALU_OP_ADD;
+                            cmp_op   = `CMP_OP_LTU;
+                            alu_in_0 = pc;
+                            alu_in_1 = imm_b;
+                            // br_flag  = `ENABLE;
+                        end
+                        `ISA_OP_BR_BGEU: begin
+                            alu_op   = `ALU_OP_ADD;
+                            cmp_op   = `CMP_OP_GEU;
+                            alu_in_0 = pc;
+                            alu_in_1 = imm_b;
+                            // br_flag  = `ENABLE;
+                        end
+                        default       : begin // 未定义命令
+                            $display("error");
+                        end
+                    endcase
+                end
                 /* J 格式 */
                 `ISA_OP_JAL  : begin // JAL
                     src_reg_used = 2'b00;        // do not use ra and rb
                     alu_op       = `ALU_OP_ADD;
-                    alu_in_0     = if_pc;
+                    alu_in_0     = pc;
                     alu_in_1     = imm_j;
                     jump_taken   = `ENABLE;
                     gpr_we_      = `ENABLE_;

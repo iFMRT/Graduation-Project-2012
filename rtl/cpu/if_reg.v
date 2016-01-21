@@ -24,14 +24,15 @@ module if_reg(
     input                   flush,       // Flush
     input  [`WORD_DATA_BUS] new_pc,      // New value of program counter
     input                   br_taken,                    // Branch taken
-    input  [`WORD_DATA_BUS] br_addr,    // Branch target
+    input  [`WORD_DATA_BUS] br_addr,     // Branch target
 
-    output reg [`WORD_DATA_BUS] if_pc,       // Program counter
-    output     [`WORD_DATA_BUS] if_pc_plus4, // Next PC
-    output reg [`WORD_DATA_BUS] if_insn,     // Instruction
-    output reg                  if_en        // Effective mark of pipeline
+    output     [`WORD_DATA_BUS] pc,      // Current Program counter
+    output reg [`WORD_DATA_BUS] if_pc,   // Next Program counter
+    output reg [`WORD_DATA_BUS] if_insn, // Instruction
+    output reg                  if_en    // Effective mark of pipeline
 );
-    assign if_pc_plus4 = if_pc + `WORD_DATA_W'd4;
+
+    assign pc = (if_pc != 0 ) ? if_pc - `WORD_DATA_W'd4 : if_pc;
 
     always @(posedge clk) begin    
         if (reset == `ENABLE) begin
@@ -54,7 +55,7 @@ module if_reg(
                     if_en   <= #1 `DISABLE;
                 end else begin
                     /* Next PC */
-                    if_pc   <= #1 if_pc_plus4;
+                    if_pc   <= #1 if_pc + `WORD_DATA_W'd4;
                     if_insn <= #1 insn;
                     if_en   <= #1 `ENABLE;
                 end // else: !if(br_taken == `ENABLE)
