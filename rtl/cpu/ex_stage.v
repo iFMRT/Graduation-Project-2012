@@ -112,7 +112,7 @@ module ex_stage (
     end
 
     assign br_addr  = alu_out;
-    assign br_taken = cmp_out | id_jump_taken;
+    assign br_taken = ( cmp_out && id_gpr_we_ ) | id_jump_taken; // Branch gpr_we_ is disable_ (Logic 1)
 
     /* ex_stage reg ==================================================*/
     ex_reg ex_reg_i (
