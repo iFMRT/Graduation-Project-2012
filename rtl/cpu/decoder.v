@@ -328,6 +328,8 @@ module decoder (
                             cmp_op   = `CMP_OP_EQ;
                             alu_in_0 = pc;
                             alu_in_1 = imm_b;
+                            $display("%h", if_insn[11:8]);
+
                             // br_flag  = `ENABLE;
                         end
                         `ISA_OP_BR_BNE: begin

@@ -32,8 +32,8 @@ module id_stage (
     input [`FWD_CTRL_BUS]    rb_fwd_ctrl,
 
     /********** IF/ID Pipeline Register **********/
-    input [`WORD_DATA_BUS]   if_pc,         // Next PC
     input [`WORD_DATA_BUS]   pc,            // Current PC
+    input [`WORD_DATA_BUS]   if_pc,         // Next PC
     input [`WORD_DATA_BUS]   if_insn,       // Instruction
     input                    if_en,         // Pipeline data enable
     /********** ID/EXPipeline  Register  **********/

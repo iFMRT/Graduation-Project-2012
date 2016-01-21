@@ -109,7 +109,7 @@ module ctrl (
             (ra_addr         != 1'b0)     &&   // r0 always is 0, no need to forward
             (id_dst_addr     == ra_addr)
         ) begin
-
+        
             ra_fwd_ctrl = `FWD_CTRL_EX;   // Forward from EX stage
 
         end else if (

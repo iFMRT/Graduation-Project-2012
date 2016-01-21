@@ -25,8 +25,8 @@ module ex_stage (
     input [`WORD_DATA_BUS]  id_alu_in_0,
     input [`WORD_DATA_BUS]  id_alu_in_1,
     input [`CMP_OP_BUS]     id_cmp_op,
-    input [`WORD_DATA_BUS]  id_cmp_in0,
-    input [`WORD_DATA_BUS]  id_cmp_in1,
+    input [`WORD_DATA_BUS]  id_cmp_in_0,
+    input [`WORD_DATA_BUS]  id_cmp_in_1,
 
     input [`MEM_OP_BUS]     id_mem_op,
     input [`WORD_DATA_BUS]  id_mem_wr_data,
@@ -87,8 +87,8 @@ module ex_stage (
     );
 
     cmp #(32) cmp_i (
-     .arg0 (id_cmp_in0),
-     .arg1 (id_cmp_in1),
+     .arg0 (id_cmp_in_0),
+     .arg1 (id_cmp_in_1),
      .op   (id_cmp_op),
      .true (cmp_out)
     );
