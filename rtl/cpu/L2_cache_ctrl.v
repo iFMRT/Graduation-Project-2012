@@ -25,8 +25,9 @@ module L2_cache_ctrl(
     input               irq,                // icache request
     input               complete,           // complete mark of writing into L1C
     input               L2_complete,        // complete mark of writing into L2C
-    input       [2:0]   PLUR,               // the number of replacing mark
-//  input               drq,                 // dcache request
+    input       [2:0]   plru,               // the number of replacing mark
+    output reg  [2:0]   plru_now,           // the value of plru now
+//  input               drq,                // dcache request
     input       [18:0]  L2_tag0_rd,         // read data of tag0
     input       [18:0]  L2_tag1_rd,         // read data of tag1
     input       [18:0]  L2_tag2_rd,         // read data of tag2
@@ -41,7 +42,8 @@ module L2_cache_ctrl(
     output reg          L2_tag1_rw,         // read / write signal of tag1
     output reg          L2_tag2_rw,         // read / write signal of tag0
     output reg          L2_tag3_rw,         // read / write signal of tag1
-    output      [16:0]  L2_tag_wd,          // write data of tag0
+    output      [18:0]  L2_tag_wd,          // write data of tag0
+    // output      [16:0]  L2_tag_wd,          // write data of tag0
     output reg          L2_rdy,
     output reg          L2_data0_rw,        // the mark of cache_data0 write signal 
     output reg          L2_data1_rw,        // the mark of cache_data1 write signal 
@@ -63,7 +65,8 @@ module L2_cache_ctrl(
     reg                 clk_tmp;            // temporary clk
     assign L2_index   = if_addr [14:6];
     assign offset     = if_addr [5:4];
-    assign L2_tag_wd  = if_addr [31:15];
+    assign L2_tag_wd  = {2'b10,if_addr [31:15]};
+    // assign L2_tag_wd  = if_addr [31:15];
     always @(*)begin // path choose
         hitway0 = (L2_tag0_rd[16:0] == if_addr[31:15]) & L2_tag0_rd[18];
         hitway1 = (L2_tag1_rd[16:0] == if_addr[31:15]) & L2_tag1_rd[18];
@@ -109,6 +112,7 @@ module L2_cache_ctrl(
                     end    
                 end
                 `ACCESS_L2:begin
+                    plru_now    <= plru;
                     L2_busy     <= `ENABLE;
                     if ( rw == `READ && tagcomp_hit == `ENABLE) begin // cache hit
                         L2_miss_stall <= `DISABLE;
@@ -189,21 +193,21 @@ module L2_cache_ctrl(
                             if (L2_tag1_rd[18] == `ENABLE) begin
                                 if (L2_tag2_rd[18] == `ENABLE) begin
                                     if (L2_tag3_rd[18] == `ENABLE) begin
-                                        if (PLUR[0] == 1'b0) begin
-                                            if (PLUR[1] == 1'b0) begin
+                                        if (plru[0] == 1'b0) begin
+                                            if (plru[1] == 1'b0) begin
                                                 L2_data0_rw <= `WRITE;
                                                 L2_tag0_rw  <= `WRITE;
-                                            end else begin // PLUR[1:0] = 2'b00
+                                            end else begin // plru[1:0] = 2'b00
                                                 L2_data1_rw <= `WRITE;
                                                 L2_tag1_rw  <= `WRITE;
-                                            end // PLUR[1:0] = 2'b01
-                                        end else if (PLUR[2] == 1'b0) begin
+                                            end // plru[1:0] = 2'b01
+                                        end else if (plru[2] == 1'b0) begin
                                             L2_data2_rw <= `WRITE;
                                             L2_tag2_rw  <= `WRITE;
-                                        end else begin// PLUR[0][2] = 2'b01
+                                        end else begin// plru[0][2] = 2'b01
                                             L2_data3_rw <= `WRITE;
                                             L2_tag3_rw  <= `WRITE;
-                                        end // PLUR[2][0] = 2'b11
+                                        end // plru[2][0] = 2'b11
                                     end else begin
                                         L2_data3_rw <= `WRITE;
                                         L2_tag3_rw  <= `WRITE;
