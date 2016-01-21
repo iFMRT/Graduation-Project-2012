@@ -105,9 +105,9 @@ module decoder (
         /* 指令类型判别 */
         if (if_en == `ENABLE) begin
             case (op)
-                `ISA_OP_NOP: begin
-                    alu_op      =   `ALU_OP_NOP;
-                end
+                // `ISA_OP_NOP: begin
+                //     alu_op      =   `ALU_OP_NOP;   // NOP should should use ADDI x0, x0, 0
+                // end
             /* I格式 */
                 `ISA_OP_LD: begin // LD指令
                     src_reg_used   = 2'b01;        // do not use rb

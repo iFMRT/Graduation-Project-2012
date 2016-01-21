@@ -23,7 +23,7 @@
 	`define ISA_OP_W		    7	         // 操作码位数
         // 定义操作码内容
 	// NOP Opcode
-	`define ISA_OP_NOP                   7'b0000000
+	// `define ISA_OP_NOP                   7'b0000000  // NOP should use ADDI x0, x0, 0
 	// I 格式
 	`define ISA_OP_LD                   7'b0000011   // LoaD  
 	`define ISA_OP_ALSI		    7'b0010011   // Arithmetic Logic Shift Immediate
