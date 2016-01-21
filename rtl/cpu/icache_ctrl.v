@@ -21,14 +21,15 @@ module icache_ctrl(
     output reg [31:0]  cpu_data,      // read data of CPU
     output reg         miss_stall,    // the signal of stall caused by cache miss
     /* L1_cache part */
-    input              LRU,           // mark of replacing
+    input              lru,           // mark of replacing
     input      [20:0]  tag0_rd,       // read data of tag0
     input      [20:0]  tag1_rd,       // read data of tag1
     input      [127:0] data0_rd,      // read data of data0
     input      [127:0] data1_rd,      // read data of data1
     output reg         tag0_rw,       // read / write signal of L1_tag0
     output reg         tag1_rw,       // read / write signal of L1_tag1
-    output     [19:0]  tag_wd,        // write data of L1_tag
+    output     [20:0]  tag_wd,        // write data of L1_tag
+    // output     [19:0]  tag_wd,        // write data of L1_tag
     output reg         data0_rw,      // read / write signal of data0
     output reg         data1_rw,      // read / write signal of data1
     output     [7:0]   index,         // address of L1_cache
@@ -51,7 +52,8 @@ module icache_ctrl(
     assign valid1        = tag1_rd[20];
     assign index         = if_addr [11:4];
     assign offset        = if_addr [3:2];
-    assign tag_wd        = if_addr [31:12];
+    // assign tag_wd        = if_addr [31:12];
+    assign tag_wd        = {1'b1,if_addr [31:12]};
     always @(*) begin
         clk_tmp = #1 clk;
     end
@@ -138,7 +140,7 @@ module icache_ctrl(
                         state  <= `WRITE_IC;
                         if (valid0 == 1'b1) begin
                             if (valid1 == 1'b1) begin
-                                if(LRU == 1'b0) begin
+                                if(lru == 1'b0) begin
                                     data0_rw  <= `WRITE;
                                     tag0_rw   <= `WRITE;
                                 end else begin
