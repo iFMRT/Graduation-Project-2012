@@ -282,19 +282,19 @@ module decoder (
                     endcase
                 end
                 // /* U 格式 */
-                // `ISA_OP_LUI  : begin // LUI 指令
-                //     src_reg_used   = 2'b00;        // do not use ra and rb
-                //     gpr_we_     = `DISABLE_;// 选通imm_u作为结果
-                //     gpr_wr_data = imm_u;
-                //     gpr_mux_ex  = `EX_OUT_PCN;
-                // end
-                // `ISA_OP_AUIPC  : begin // LUIPC 指令
-                //     src_reg_used   = 2'b00;        // do not use ra and rb
-                //     alu_op      = `ALU_OP_ADD;
-                //     alu_in_0    = pc;
-                //     alu_in_1    = imm_u;
-                //     gpr_we_     = `ENABLE_;
-                // end
+                `ISA_OP_LUI  : begin // LUI 指令
+                    src_reg_used = 2'b00;        // do not use ra and rb
+                    gpr_we_      = `ENABLE_;// 选通imm_u作为结果
+                    gpr_wr_data  = imm_u;
+                    gpr_mux_ex   = `EX_OUT_PCN;
+                end
+                `ISA_OP_AUIPC  : begin // LUIPC 指令
+                    src_reg_used = 2'b00;        // do not use ra and rb
+                    alu_op       = `ALU_OP_ADD;
+                    alu_in_0     = pc;
+                    alu_in_1     = imm_u;
+                    gpr_we_      = `ENABLE_;
+                end
                 /* S 格式 */
                 `ISA_OP_ST  : begin // SW 命令
                     src_reg_used   = 2'b11;        // use ra and rb
@@ -328,7 +328,6 @@ module decoder (
                             cmp_op   = `CMP_OP_EQ;
                             alu_in_0 = pc;
                             alu_in_1 = imm_b;
-                            $display("%h", if_insn[11:8]);
 
                             // br_flag  = `ENABLE;
                         end
