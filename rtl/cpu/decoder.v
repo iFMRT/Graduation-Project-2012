@@ -159,7 +159,6 @@ module decoder (
                             alu_op      = `ALU_OP_SLL;
                             alu_in_1    = imm_i;
                             gpr_we_     = `ENABLE_;
-                            gpr_mux_ex  = `EX_OUT_CMP;
                         end
                         `ISA_OP_ALSI_SLTI:begin   // SLTI 指令
                             cmp_op      = `CMP_OP_LT;    //这里大概需要一个控制信号，将最后写回寄存器的选通为cmp输出
@@ -239,7 +238,6 @@ module decoder (
                         `ISA_OP_ALS_SLL: begin
                             alu_op      = `ALU_OP_SLL;
                             gpr_we_     = `ENABLE_;
-                            gpr_mux_ex  = `EX_OUT_CMP;
                         end
                         `ISA_OP_ALS_SLT: begin
                             cmp_op      = `CMP_OP_LT;
