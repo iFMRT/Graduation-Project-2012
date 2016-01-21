@@ -66,7 +66,7 @@ module ex_stage (
     wire                  cmp_out;
     reg  [`WORD_DATA_BUS] ex_out_inner;
 
-    assign fwd_data    = alu_out;
+    assign fwd_data    = ex_out_inner;
     // Forward Data From MEM Stage 
     // When Load instruction in MEM Stage, Store instruction in EX Stage.
     assign alu_in_0    = (ex_ra_fwd_en == `ENABLE) ? mem_fwd_data : id_alu_in_0;
@@ -99,7 +99,9 @@ module ex_stage (
             `EX_OUT_ALU : begin
                 ex_out_inner = alu_out;
             end
-            // `EX_OUT_CMP : ex_out_inner = {31'b0, cmp_out};
+            `EX_OUT_CMP : begin
+                ex_out_inner = {31'b0, cmp_out};   
+            end
             `EX_OUT_PCN : begin
                 ex_out_inner = id_gpr_wr_data;  // When EX_OUT_PCN, it is PC + 4
             end
