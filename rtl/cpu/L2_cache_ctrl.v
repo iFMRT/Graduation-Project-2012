@@ -97,7 +97,6 @@ module L2_cache_ctrl(
         end else begin
             case(state)
                 `L2_IDLE:begin
-                    plru_now    <= plru;
                     L2_busy     <= `DISABLE;
                     L2_rdy      <= `DISABLE;
                     L2_tag0_rw  <= rw;
@@ -113,6 +112,7 @@ module L2_cache_ctrl(
                     end    
                 end
                 `ACCESS_L2:begin
+                    plru_now    <= plru;
                     L2_busy     <= `ENABLE;
                     if ( rw == `READ && tagcomp_hit == `ENABLE) begin // cache hit
                         L2_miss_stall <= `DISABLE;
