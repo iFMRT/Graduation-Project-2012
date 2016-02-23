@@ -16,7 +16,7 @@
 module decoder (
     /********** IF/ID Pipeline Register **********/
     input wire [`WORD_DATA_BUS]  if_pc,          // Program counter
-    input wire [`WORD_DATA_BUS]  pc,    // Jump adn link return address
+    input wire [`WORD_DATA_BUS]  pc,             // Jump and link return address
     input wire [`WORD_DATA_BUS]  if_insn,        // Instruction
     input wire                   if_en,          // Pipeline data enable
 

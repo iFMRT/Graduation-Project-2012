@@ -7,22 +7,13 @@
 分组                  | 信号名         | 信号类型 | 数据类型 | 位宽   |  含义
 :------               | :------        | :------  | :------  |:------ | :------
 IF/ID流水线寄存器     | if_pc          | 输入端口 | wire     | 32     | 程序计数器
-IF/ID流水线寄存器     | if_pc_plus4    | 输入端口 | wire     | 32     | 返回地址
+IF/ID流水线寄存器     | pc             | 输入端口 | wire     | 32     | 返回地址
 IF/ID流水线寄存器     | if_insn        | 输入端口 | wire     | 32     | 指令
 IF/ID流水线寄存器     | if_en          | 输入端口 | wire     | 1      | 流水线数据的有效标志位
-GPR接口               | gpr_rd_data_0  | 输入端口 | wire     | 32     | 读取数据0
-GPR接口               | gpr_rd_data_1  | 输入端口 | wire     | 32     | 读取数据1
+两个操作数            | ra_data        | 输入端口 | wire     | 32     | 读取数据0
+两个操作数            | rb_data        | 输入端口 | wire     | 32     | 读取数据1
 GPR接口               | gpr_rd_addr_0  | 输出端口 | wire     | 5      | 读取地址0
 GPR接口               | gpr_rd_addr_1  | 输出端口 | wire     | 5      | 读取地址1
-LOAD 冲突的检测       | id_en          | 输入端口 | wire     | 1      | 流水线数据有效
-LOAD 冲突的检测       | id_dst_addr    | 输入端口 | wire     | 5      | 写入地址
-LOAD 冲突的检测       | id_gpr_we_     | 输入端口 | wire     | 1      | 写入有效
-LOAD 冲突的检测       | id_mem_op      | 输入端口 | wire     | 2      | 内存操作
-来自EX阶段的数据转发  | ex_en          | 输入端口 | wire     | 1      | 流水线数据的有效
-来自EX阶段的数据转发  | ex_dst_addr    | 输入端口 | wire     | 5      | 写入地址
-来自EX阶段的数据转发  | ex_gpr_we_     | 输入端口 | wire     | 1      | 写入有效
-来自EX阶段的数据转发  | ex_fwd_we      | 输入端口 | wire     | 32     | 数据转发
-来自MEM阶段的数据转发 | mem_fwd_data   | 输入端口 | wire     | 32     | 数据转发
 解码结果              | alu_op         | 输出端口 | reg      | 4      | ALU 操作
 解码结果              | cmp_op         | 输出端口 | reg      | 3      | CMP 操作
 解码结果              | alu_in_0       | 输出端口 | reg      | 32     | ALU 输入 0
@@ -37,13 +28,11 @@ LOAD 冲突的检测       | id_mem_op      | 输入端口 | wire     | 2      |
 解码结果              | gpr_we_        | 输出端口 | reg      | 1      | 通用寄存器写入有效
 解码结果              | dst_addr       | 输出端口 | reg      | 5      | 通用寄存器写入地址
 解码结果              | gpr_mux_ex     | 输出端口 | reg      | 1      | ex 阶段的通用寄存器写回选通信号
-解码结果              | gpr_mux_mem    | 输出端口 | reg      | 1      | mem 阶段的通用寄存器写回选通信号
 解码结果              | gpr_wr_data    | 输出端口 | reg      | 32     | ID 阶段输出的 gpr 写入信号
-解码结果              | ld_hazard      | 输出端口 | reg      | 1      | Load冲突
-指令字段              | op             | 内部信号 | wire     | 7      | 操作码
-指令字段              | ra_addr        | 内部信号 | wire     | 5      | Ra地址
-指令字段              | rb_addr        | 内部信号 | wire     | 5      | Rb地址
-指令字段              | rc_addr        | 内部信号 | wire     | 5      | Rc地址
+冲突检测              | op             | 输出端口 | wire     | 7      | 操作码
+冲突检测              | ra_addr        | 输出端口 | wire     | 5      | Ra地址
+冲突检测              | rb_addr        | 输出端口 | wire     | 5      | Rb地址
+冲突检测              | src_reg_used   | 输出端口 | reg      | 2      | 寄存器编码字段有效标识
 指令字段              | funct3         | 内部信号 | wire     | 3      | 部件功能
 指令字段              | funct7         | 内部信号 | wire     | 7      | 有符号无符号和加减操作区分 
 立即数处理            | imm_u          | 输出信号 | wire     | 32     | U 格式立即数
@@ -69,6 +58,8 @@ LOAD 冲突的检测       | id_mem_op      | 输入端口 | wire     | 2      |
     wire [`WORD_DATA_BUS] imm_u  = {if_insn[31:12],12'b0}; 
     // I 格式立即数处理
     wire [`WORD_DATA_BUS] imm_i  = {{20{if_insn[31]}},if_insn[31:20]};
+    // JALR 立即数处理 最低有效位置为 0，相当于原来的立即数加上 PC+4 再把结果置为 0
+    wire [`WORD_DATA_BUS] imm_ijr  = {{20{if_insn[31]}},if_insn[31:21], 1'b0};
     // I 格式右移指令立即数处理
     wire [`WORD_DATA_BUS] imm_ir = {{26{if_insn[31]}},if_insn[24:20]};
     // S 格式立即数处理
@@ -104,73 +95,7 @@ LOAD 冲突的检测       | id_mem_op      | 输入端口 | wire     | 2      |
 
 此处对寄存器读取地址进行赋值。通用寄存器读取地址使用指令的 Ra 字段（ra_addr）和 Rb 字段（rb_addr）。存储器写回数据恒为第二操作数，而得益于 riscv 指令集编码的特色，通用寄存器写回地址总是在 Rc 字段。
 
-+ 数据转发
 
-```
-    /********** 转发 **********/
-    always @(*) 
-        begin
-            /* 关于 Ra 的转发 */
-            if ((id_en == `ENABLE) && (id_gpr_we_ == `ENABLE_) && (id_dst_addr == ra_addr)) 
-                begin
-                    ra_data = ex_fwd_data;   // 来自 EX 阶段的转发
-                end 
-            else if ((ex_en == `ENABLE) && (ex_gpr_we_ == `ENABLE_) && (ex_dst_addr == ra_addr)) 
-                begin
-                    ra_data = mem_fwd_data;  // 来自 MEM 阶段的转发
-                end 
-            else 
-                begin
-                    ra_data = gpr_rd_data_0; // 没有发生流水线冲突
-                end
-            /* 关于 Rb 的转发*/
-            if ((id_en == `ENABLE) && (id_gpr_we_ == `ENABLE_) && (id_dst_addr == rb_addr)) 
-                begin
-                    rb_data = ex_fwd_data;   // 来自 EX 阶段的转发
-                end 
-            else if ((ex_en == `ENABLE) && (ex_gpr_we_ == `ENABLE_) && (ex_dst_addr == rb_addr)) 
-                begin
-                    rb_data = mem_fwd_data;  // 来自 MEM 阶段的转发
-                end 
-            else 
-                begin
-                    rb_data = gpr_rd_data_1; // 没有发生流水线冲突
-                end
-        end
-```
-
-#### [1] Ra 寄存器的数据转发
-
-因为流水线前的结果会成为最新值，转发的比较按 EX 阶段、 MEM 阶段的顺序进行。
-
-来自 EX 阶段的数据转发的产生条件为： ID/EX 流水线寄存器有效、 Ra 寄存器的读取地址（ra_addr）与寄存器写入地址（id_dst_addr）相等，且寄存器的写入有效信号（id_gpr_we_）为有效。
-
-来自 MEM 阶段的数据转发的产生条件为： EX/MEM 流水线寄存器有效、 Ra 寄存器的读取地址（ra_addr）与寄存器写入地址（ex_dst_addr）相等，且寄存器的写入有效信号（ex_gpr_we_）为有效。无法进行转发时，直接使用寄存器堆读取值。
-
-####[2] Rb 寄存器的数据转发
-
-来自 EX 阶段的数据转发的产生条件为： ID/EX 流水线寄存器有效、 Rb 寄存器的读取地址（rb_addr）与寄存器写入地址（id_dst_addr）相等，且寄存器的写入有效信号（id_gpr_we_）为有效。来自 MEM 阶段的数据转发的产生条件为： EX/MEM 流水线寄存器有效、 Rb 寄存器的读取地址（rb_addr）与寄存器写入地址（ex_dst_addr）相等，且寄存器的写入有效信号（ex_gpr_we_）为有效。无需进行数据转发时，直接使用寄存器堆读取值。
-
-+ Load 冲突检测
-
-```
-    /********** Load 冲突的检测 **********/
-    always @(*) 
-        begin
-            if ((id_en == `ENABLE) && (id_gpr_we_ = `ENABLE) && (id_mem_op != `MEM_OP_NOP) && ((id_dst_addr == ra_addr) || (id_dst_addr == rb_addr))) 
-                begin
-                    ld_hazard = `ENABLE;  // 存在 Load 冲突
-                end 
-            else 
-                begin
-                    ld_hazard = `DISABLE; // 不存在 Load 冲突
-                end
-        end
-```
-
-#### [1] Load 冲突检测
-
-Load 冲突产生的条件为： ID/EX 流水线寄存器中存放的之前的指令的内存操作不为空，通用寄存器写入有效且写入地址与当前指令的读取地址相等。 ID/EX 流水线寄存器有效、内存操作（id_mem_op）为 Load 指令（MEM_OP_LDW），且之前指令的写入地址（id_dst_addr）与 Ra 寄存器的地址（ra_addr）或 Rb 寄存器的地址（rb_addr）相等时使能 Load 冲突信号（ld_hazard）。
 
 + 内部信号的初始化
 
