@@ -29,7 +29,7 @@ module gpr_testbench();
 	/******** 测试参数 ********/
 	reg 	[31:0]	vector_num;			// 测试次数
 	reg 	[31:0]	errors;				// 结果错误次数
-	reg 	[111:0]	test_vectors[5:0];	// 测试向量存储	
+	reg 	[111:0]	test_vectors[6:0];	// 测试向量存储	
 
 	/******** 被测试模块的实例化 ********/
 	gpr dut(.clk		(clk),			// 时钟
