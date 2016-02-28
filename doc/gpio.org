@@ -1,0 +1,312 @@
+* GPIO 
+** 什么是 GPIO
+
+GPIO( General Purpose Input Output ) 是以位为单位进行数字输入输出的 I/O 接口。作为单纯的通用输入输出 I/O，输入时从外部读取输入信号、输出时将写入的值输入到外部。
+
+[[file:img/gpio_0.png]]
+
+** GPIO 的设计
+
+设计的 GPIO 有输入专用端口、输出专用端口，以及可以输入输出的双向端口三种。输入输出的双向端口可以作为输入或输出端口使用，输入输出的方向通过控制寄存器设置。
+
+GPIO 的控制寄存器
+
+[[file:img/gpio_1.png]]
+
+- 控制寄存器0：输入端口
+  *[31:0]: 输入数据（INPUT_DATA）*
+  通过对该寄存器的读取，可以读取输入端口的信号值。
+- 控制寄存器1：输出端口
+  *[31:0]: 输出数据（OUTPUT_DATA）*
+  将数据写入该寄存器，会直接输出到输出端口。
+- 控制寄存器2：输入输出端口
+  *[31:0]: 输入输出数据（INOUT_DATA）*
+  当输入输出方向为输入时，读取该寄存器即可获取外部输入的信号值；为输出时，对该寄存器写入数据即可输出到外部。
+- 控制寄存器3：输入输出方向
+  *[31:0]: 输入输出方向（INOUT_DIR）*
+  该寄存器用来设置输入输出端口的信号方向。当寄存器值为 0时端口为输入、值为 1时端口为输出。该寄存器各个比特对应控制相应的输入输出端口。
+
+** GPIO 的实现
+
+GPIO 框图
+
+[[file:img/gpio_2.png]]
+
+GPIO 由输入端口、输出端口和输入输出端口三个部分构成。各个端口在设计上是独立的，每个端口是否实现，以及每个端口的通道数都使用宏来定义。
+
+*** GPIO 宏一览（gpio.h）
+
+#+CAPTION: GPIO 宏一览(gpio.h)
+| 宏名               | 值   | 含义                      |
+|--------------------+------+---------------------------|
+| GPIO_IN_CH         | 4    | 输入端口                  |
+| GPIO_OUT_CH        | 18   | 输出端口                  |
+| GPIO_IO_CH         | 16   | 输入输出端口              |
+| GPIO_ADDR_BUS      | 1:0  | 地址总线                  |
+| GPIO_ADDR_W        | 2    | 地址宽度                  |
+| GPIO_ADDR_LOC      | 1:0  | 地址的位置                |
+| GPIO_ADDR_IN_DATA  | 2'h0 | 控制寄存器0：输入端口     |
+| GPIO_ADDR_OUT_DATA | 2'h1 | 控制寄存器1：输出端口     |
+| GPIO_ADDR_IO_DATA  | 2'h2 | 控制寄存器2：输入输出端口 |
+| GPIO_ADDR_IO_DIR   | 2'h3 | 控制寄存器3：输入输出方向 |
+| GPIO_DIR_IN        | 1'b0 | 输入输出方向：输入        |
+| GPIO_DIR_OUT       | 1'b1 | 输入输出方向：输出        |
+
+*** GPIO 信号线一览（gpio.v）
+
+- 时钟复位
+
+| 信号名 | 信号类型 | 数据类型 | 位宽 | 含义     |
+|--------+----------+----------+------+----------|
+| clk    | 输入端口 | wire     |    1 | 时钟     |
+| reset  | 输入端口 | wire     |    1 | 异步复位 |
+
+- 总线接口
+
+| 信号名  | 信号类型 | 数据类型 | 位宽 | 含义         |
+|---------+----------+----------+------+--------------|
+| cs_     | 输入端口 | wire     |    1 | 片选信号     |
+| as_     | 输入端口 | wire     |    1 | 地址选通信号 |
+| rw      | 输入端口 | wire     |    1 | 读/写        |
+| addr    | 输入端口 | wire     |    2 | 地址         |
+| wr_data | 输入端口 | wire     |   32 | 写入的数据   |
+| rd_data | 输出端口 | reg      |   32 | 读取的数据   |
+| rdy_    | 输出端口 | reg      |    1 | 就绪信号     |
+
+- 通用输入输出端口
+
+| 信号名   | 信号类型     | 数据类型 | 位宽 | 含义              |
+|----------+--------------+----------+------+-------------------|
+| gpio_in  | 输入端口     | wire     |    4 | GPIO 输入端口     |
+| gpio_out | 输出端口     | reg      |   18 | GPIO 输出端口     |
+| gpio_io  | 输入输出端口 | wire     |   16 | GPIO 输入输出端口 |
+
+- 输入输出信号
+
+| 信号名 | 信号类型 | 数据类型 | 位宽 | 含义                        |
+|--------+----------+----------+------+-----------------------------|
+| io_in  | 内部信号 | wire     |   16 | GPIO 输入输出端口的输入数据 |
+| io_out | 内部信号 | reg      |   16 | GPIO 输入输出端口的输出数据 |
+| io_dir | 内部信号 | reg      |   16 | GPIO 输入输出端口的方向     |
+
+#+CAPTION: GPIO 的输入输出端口
+#+BEGIN_SRC verilog
+`ifdef GPIO_IO_CH // 输入输出端口的控制
+    /******** 输入输出信号 ********/
+    /* 1. 输入输出信号的定义
+     * 此处定义输入输出端口所用的信号，如下图所示。
+     */ 
+    wire [`GPIO_IO_CH-1:0]    io_in;     // 输入的数据
+    reg  [`GPIO_IO_CH-1:0]    io_out;    // 输出的数据
+    reg  [`GPIO_IO_CH-1:0]    io_dir;    // 输入输出方向（控制寄存器3）
+    reg  [`GPIO_IO_CH-1:0]    io;        // 输入输出
+    integer                   i;         // 迭代器
+
+    /******** 输入输出信号的连续赋值 ********/
+    /* 2. 输入输出信号的连续赋值
+     * 当前端口（gpio_io）的值连续赋值给输入的数据（io_in）。
+     * 用作输出时为来自内部的输出数据，用作输入时为来自外部的输入数据。
+     * 输入输出端口（gpio_io）的值由输入输出信号（io）连续赋值得到。
+     */ 
+    assign io_in   = gpio_io;            // 输入的数据
+    assign gpio_io = io;                 // 输入输出
+
+    /******** 输入输出方向的控制 ********/
+    always @(*) begin
+        for (i = 0; i < `GPIO_IO_CH; i = i + 1) begin : IO_DIR
+            io[i] = (io_dir[i] == `GPIO_DIR_IN) ? 1'bz : io_out[i];
+        end
+    end
+`endif
+#+END_SRC
+
+#+CAPTION: 输入输出端口的信号
+[[file:img/gpio_3.png]]
+
+#+CAPTION: GPIO 的输入输出端口
+#+BEGIN_SRC verilog
+
+    /********** GPIO 的控制  **********/
+    always @(posedge clk or `RESET_EDGE reset) begin
+        if (reset == `RESET_ENABLE) begin
+            /* 异步复位 */
+            rd_data  <= #1 `WORD_DATA_W'h0;
+            rdy_     <= #1 `DISABLE_;
+`ifdef GPIO_OUT_CH   // 输出端口复位
+            gpio_out <= #1 {`GPIO_OUT_CH{`LOW}};
+`endif
+`ifdef GPIO_IO_CH    // 输入输出端口复位
+            io_out   <= #1 {`GPIO_IO_CH{`LOW}};
+            io_dir   <= #1 {`GPIO_IO_CH{`GPIO_DIR_IN}};
+`endif
+        end else begin
+            /* 就绪信号生成 */
+            /* 当片选信号（cs_）和地址选通信号（as_）同时到来时，
+             * 表示有来自总线的访问，使能就绪信号（rdy_）。
+             * 其他情况下就绪信号无效。
+             */
+            if ((cs_ == `ENABLE_) && (as_ == `ENABLE_)) begin
+                rdy_     <= #1 `ENABLE_;
+            end else begin
+                rdy_     <= #1 `DISABLE_;
+            end
+            /* 读取访问 */
+            if ((cs_ == `ENABLE_) && (as_ == `ENABLE_) && (rw == `READ)) begin
+                case (addr)
+`ifdef GPIO_IN_CH   // Input Port Read
+                    `GPIO_ADDR_IN_DATA  : begin // Control Register 0
+                        rd_data  <= #1 {{`WORD_DATA_W-`GPIO_IN_CH{1'b0}},
+                                        gpio_in};
+                    end
+`endif
+`ifdef GPIO_OUT_CH  // Output Port Read
+                    `GPIO_ADDR_OUT_DATA : begin // Control Register 1
+                        rd_data  <= #1 {{`WORD_DATA_W-`GPIO_OUT_CH{1'b0}},
+                                        gpio_out};
+                    end
+`endif
+`ifdef GPIO_IO_CH   // Input/Output Port Read
+                    `GPIO_ADDR_IO_DATA  : begin // Control Register 2
+                        rd_data  <= #1 {{`WORD_DATA_W-`GPIO_IO_CH{1'b0}},
+                                        io_in};
+                     end
+                    `GPIO_ADDR_IO_DIR   : begin // Control Register 3
+                        rd_data  <= #1 {{`WORD_DATA_W-`GPIO_IO_CH{1'b0}},
+                                        io_dir};
+                    end
+`endif
+                endcase
+            end else begin
+                rd_data  <= #1 `WORD_DATA_W'h0;
+            end
+            /* 写入访问 */
+            if ((cs_ == `ENABLE_) && (as_ == `ENABLE_) && (rw == `WRITE)) begin
+                case (addr)
+`ifdef GPIO_OUT_CH  // 向输出端口写入
+                    `GPIO_ADDR_OUT_DATA : begin // 控制寄存器 1
+                        gpio_out <= #1 wr_data[`GPIO_OUT_CH-1:0];
+                    end
+`endif
+`ifdef GPIO_IO_CH   // 向输入输出端口写入
+                    `GPIO_ADDR_IO_DATA  : begin // 控制寄存器 2
+                        io_out   <= #1 wr_data[`GPIO_IO_CH-1:0];
+                     end
+                    `GPIO_ADDR_IO_DIR   : begin // 控制寄存器 3
+                        io_dir   <= #1 wr_data[`GPIO_IO_CH-1:0];
+                    end
+`endif
+                endcase
+            end
+        end
+    end
+#+END_SRC
+
+** Testbench
+
+#+CAPTION: 测试 inout 端口 gpio_io
+#+BEGIN_SRC verilog 
+    reg [`GPIO_IO_CH-1:0] gpio_io_in;
+    reg                   gpio_io_oe; // Output enable
+    assign gpio_io = ( gpio_io_oe == `GPIO_DIR_IN ) ? gpio_io_in : `GPIO_IO_CH'bz;
+#+END_SRC
+
+*** 复位
+
+#+CAPTION: 输入信号
+| reset   | cs_  | as_  | rw   | addr | wr_data | data | gpio_in | gpio_io_in | gpio_io_oe    |
+| 有效    | 无关 | 无关 | 无关 | 无关 | 无关    | 无关 | 无关    | 无关       | 方向为输出    |
+| `ENABLE |      |      |      |      |         |      |         |            | `GPIO_DIR_OUT |
+
+#+CAPTION: 输出信号
+| rd_data         | rdy_      | gpio_out        | gpio_io        |
+| 0               | 无效      | 0               | 高阻态         |
+| `WORD_DATA_W'h0 | `DISABLE_ | `GPIO_OUT_CH'h0 | `GPIO_IO_CH'bz |
+
+*** 向输入端口输入数据
+
+#+CAPTION: 输入信号
+| reset   | cs_      | as_      | rw    | addr               | wr_data | gpio_in        | gpio_io_in | gpio_io_oe    |
+| 无效    | 有效     | 有效     | 读取  | 输入端口           | 无关    | 0xa            | 无关       | 方向为输出    |
+| `ENABLE | `ENABLE_ | `ENABLE_ | `READ | `GPIO_ADDR_IN_DATA |         | `GPIO_IN_CH'ha |            | `GPIO_DIR_OUT |
+
+#+CAPTION: 输出信号
+| rd_data         | rdy_     | gpio_out        | gpio_io        |
+| 0xa             | 有效     | 0               | 高阻态         |
+| `WORD_DATA_W'ha | `ENABLE_ | `GPIO_OUT_CH'h0 | `GPIO_IO_CH'bz |
+
+*** 向输出端口写入数据
+
+#+CAPTION: 输入信号
+| cs_      | as_      | rw     | addr                | wr_data          | gpio_in | gpio_io_in | gpio_io_oe    |
+| 有效     | 有效     | 写入   | 输出端口            | 0x56             | 无关    | 无关       | 方向为输出    |
+| `ENABLE_ | `ENABLE_ | `WRITE | `GPIO_ADDR_OUT_DATA | `WORD_DATA_W'h56 |         |            | `GPIO_DIR_OUT |
+
+#+CAPTION: 输出信号
+| rd_data          | rdy_     | gpio_out         | gpio_io        |
+| 0                | 有效     | 0x56             | 高阻态         |
+| `WORD_DATA_W'h0 | `ENABLE_ | `GPIO_OUT_CH'h56 | `GPIO_IO_CH'bz |
+
+*** 从输出端口读取数据
+
+#+CAPTION: 输入信号
+| cs_      | as_      | rw    | addr                | wr_data | gpio_in | gpio_io_in | gpio_io_oe    |
+| 有效     | 有效     | 读取  | 输出端口            | 无关    | 无关    | 无关       | 方向为输出    |
+| `ENABLE_ | `ENABLE_ | `READ | `GPIO_ADDR_OUT_DATA |         |         |            | `GPIO_DIR_OUT |
+
+#+CAPTION: 输出信号
+| rd_data          | rdy_     | gpio_out         | gpio_io        |
+| 0x56             | 有效     | 56               | 高阻态         |
+| `WORD_DATA_W'h56 | `ENABLE_ | `GPIO_OUT_CH'h56 | `GPIO_IO_CH'bz |
+
+*** 设置输入输出端口的信号方向为输入
+
+复位时默认的方向就是输入。
+
+*** 向输入输出端口输入数据
+
+#+CAPTION: 输入信号
+| cs_      | as_      | rw    | addr               | wr_data | gpio_in | gpio_io_in      | gpio_io_oe   |
+| 有效     | 有效     | 读取  | 输入输出端口       | 无关    | 无关    | 0x24            | 方向为输入   |
+| `ENABLE_ | `ENABLE_ | `READ | `GPIO_ADDR_IO_DATA |         |         | `GPIO_IO_CH'h24 | `GPIO_DIR_IN |
+
+#+CAPTION: 输出信号
+| rd_data          | rdy_     | gpio_out         | gpio_io         |
+| 0x24             | 有效     | 保持不变         | 0x24            |
+| `WORD_DATA_W'h24 | `ENABLE_ | `GPIO_OUT_CH'h56 | `GPIO_IO_CH'h24 |
+
+*** 向输入输出端口写入数据
+
+#+CAPTION: 输入信号
+| cs_      | as_      | rw     | addr               | wr_data          | gpio_in | gpio_io_in | gpio_io_oe    |
+| 有效     | 有效     | 写入   | 输入输出端口       | 0x59             | 无关    | 无关　     | 方向为输出    |
+| `ENABLE_ | `ENABLE_ | `WRITE | `GPIO_ADDR_IO_DATA | `WORD_DATA_W'h59 |         |            | `GPIO_DIR_OUT |
+
+#+CAPTION: 输出信号
+| rd_data         | rdy_     | gpio_out         | gpio_io        |
+| 0               | 有效     | 保持不变         | 高阻态         |
+| `WORD_DATA_W'h0 | `ENABLE_ | `GPIO_OUT_CH'h56 | `GPIO_IO_CH'bz |
+
+*** 设置输入输出端口的信号方向为输出
+
+#+CAPTION: 输入信号
+| cs_      | as_      | rw     | addr              | wr_data         | gpio_in | gpio_io_in | gpio_io_oe    |
+| 有效     | 有效     | 写入   | 输入输出方向      | 全是 1          | 无关    | 无关　     | 方向为输出    |
+| `ENABLE_ | `ENABLE_ | `WRITE | `GPIO_ADDR_IO_DIR | `WORD_DATA_W'b1 |         |            | `GPIO_DIR_OUT |
+
+#+CAPTION: 输出信号
+| rd_data         | rdy_     | gpio_out         | gpio_io         |
+| 0               | 有效     | 保持不变         | 0x59            |
+| `WORD_DATA_W'h0 | `ENABLE_ | `GPIO_OUT_CH'h56 | `GPIO_IO_CH'h59 |
+
+*** 从输入输出端口读取数据
+
+#+CAPTION: 输入信号
+| cs_      | as_      | rw    | addr               | wr_data | gpio_in | gpio_io_in | gpio_io_oe    |
+| 有效     | 有效     | 读取  | 输入输出端口       | 无关    | 无关    | 无关　     | 方向为输出    |
+| `ENABLE_ | `ENABLE_ | `READ | `GPIO_ADDR_IO_DATA |         |         |            | `GPIO_DIR_OUT |
+
+#+CAPTION: 输出信号
+| rd_data          | rdy_     | gpio_out         | gpio_io         |
+| 0x59             | 有效     | 保持不变         | 保持不变        |
+| `WORD_DATA_W'h59 | `ENABLE_ | `GPIO_OUT_CH'h56 | `GPIO_IO_CH'h59 |
+
