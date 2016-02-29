@@ -19,13 +19,13 @@ module gpio_test;
     wire                    rdy_;    // Ready
     /********** General Purpose Input/Output **********/
 `ifdef GPIO_IN_CH    // Input Port Implementation
-    reg  [`GPIO_IN_CH-1:0]  gpio_in; // Input Port?Control Register 0?
+    reg  [`GPIO_IN_CH-1:0]  gpio_in; // Input Port (Control Register 0)
 `endif
 `ifdef GPIO_OUT_CH   // Output Port Implementation
-    wire [`GPIO_OUT_CH-1:0] gpio_out;// Output Port ?Control Register1?
+    wire [`GPIO_OUT_CH-1:0] gpio_out;// Output Port (Control Register1)
 `endif
 `ifdef GPIO_IO_CH    // Input/Output Port Implementation
-    wire [`GPIO_IO_CH-1:0]  gpio_io; // Input/Output Port ?Control Register2?
+    wire [`GPIO_IO_CH-1:0]  gpio_io; // Input/Output Port (Control Register2)
 `endif
 
     /******** Define Simulation Loop********/
