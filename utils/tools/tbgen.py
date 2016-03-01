@@ -78,6 +78,22 @@ class TestbenchGenerator(object):
 
             self.module_header += self.parser_header(line)
 
+    def gen_dut(self):
+        dut = ""
+
+        dut = "    " + self.module_name + " " + self.module_name + " (\n"
+
+        last_arg = self.args_list.pop()
+
+        for arg in self.args_list:
+            dut += "        " + "." + arg + "(" + arg + "),\n"
+
+        dut += "        " + "." + last_arg + "(" + last_arg + ")\n"
+
+        dut += "    );"
+
+        return dut
+
     def write_file(self):
         # Create Testbench File
         with open('gpio_test.v', 'w') as f:
