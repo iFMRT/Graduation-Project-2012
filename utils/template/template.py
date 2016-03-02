@@ -83,13 +83,11 @@ class Compiler(object):
         elif fragment.type == VAR_FRAGMENT:
             node_class = _Variable
         elif fragment.type == OPEN_BLOCK_FRAGMENT:
-            cmd = fragment.text[0]
+            cmd = fragment.text.split()[0]
             if cmd == 'each':
                 node_class = _Each
-
         # TODO
         # if node_class is None:
         #    raise TemplateSyntaxError(fragment)
-
-        # return node_class(fragment.text)
+        return node_class(fragment.text)
 

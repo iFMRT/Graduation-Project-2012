@@ -30,10 +30,13 @@ class CompilerTest(unittest.TestCase):
 
     def test_create_node_method_return_correct_result(self):
         node_objs = []
+
         for item in self.each_fragment:
+            if item.text == 'end':
+                continue
             node_objs.append(self.compiler.create_node(item))
 
-        # self.assertIsInstance(node_objs[0], TestEach)
-        # self.assertIsInstance(node_objs[1], TestText)
-        # self.assertIsInstance(node_objs[2], TestVariable)
-        # self.assertIsInstance(node_objs[3], TestText)
+        self.assertIsInstance(node_objs[0], TestEach)
+        self.assertIsInstance(node_objs[1], TestText)
+        self.assertIsInstance(node_objs[2], TestVariable)
+        self.assertIsInstance(node_objs[3], TestText)
