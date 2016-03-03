@@ -27,6 +27,11 @@ def eval_expression(expr):
     return 'literal', ast.literal_eval(expr)
     # TODO: return iterator variable name
 
+
+def resolve(name, context):
+    return context[name]
+
+
 class _Fragment(object):
     def __init__(self, raw_text):
         self.raw = raw_text
@@ -63,6 +68,15 @@ class _Node(object):
     def process_fragment(self, fragment):
         pass
 
+    def render(self, context):
+        pass
+
+    def render_children(self, context):
+        def render_child(child):
+            child_html = child.render(context)
+            return '' if not child_html else str(child_html)
+        return ''.join(list(map(render_child, self.children)))
+
 class _ScopableNode(_Node):
     creates_scope = True
 
@@ -72,6 +86,9 @@ class _Root(_Node):
 class _Variable(_Node):
     def process_fragment(self, fragment):
         self.name = fragment
+
+    def render(self, context):
+        return resolve(self.name, context)
 
 # Just for test
 TestVariable = _Variable
@@ -84,6 +101,13 @@ class _Each(_ScopableNode):
         self.it = eval_expression(it)
         # TODO: check TemplateSyntaxError
 
+    def render(self, context):
+        # TODO: process iterator variable name
+        items = self.it[1]
+        def render_item(item):
+            return  self.render_children({'it': item})
+        return ''.join(list(map(render_item, items)))
+
 # Just for test
 TestEach = _Each
 
@@ -91,6 +115,9 @@ TestEach = _Each
 class _Text(_Node):
     def process_fragment(self, fragment):
         self.text = fragment
+
+    def render(self, context):
+        return self.text
 
 # Just for test
 TestText = _Text

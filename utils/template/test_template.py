@@ -86,11 +86,26 @@ class CompilerTest(unittest.TestCase):
         self.assertIsInstance(root_grandchildren_right[2], TestText)
 
 class NodeTest(unittest.TestCase):
-    def test_process_fragment_method_return_correct_result(self):
-        variable_node = TestVariable('var')
-        each_node     = TestEach('each [1, 2, 3]')
-        text_node     = TestText('<div>')
+    def setUp(self):
+        self.variable_node = TestVariable('it')
+        self.each_node     = TestEach('each [1, 2, 3]')
+        self.text_node     = TestText('<div>')
 
-        self.assertEqual(variable_node.name, 'var' )
-        self.assertEqual(each_node.it[1], [1, 2, 3])
-        self.assertEqual(text_node.text, '<div>')
+        self.context       = {'it': 'Happy'}
+        self.each_node.children += [self.text_node, self.variable_node, self.text_node]
+
+
+    def test_process_fragment_method_return_correct_result(self):
+
+        self.assertEqual(self.variable_node.name, 'it' )
+        self.assertEqual(self.each_node.it[1], [1, 2, 3])
+        self.assertEqual(self.text_node.text, '<div>')
+
+    def test_render_method_return_correct_result(self):
+        variable_result = self.variable_node.render(self.context)
+        text_result     = self.text_node.render(self.context)
+        each_result     = self.each_node.render(self.context)
+
+        self.assertEqual(variable_result, 'Happy')
+        self.assertEqual(text_result, '<div>')
+        self.assertEqual(each_result, '<div>1<div><div>2<div><div>3<div>')
