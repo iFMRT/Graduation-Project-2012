@@ -46,10 +46,18 @@ class _Fragment(object):
 TestFragment = _Fragment
 
 class _Node(object):
-    def __init__(self, fragment):
-        pass
+    creates_scope = False
 
-class _Each(_Node):
+    def __init__(self, fragment=None):
+        self.children = []
+
+class _ScopableNode(_Node):
+    creates_scope = True
+
+class _Root(_Node):
+    pass
+
+class _Each(_ScopableNode):
     pass
 
 # Just for test
@@ -75,6 +83,21 @@ class Compiler(object):
         for fragment in TOK_REGEX.split(self.template_string):
             if fragment:
                 yield _Fragment(fragment)
+
+    def compile(self):
+        root = _Root()
+        scope_stack = [root]
+        for fragment in self.each_fragment():
+            parent_scope = scope_stack[-1]
+            if fragment.type == CLOSE_BLOCK_FRAGMENT:
+                scope_stack.pop()
+                continue
+            new_node = self.create_node(fragment)
+            if new_node:
+                parent_scope.children.append(new_node)
+                if new_node.creates_scope:
+                    scope_stack.append(new_node)
+        return root
 
     def create_node(self, fragment):
         node_class = None
