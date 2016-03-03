@@ -23,9 +23,12 @@ TOK_REGEX = re.compile(r"(%s.*?%s|%s.*?%s)" % (
 WHITESPACE = re.compile('\s+')
 
 def eval_expression(expr):
-    # TODO: return iterator literal
-    return 'literal', ast.literal_eval(expr)
-    # TODO: return iterator variable name
+    try:
+        # return iterator literal
+        return 'literal', ast.literal_eval(expr)
+    except ValueError as SyntaxError:
+        # return iterator variable name
+        return 'name', expr
 
 
 def resolve(name, context):
@@ -73,8 +76,8 @@ class _Node(object):
 
     def render_children(self, context):
         def render_child(child):
-            child_html = child.render(context)
-            return '' if not child_html else str(child_html)
+            child_text = child.render(context)
+            return '' if not child_text else str(child_text)
         return ''.join(list(map(render_child, self.children)))
 
 class _ScopableNode(_Node):
@@ -104,8 +107,8 @@ class _Each(_ScopableNode):
         # TODO: check TemplateSyntaxError
 
     def render(self, context):
-        # TODO: process iterator variable name
-        items = self.it[1]
+        # process iterator variable name
+        items = self.it[1] if self.it[0] == 'literal' else resolve(self.it[1], context)
         def render_item(item):
             return  self.render_children({'it': item})
         return ''.join(list(map(render_item, items)))
