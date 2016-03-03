@@ -85,3 +85,12 @@ class CompilerTest(unittest.TestCase):
         self.assertIsInstance(root_grandchildren_right[1], TestVariable)
         self.assertIsInstance(root_grandchildren_right[2], TestText)
 
+class NodeTest(unittest.TestCase):
+    def test_process_fragment_method_return_correct_result(self):
+        variable_node = TestVariable('var')
+        each_node     = TestEach('each [1, 2, 3]')
+        text_node     = TestText('<div>')
+
+        self.assertEqual(variable_node.name, 'var' )
+        self.assertEqual(each_node.it[1], [1, 2, 3])
+        self.assertEqual(text_node.text, '<div>')

@@ -1,4 +1,5 @@
 import re
+import ast
 
 # Fragment Type
 VAR_FRAGMENT         = 0
@@ -18,6 +19,13 @@ TOK_REGEX = re.compile(r"(%s.*?%s|%s.*?%s)" % (
     BLOCK_TOKEN_START,
     BLOCK_TOKEN_END
 ))
+
+WHITESPACE = re.compile('\s+')
+
+def eval_expression(expr):
+    # TODO: return iterator literal
+    return 'literal', ast.literal_eval(expr)
+    # TODO: return iterator variable name
 
 class _Fragment(object):
     def __init__(self, raw_text):
@@ -50,6 +58,10 @@ class _Node(object):
 
     def __init__(self, fragment=None):
         self.children = []
+        self.process_fragment(fragment)
+
+    def process_fragment(self, fragment):
+        pass
 
 class _ScopableNode(_Node):
     creates_scope = True
@@ -57,23 +69,32 @@ class _ScopableNode(_Node):
 class _Root(_Node):
     pass
 
+class _Variable(_Node):
+    def process_fragment(self, fragment):
+        self.name = fragment
+
+# Just for test
+TestVariable = _Variable
+
 class _Each(_ScopableNode):
-    pass
+    def process_fragment(self, fragment):
+        # "each iterator" to "iterator", it is for iterator
+        it = WHITESPACE.split(fragment, 1)[1]
+        # change to python iterator
+        self.it = eval_expression(it)
+        # TODO: check TemplateSyntaxError
 
 # Just for test
 TestEach = _Each
 
+
 class _Text(_Node):
-    pass
+    def process_fragment(self, fragment):
+        self.text = fragment
 
 # Just for test
 TestText = _Text
 
-class _Variable(_Node):
-    pass
-
-# Just for test
-TestVariable = _Variable
 
 class Compiler(object):
     def __init__(self, template_string):
