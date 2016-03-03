@@ -81,7 +81,9 @@ class _ScopableNode(_Node):
     creates_scope = True
 
 class _Root(_Node):
-    pass
+   def render(self, context):
+       return self.render_children(context)
+
 
 class _Variable(_Node):
     def process_fragment(self, fragment):
@@ -162,3 +164,10 @@ class Compiler(object):
         #    raise TemplateSyntaxError(fragment)
         return node_class(fragment.text)
 
+
+class Template(object):
+    def __init__(self, contents):
+        self.root = Compiler(contents).compile()
+
+    def render(self, **kwargs):
+        return self.root.render(kwargs)

@@ -1,5 +1,5 @@
 import unittest
-from .template import Compiler
+from .template import Compiler, Template
 from .template import TestFragment, TestEach, TestText, TestVariable
 from .template import VAR_FRAGMENT, OPEN_BLOCK_FRAGMENT, CLOSE_BLOCK_FRAGMENT, TEXT_FRAGMENT
 
@@ -109,3 +109,18 @@ class NodeTest(unittest.TestCase):
         self.assertEqual(variable_result, 'Happy')
         self.assertEqual(text_result, '<div>')
         self.assertEqual(each_result, '<div>1<div><div>2<div><div>3<div>')
+
+# Functional testing
+class EachTests(unittest.TestCase):
+
+    def test_each_iterable_as_literal_list(self):
+        rendered = Template('{% each [1, 2, 3] %}<div>{{it}}</div>{% end %}').render()
+        self.assertEquals(rendered, '<div>1</div><div>2</div><div>3</div>')
+
+    def test_each_space_issues(self):
+        rendered = Template('{% each [1,2, 3]%}<div>{{it}}</div>{%end%}').render()
+        self.assertEquals(rendered, '<div>1</div><div>2</div><div>3</div>')
+
+    def test_each_no_tags_inside(self):
+        rendered = Template('{% each [1,2,3] %}<br>{% end %}').render()
+        self.assertEquals(rendered, '<br><br><br>')
