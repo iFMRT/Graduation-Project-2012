@@ -7,7 +7,7 @@ class FragmentTest(unittest.TestCase):
     def test_fragment_object_has_correct_property(self):
         open_obj  = TestFragment("{% each [1, 2, 3] %}")
         text_obj  = TestFragment("<div>")
-        var_obj   = TestFragment("{{ var }}")
+        var_obj   = TestFragment("{& var &}")
         close_obj = TestFragment("{% end %}")
 
         self.assertEqual(open_obj.text, "each [1, 2, 3]")
@@ -21,7 +21,7 @@ class FragmentTest(unittest.TestCase):
 
 class CompilerTest(unittest.TestCase):
     def setUp(self):
-        self.compiler = Compiler("{%each [1, 2, 3]%} <div> {{var}} </div> {%end%}")
+        self.compiler = Compiler("{%each [1, 2, 3]%} <div> {&var&} </div> {%end%}")
         self.each_fragment = self.compiler.each_fragment()
 
     def test_each_fragment_method_generate_fragment_objects(self):
@@ -54,9 +54,9 @@ class CompilerTest(unittest.TestCase):
 
     def test_complie_method_create_nested_children_for_each_node(self):
         self.compiler = Compiler(
-            "{%each [1, 2, 3]%} <div> {{var}} </div> {%end%}" +
-            "{{var}}" +
-            "{%each [1, 2, 3]%} <div> {{var}} </div> {%end%}"
+            "{%each [1, 2, 3]%} <div> {&var&} </div> {%end%}" +
+            "{&var&}" +
+            "{%each [1, 2, 3]%} <div> {&var&} </div> {%end%}"
         )
 
         root_children             = self.compiler.compile().children
@@ -114,11 +114,11 @@ class NodeTest(unittest.TestCase):
 class EachTests(unittest.TestCase):
 
     def test_each_iterable_as_literal_list(self):
-        rendered = Template('{% each [1, 2, 3] %}<div>{{it}}</div>{% end %}').render()
+        rendered = Template('{% each [1, 2, 3] %}<div>{&it&}</div>{% end %}').render()
         self.assertEquals(rendered, '<div>1</div><div>2</div><div>3</div>')
 
     def test_each_space_issues(self):
-        rendered = Template('{% each [1,2, 3]%}<div>{{it}}</div>{%end%}').render()
+        rendered = Template('{% each [1,2, 3]%}<div>{&it&}</div>{%end%}').render()
         self.assertEquals(rendered, '<div>1</div><div>2</div><div>3</div>')
 
     def test_each_no_tags_inside(self):
@@ -126,13 +126,15 @@ class EachTests(unittest.TestCase):
         self.assertEquals(rendered, '<br><br><br>')
 
     def test_each_iterable_in_context(self):
-        rendered = Template('{% each items %}<div>{{it}}</div>{% end %}').render(items=['alex', 'maria'])
+        rendered = Template('{% each items %}<div>{&it&}</div>{% end %}').render(items=['alex', 'maria'])
         self.assertEquals(rendered, '<div>alex</div><div>maria</div>')
 
     def test_each_parent_context(self):
-        rendered = Template('{% each [1, 2, 3] %}<div>{{..name}}-{{it}}</div>{% end %}').render(name='jon doe')
+        rendered = Template('{% each [1, 2, 3] %}<div>{&..name&}-{&it&}</div>{% end %}').render(name='jon doe')
         self.assertEquals(rendered, '<div>jon doe-1</div><div>jon doe-2</div><div>jon doe-3</div>')
 
     def test_nested_objects(self):
-       context = {'lines': [{'name': 'l1'}], 'name': 'p1'}
-       rendered = Template('<h1>{{name}}</h1>{% each lines %}<span class="{{..name}}-{{it.name}}">{{it.name}}</span>{% end %}').render(**context)
+        print("nested")
+        context = {'lines': [{'name': 'l1', 'a': 'b'}], 'name': 'p1'}
+        rendered = Template('<h1>{&name&}</h1>{% each lines %}<span class="{&..name&}-{&it.name&}">{%each [1, 2, 3]%}{& ..it.it &}{%end%}</span>{% end %}').render(**context)
+        self.assertEquals(rendered, '<h1>p1</h1><span class="p1-l1">l1</span>')

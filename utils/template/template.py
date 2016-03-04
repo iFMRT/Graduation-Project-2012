@@ -62,7 +62,7 @@ def resolve(name, context):
     try:
         for tok in name.split('.'):
             context = context[tok]
-            return context
+        return context
     except KeyError:
         raise TemplateContextError(name)
 
@@ -116,8 +116,8 @@ class _ScopableNode(_Node):
     creates_scope = True
 
 class _Root(_Node):
-   def render(self, context):
-       return self.render_children(context)
+    def render(self, context):
+        return self.render_children(context)
 
 
 class _Variable(_Node):
