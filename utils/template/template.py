@@ -32,7 +32,13 @@ def eval_expression(expr):
 
 
 def resolve(name, context):
-    return context[name]
+    if name.startswith('..'):
+        context = context.get('..', {})
+        name    = name[2:]
+
+    for tok in name.split('.'):
+        context = context[tok]
+        return context
 
 
 class _Fragment(object):
@@ -110,7 +116,7 @@ class _Each(_ScopableNode):
         # process iterator variable name
         items = self.it[1] if self.it[0] == 'literal' else resolve(self.it[1], context)
         def render_item(item):
-            return  self.render_children({'it': item})
+            return  self.render_children({'..': context, 'it': item})
         return ''.join(list(map(render_item, items)))
 
 # Just for test
