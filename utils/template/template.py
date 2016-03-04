@@ -8,8 +8,8 @@ CLOSE_BLOCK_FRAGMENT = 2
 TEXT_FRAGMENT        = 3
 
 # Split variable token "{{..}}" and block token "{%...%}"
-VAR_TOKEN_START   = '{{'
-VAR_TOKEN_END     = '}}'
+VAR_TOKEN_START   = '{&'
+VAR_TOKEN_END     = '&}'
 BLOCK_TOKEN_START = '{%'
 BLOCK_TOKEN_END   = '%}'
 
