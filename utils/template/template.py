@@ -22,6 +22,29 @@ TOK_REGEX = re.compile(r"(%s.*?%s|%s.*?%s)" % (
 
 WHITESPACE = re.compile('\s+')
 
+
+class TemplateError(Exception):
+    pass
+
+
+class TemplateContextError(TemplateError):
+
+    def __init__(self, context_var):
+        self.context_var = context_var
+
+    def __str__(self):
+        return "cannot resolve '%s'" % self.context_var
+
+
+class TemplateSyntaxError(TemplateError):
+
+    def __init__(self, error_syntax):
+        self.error_syntax = error_syntax
+
+    def __str__(self):
+        return "'%s' seems like invalid syntax" % self.error_syntax
+
+
 def eval_expression(expr):
     try:
         # return iterator literal
@@ -36,9 +59,12 @@ def resolve(name, context):
         context = context.get('..', {})
         name    = name[2:]
 
-    for tok in name.split('.'):
-        context = context[tok]
-        return context
+    try:
+        for tok in name.split('.'):
+            context = context[tok]
+            return context
+    except KeyError:
+        raise TemplateContextError(name)
 
 
 class _Fragment(object):
@@ -106,11 +132,14 @@ TestVariable = _Variable
 
 class _Each(_ScopableNode):
     def process_fragment(self, fragment):
-        # "each iterator" to "iterator", it is for iterator
-        it = WHITESPACE.split(fragment, 1)[1]
-        # change to python iterator
-        self.it = eval_expression(it)
-        # TODO: check TemplateSyntaxError
+        try:
+            # "each iterator" to "iterator", it is for iterator
+            it = WHITESPACE.split(fragment, 1)[1]
+            # change to python iterator
+            self.it = eval_expression(it)
+        except ValueError:
+            # check TemplateSyntaxError
+            raise TemplateSyntaxError(fragment)
 
     def render(self, context):
         # process iterator variable name
@@ -168,9 +197,8 @@ class Compiler(object):
             cmd = fragment.text.split()[0]
             if cmd == 'each':
                 node_class = _Each
-        # TODO
-        # if node_class is None:
-        #    raise TemplateSyntaxError(fragment)
+        if node_class is None:
+            raise TemplateSyntaxError(fragment)
         return node_class(fragment.text)
 
 
