@@ -1,10 +1,16 @@
 import sys
+sys.path.append("..")
 import re
+from template.template import Template
 
 class TestbenchGenerator(object):
+    def __init__(self):
+        self.module_header = ''
+        self.ports_name = []
+        self.ports_width = {}
+        self.ports_type = {}
 
     def open_file(self, src_file_name=None):
-
         try:
             with open(src_file_name, 'r') as src_file:
                 self.src_file_content = src_file.readlines()
@@ -13,7 +19,13 @@ class TestbenchGenerator(object):
             print("ERROR: Open and read file error.\n ERROR:    %s" % e)
             sys.exit(1)
 
-    def parser_header(self, line):
+
+    def render(self):
+        context = {'header': self.module_header, 'dut': self.gen_dut()}
+        with open('template.v') as template_flie:
+            self.result = Template(template_flie.read()).render(**context)
+
+    def parse_header(self, line):
         # remove 'wire' and 'reg'
         # remove ')' is the same as replacing ');' to ';'
         line = re.sub('\wire|reg|\(|\)', '', line)
@@ -33,11 +45,13 @@ class TestbenchGenerator(object):
 
         return line
 
-    def parser_args(self, line):
-        args = []
+    def parse_ports(self, line):
+        port_type    = []
+        port_width   = []
+        port_name    = []
 
-        remove_items = ['input', 'output', 'inout',
-                        'reg', 'wire',
+        type_list    = ['input', 'output', 'inout']
+        remove_items = ['reg', 'wire',
                         ');', ',', ')', '',
         ]
 
@@ -47,63 +61,74 @@ class TestbenchGenerator(object):
 
         # remove "//" line comments
         if '//' in line:
+            port_comment = line.split('//')[1]
             line = line.split('//')[0]
 
         line = line.split()
 
         for item in line:
-            if item not in remove_items and '[' not in item:
+            if item in type_list:
+                port_type.append(item)
+            elif '[' in item:
+                port_width.append(item)
+            elif item not in remove_items:
                 # remove ',' from 'arg,'
                 item = re.sub(',', '', item)
                 # remove ')' from 'arg)'
                 item = re.sub('\\)', '', item)
                 # remove ');' from 'arg);'
                 item = re.sub('\\);', '', item)
-                args.append(item)
+                port_name.append(item)
 
-        return args
+        # idx is for index
+        for idx, name in enumerate(port_name):
+            self.ports_name.append(name)
+            self.ports_width[name] = port_width[idx]
+            self.ports_type[name]  = port_type[idx]
+
 
     def parser(self):
-        self.module_header = ''
-        self.args_list = []
-
         for line in self.src_file_content:
             if 'input' in line or 'output' in line or 'inout' in line:
-                self.args_list += self.parser_args(line)
+                self.parse_ports(line)
 
             # break when read to module header end
             if ');' in line:
-                self.module_header += self.parser_header(line)
+                self.module_header += self.parse_header(line)
                 break
 
-            self.module_header += self.parser_header(line)
+            self.module_header += self.parse_header(line)
 
     def gen_dut(self):
         dut = ""
 
         dut = "    " + self.module_name + " " + self.module_name + " (\n"
 
-        last_arg = self.args_list.pop()
+        last_port = self.ports_name.pop()
 
-        for arg in self.args_list:
-            dut += "        " + "." + arg + "(" + arg + "),\n"
+        for name in self.ports_name:
+            dut += "        " + "." + name + "(" + name + "),\n"
 
-        dut += "        " + "." + last_arg + "(" + last_arg + ")\n"
+        dut += "        " + "." + last_port + "(" + last_port + ")\n"
 
         dut += "    );"
 
         return dut
 
+    def gen_dut_task(self):
+        pass
+
     def write_file(self):
         # Create Testbench File
         with open('gpio_test.v', 'w') as f:
-            f.write(self.module_header)
+            f.write(self.result)
 
 if __name__ == "__main__":
 
     tbg = TestbenchGenerator()
     tbg.open_file('gpio.v')
     tbg.parser()
+    tbg.render()
     tbg.write_file()
 
 
