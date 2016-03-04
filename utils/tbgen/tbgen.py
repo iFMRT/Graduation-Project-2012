@@ -78,6 +78,9 @@ class TestbenchGenerator(object):
                 item = re.sub('\\)', '', item)
                 # remove ');' from 'arg);'
                 item = re.sub('\\);', '', item)
+                # if one port has no width, use '' instead
+                if len(port_width) - len(port_name) != 1:
+                    port_width.append('')
                 port_name.append(item)
 
         # idx is for index
@@ -100,28 +103,44 @@ class TestbenchGenerator(object):
             self.module_header += self.parse_header(line)
 
     def gen_dut(self):
-        dut = ""
-
         dut = "    " + self.module_name + " " + self.module_name + " (\n"
-
         last_port = self.ports_name.pop()
 
         for name in self.ports_name:
             dut += "        " + "." + name + "(" + name + "),\n"
 
         dut += "        " + "." + last_port + "(" + last_port + ")\n"
-
         dut += "    );"
 
         return dut
 
     def gen_dut_task(self):
-        pass
+        width_ports = []
+        with open('template/task.v', 'r') as f:
+            task_template = f.read()
+
+        for idx, port in enumerate(self.ports_name):
+            width_ports.append(self.ports_width[port] + ' _' + port )
+
+
+        ports = self.ports_name
+        last_port = ports.pop()
+        context = {'task_name': 'gpio_tb',
+                   'width_ports': width_ports,
+                   'ports': ports,
+                   'last_port': last_port,
+        }
+
+        task = Template(task_template).render(**context)
+
+        return task
+
 
     def write_file(self):
         # Create Testbench File
         with open('gpio_test.v', 'w') as f:
             f.write(self.result)
+
 
 if __name__ == "__main__":
 
