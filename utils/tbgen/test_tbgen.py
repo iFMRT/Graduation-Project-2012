@@ -58,11 +58,10 @@ class TbgenTest(unittest.TestCase):
         self.assertEqual(result, expect_string)
 
     def test_gen_dut_task_method_return_correct_result(self):
-        self.tbgen.src_file_content = ["module gpio ( output reg  [`WORD_DATA_BUS] rd_data, output rd_read, inout wire [`GPIO_IO_CH-1:0]  gpio_io ); // comments"]
+        self.tbgen.src_file_content = ["module gpio (input clk, input reset, output reg  [`WORD_DATA_BUS] rd_data, output rd_read, inout wire [`GPIO_IO_CH-1:0]  gpio_io ); // comments"]
         self.tbgen.parser()
 
         result        = self.tbgen.gen_dut_task()
-        print(result)
         expect_string = """    task gpio_tb;
         input [`WORD_DATA_BUS] _rd_data;
         input  _rd_read;
@@ -81,3 +80,42 @@ class TbgenTest(unittest.TestCase):
     endtask
 """
         self.assertEqual(result, expect_string)
+
+    def test_gen_test_case_yaml_method(self):
+        self.tbgen.src_file_content = ["module gpio ( input clk, input reset, output reg  [`WORD_DATA_BUS] rd_data, inout wire [`GPIO_IO_CH-1:0]  gpio_io ); // comments"]
+        self.tbgen.parser()
+        
+        result = self.tbgen.gen_test_case_yaml()
+        expect_string = """init input:
+    clk: placeholder
+    reset: placeholder
+init output:
+    display: something you want to display
+    gpio_io: placeholder
+    rd_data: placeholder
+"""
+        self.assertEqual(result, expect_string)
+
+    def test_parse_test_case_yaml_method_return_correct_result(self):
+        parsed_string = """init input:
+    clk: placeholder
+    reset: placeholder
+init output:
+    display: something you want to display
+    gpio_io: placeholder
+    rd_data: placeholder
+"""
+        result = self.tbgen.load_yaml(parsed_string)
+        expect = {
+            'init input':{
+                'clk': 'placeholder',
+                'reset': 'placeholder'
+            },
+            'init output': {
+                'display': 'something you want to display',
+                'gpio_io': 'placeholder',
+                'rd_data': 'placeholder'
+            }
+        }
+
+        #self.assertEqual(result, expect)
