@@ -26,7 +26,7 @@ module L2_cache_ctrl(
     input               complete,           // complete mark of writing into L1C
     input               L2_complete,        // complete mark of writing into L2C
     input       [2:0]   plru,               // the number of replacing mark
-    output reg  [2:0]   plru_now,           // the value of plru now
+//    output reg  [2:0]   plru_now,           // the value of plru now
 //  input               drq,                // dcache request
     input       [18:0]  L2_tag0_rd,         // read data of tag0
     input       [18:0]  L2_tag1_rd,         // read data of tag1
@@ -112,8 +112,8 @@ module L2_cache_ctrl(
                     end    
                 end
                 `ACCESS_L2:begin
-                    plru_now    <= plru;
                     L2_busy     <= `ENABLE;
+                    // plru_now    <= plru;
                     if ( rw == `READ && tagcomp_hit == `ENABLE) begin // cache hit
                         L2_miss_stall <= `DISABLE;
                         state         <= `WRITE_L1;

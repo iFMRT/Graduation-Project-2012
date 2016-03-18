@@ -37,7 +37,7 @@ module icache_test();
     /* CPU part */
     wire             L2_miss_stall; // stall caused by L2_miss
     /*cache part*/
-    wire     [2:0]   plru_now;      // the value of plru now
+    // wire     [2:0]   plru_now;      // the value of plru now
     wire             L2_busy;       // busy mark of L2C
     wire     [127:0] data_wd;       // write data to L1_IC
     wire             L2_tag0_rw;    // read / write signal of tag0
@@ -116,7 +116,7 @@ module icache_test();
         .complete       (complete),      // complete write from L2 to L1
         .L2_complete    (L2_complete),   // complete write from MEM to L2
         .plru           (plru),          // replace mark
-        .plru_now       (plru_now),      // the value of plru now
+        // .plru_now       (plru_now),      // the value of plru now
         .L2_tag0_rd     (L2_tag0_rd),    // read data of tag0
         .L2_tag1_rd     (L2_tag1_rd),    // read data of tag1
         .L2_tag2_rd     (L2_tag2_rd),    // read data of tag2
@@ -182,7 +182,7 @@ module icache_test();
         .L2_tag2_rw     (L2_tag2_rw),    // read / write signal of tag2
         .L2_tag3_rw     (L2_tag3_rw),    // read / write signal of tag3
         .L2_index       (L2_index),      // address of cache
-        .plru_now       (plru_now),      // the value of plur now
+        // .plru_now       (plru_now),      // the value of plur now
         .L2_tag_wd      (L2_tag_wd),     // write data of tag
         .L2_tag0_rd     (L2_tag0_rd),    // read data of tag0
         .L2_tag1_rd     (L2_tag1_rd),    // read data of tag1
@@ -266,7 +266,7 @@ module icache_test();
         input           _mem_rw;             // read / write signal of memory
         begin 
             if( (L2_miss_stall === _L2_miss_stall)  && 
-                (plru_now      === _plru_now)       && 
+                // (plru_now      === _plru_now)       && 
                 (L2_busy       === _L2_busy)        && 
                 (data_wd       === _data_wd)        && 
                 (L2_tag0_rw    === _L2_tag0_rw)     && 
@@ -287,6 +287,58 @@ module icache_test();
             end else begin 
                  $display("L2_icache Test Failed !"); 
             end 
+            // check
+            // if(L2_miss_stall !== _L2_miss_stall)begin 
+            //     $display("L2_miss_stall Test Failed !"); 
+            // end
+            // // if(plru_now      !== _plru_now)    begin
+            // //     $display("plru_now Test Failed !"); 
+            // // end
+            // if(L2_busy       !== _L2_busy)     begin
+            //     $display("L2_busy Test Failed !"); 
+            // end
+            // if(data_wd       !== _data_wd)     begin
+            //     $display("data_wd Test Failed !"); 
+            // end
+            // if(L2_tag0_rw    !== _L2_tag0_rw)  begin
+            //     $display("L2_tag0_rw Test Failed !"); 
+            // end
+            // if(L2_tag1_rw    !== _L2_tag1_rw)  begin
+            //     $display("L2_tag1_rw Test Failed !"); 
+            // end
+            // if(L2_tag2_rw    !== _L2_tag2_rw)  begin
+            //     $display("L2_tag2_rw Test Failed !"); 
+            // end
+            // if(L2_tag3_rw    !== _L2_tag3_rw)  begin
+            //     $display("L2_miss_stall Test Failed !"); 
+            // end
+            // if(L2_tag_wd     !== _L2_tag_wd)   begin
+            //     $display("L2_tag_wd Test Failed !"); 
+            // end
+            // if(L2_rdy        !== _L2_rdy)      begin
+            //     $display("L2_rdy Test Failed !"); 
+            // end
+            // if(L2_data0_rw   !== _L2_data0_rw) begin
+            //     $display("L2_data0_rw Test Failed !"); 
+            // end
+            // if(L2_data1_rw   !== _L2_data1_rw) begin
+            //     $display("L2_data1_rw Test Failed !"); 
+            // end
+            // if(L2_data2_rw   !== _L2_data2_rw) begin
+            //     $display("L2_data2_rw Test Failed !"); 
+            // end
+            // if(L2_data3_rw   !== _L2_data3_rw) begin
+            //     $display("L2_data3_rw Test Failed !"); 
+            // end
+            // if(L2_index      !== _L2_index)    begin
+            //     $display("L2_miss_stall Test Failed !"); 
+            // end
+            // if(mem_addr      !== _mem_addr)    begin
+            //     $display("L2_index Test Failed !"); 
+            // end
+            // if(mem_rw        !== _mem_rw) begin
+            //     $display("mem_rw Test Failed !"); 
+            // end 
         end
     endtask
     task tag_ram_tb;
