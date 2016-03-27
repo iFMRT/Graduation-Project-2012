@@ -1,4 +1,5 @@
 import sys
+import yaml
 sys.path.append("..")
 import re
 from template.template import Template
@@ -14,7 +15,6 @@ class TestbenchGenerator(object):
         try:
             with open(src_file_name, 'r') as src_file:
                 self.src_file_content = src_file.readlines()
-
         except Exception as e:
             print("ERROR: Open and read file error.\n ERROR:    %s" % e)
             sys.exit(1)
@@ -29,12 +29,10 @@ class TestbenchGenerator(object):
         # remove 'wire' and 'reg'
         # remove ')' is the same as replacing ');' to ';'
         line = re.sub('\wire|reg|\(|\)', '', line)
-
         # replace input to reg, output and inout to wire
         line = re.sub('input', 'reg ', line)
         line = re.sub('output', 'wire', line)
         line = re.sub('inout', 'wire', line)
-
         # replace ',' to ';'
         line = re.sub(',', ';', line)
 
@@ -49,7 +47,6 @@ class TestbenchGenerator(object):
         port_type    = []
         port_width   = []
         port_name    = []
-
         type_list    = ['input', 'output', 'inout']
         remove_items = ['reg', 'wire',
                         ');', ',', ')', '',
@@ -58,12 +55,10 @@ class TestbenchGenerator(object):
         # remove '(' or 'module dut_name ('
         if '(' in line:
             line = line.split('(')[1]
-
         # remove "//" line comments
         if '//' in line:
             port_comment = line.split('//')[1]
             line = line.split('//')[0]
-
         line = line.split()
 
         for item in line:
@@ -116,25 +111,44 @@ class TestbenchGenerator(object):
 
     def gen_dut_task(self):
         width_ports = []
+        ports       = []
         with open('template/task.v', 'r') as f:
             task_template = f.read()
 
         for idx, port in enumerate(self.ports_name):
-            width_ports.append(self.ports_width[port] + ' _' + port )
+            if self.ports_type[port] != 'input':
+                ports.append(port)
+                width_ports.append(self.ports_width[port] + ' _' + port )
 
 
-        ports = self.ports_name
         last_port = ports.pop()
-        context = {'task_name': 'gpio_tb',
-                   'width_ports': width_ports,
-                   'ports': ports,
-                   'last_port': last_port,
+        context   = {'task_name':   'gpio_tb',
+                     'width_ports': width_ports,
+                     'ports':       ports,
+                     'last_port':   last_port,
         }
 
         task = Template(task_template).render(**context)
 
         return task
 
+    def gen_test_case_yaml(self):
+        init_input  = {}
+        init_output = {'display': 'something you want to display'}
+        
+        for port in self.ports_name:
+            if self.ports_type[port] == 'input':
+                init_input[port]  = "placeholder"
+            else:
+                init_output[port] = "placeholder"
+
+        return yaml.dump({
+            'init input': init_input,
+            'init output': init_output,
+        }, indent=4, default_flow_style=False)
+
+    def load_yaml(self, testcase):
+        return yaml.load(testcase)
 
     def write_file(self):
         # Create Testbench File

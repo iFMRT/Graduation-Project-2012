@@ -1,0 +1,23 @@
+* Testbench Generator 
+
+Generate testbench for a given verilog module file.
+
+[[https://github.com/syl20bnr/spacemacs][file:https://cdn.rawgit.com/syl20bnr/spacemacs/442d025779da2f62fc86c2082703697714db6514/assets/spacemacs-badge.svg]]
+[[https://en.wikipedia.org/wiki/Beerware][file:https://img.shields.io/badge/license-Beerware%20License-blue.svg?style=flat]]
+
+** Usage
+
+*** Quick Usage
+#+BEGIN_SRC 
+
+python3 tbgen.py input_verilog_file_name [-o output_testbench_file_name]
+
+#+END_SRC
+
+*** TODO Generate Custom Testcase
+
+** License
+
+Testbench Generator is licensed under the [[https://en.wikipedia.org/wiki/Beerware][Beerware license]].
+Copyright © 2016, Leway Colin
+
