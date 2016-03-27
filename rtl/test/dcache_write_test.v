@@ -304,62 +304,62 @@ module dcache_write_test();
                 (irq        === _irq)               && 
                 (l2_index   === _l2_index)          && 
                 (l2_addr    === _l2_addr)           && 
-                (data_wd_dc   === _data_wd_dc)          && 
+                (data_wd_dc   === _data_wd_dc)      && 
                 (dirty0_rw  === _dirty0_rw)         && 
                 (dirty1_rw  === _dirty1_rw)         && 
                 (data_rd    === _data_rd)           && 
                 // (hitway     === _hitway)            &&
                 (data_wd_dc    === _data_wd_dc)
                ) begin 
-                 $display("Dcache Test Succeeded !"); 
+                 $display("dcache Test Succeeded !"); 
             end else begin 
-                 $display("Dcache Test Failed !"); 
+                 $display("dcache Test Failed !"); 
             end 
-            // if (data_wd_dc   !== _data_wd_dc) begin
-            //     $display("data_wd_dc:%b(excepted %b)",data_wd_dc,_data_wd_dc); 
-            // end
-            // if (data_rd   !== _data_rd) begin
-            //     $display("data_rd:%b(excepted %b)",data_rd,_data_rd); 
-            // end
-            // if (dirty0_rw   !== _dirty0_rw) begin
-            //     $display("dirty0_rw:%b(excepted %b)",dirty0_rw,_dirty0_rw); 
-            // end
-            // if (dirty1_rw   !== _dirty1_rw) begin
-            //     $display("dirty1_rw:%b(excepted %b)",dirty1_rw,_dirty1_rw); 
-            // end
-            // if (read_data_m   !== _read_data_m) begin
-            //     $display("read_data_m:%b(excepted %b)",read_data_m,_read_data_m); 
-            // end
-            // if (miss_stall !== _miss_stall) begin
-            //     $display("miss_stall:%b(excepted %b)",miss_stall,_miss_stall); 
-            // end
-            // if (tag0_rw    !== _tag0_rw) begin
-            //     $display("tag0_rw:%b(excepted %b)",tag0_rw,_tag0_rw); 
-            // end
-            // if (tag1_rw    !== _tag1_rw) begin
-            //     $display("tag1_rw:%b(excepted %b)",tag1_rw,_tag1_rw); 
-            // end
-            // if (tag_wd     !== _tag_wd) begin
-            //     $display("tag_wd:%b(excepted %b)",tag_wd,_tag_wd); 
-            // end
-            // if (data0_rw   !== _data0_rw) begin
-            //     $display("data0_rw:%b(excepted %b)",data0_rw,_data0_rw); 
-            // end
-            // if (data1_rw   !== _data1_rw) begin
-            //     $display("data1_rw:%b(excepted %b)",data1_rw,_data1_rw); 
-            // end
-            // if (index      !== _index) begin
-            //     $display("index:%b(excepted %b)",index,_index); 
-            // end
-            // if (irq   !== _irq) begin
-            //     $display("irq:%b(excepted %b)",irq,_irq); 
-            // end
-            // if (l2_index   !== _l2_index) begin
-            //     $display("l2_index:%b(excepted %b)",l2_index,_l2_index); 
-            // end
-            // if (l2_addr      !== _l2_addr) begin
-            //     $display("l2_addr:%b(excepted %b)",l2_addr,_l2_addr); 
-            // end
+            if (data_wd_dc   !== _data_wd_dc) begin
+                $display("data_wd_dc:%b(excepted %b)",data_wd_dc,_data_wd_dc); 
+            end
+            if (data_rd   !== _data_rd) begin
+                $display("data_rd:%b(excepted %b)",data_rd,_data_rd); 
+            end
+            if (dirty0_rw   !== _dirty0_rw) begin
+                $display("dirty0_rw:%b(excepted %b)",dirty0_rw,_dirty0_rw); 
+            end
+            if (dirty1_rw   !== _dirty1_rw) begin
+                $display("dirty1_rw:%b(excepted %b)",dirty1_rw,_dirty1_rw); 
+            end
+            if (read_data_m   !== _read_data_m) begin
+                $display("read_data_m:%b(excepted %b)",read_data_m,_read_data_m); 
+            end
+            if (miss_stall !== _miss_stall) begin
+                $display("miss_stall:%b(excepted %b)",miss_stall,_miss_stall); 
+            end
+            if (tag0_rw    !== _tag0_rw) begin
+                $display("tag0_rw:%b(excepted %b)",tag0_rw,_tag0_rw); 
+            end
+            if (tag1_rw    !== _tag1_rw) begin
+                $display("tag1_rw:%b(excepted %b)",tag1_rw,_tag1_rw); 
+            end
+            if (tag_wd     !== _tag_wd) begin
+                $display("tag_wd:%b(excepted %b)",tag_wd,_tag_wd); 
+            end
+            if (data0_rw   !== _data0_rw) begin
+                $display("data0_rw:%b(excepted %b)",data0_rw,_data0_rw); 
+            end
+            if (data1_rw   !== _data1_rw) begin
+                $display("data1_rw:%b(excepted %b)",data1_rw,_data1_rw); 
+            end
+            if (index      !== _index) begin
+                $display("index:%b(excepted %b)",index,_index); 
+            end
+            if (irq   !== _irq) begin
+                $display("irq:%b(excepted %b)",irq,_irq); 
+            end
+            if (l2_index   !== _l2_index) begin
+                $display("l2_index:%b(excepted %b)",l2_index,_l2_index); 
+            end
+            if (l2_addr      !== _l2_addr) begin
+                $display("l2_addr:%b(excepted %b)",l2_addr,_l2_addr); 
+            end
         end
     endtask 
     task l2_cache_ctrl_tb;
@@ -947,7 +947,7 @@ module dcache_write_test();
                 `READ                     // dirty1_rw
                 );
         end        
-        #STEP begin // L1_IDLE  & l2_IDLE        
+        #STEP begin // L1_ACCESS(write hit)  & l2_IDLE        
             $display("\n========= Clock 13 ========");
             l2_cache_ctrl_tb(
                 `DISABLE,            // miss caused by L2C             
@@ -1003,7 +1003,50 @@ module dcache_write_test();
                 128'h0876547A_00000000_ABF00000_123BC000,   // read data of cache_data0
                 128'h0                                      // read data of cache_data1
                 ); 
-            #10;
+        end        
+        #STEP begin // WRITE_HIT & l2_IDLE        
+            $display("\n========= Clock 14 ========");
+            dcache_ctrl_tb(
+                32'bx,          // read data of CPU
+                `DISABLE,        // the signal of stall caused by cache miss
+                `WRITE,          // read / write signal of L1_tag0
+                `READ,          // read / write signal of L1_tag1
+                21'b1_0000_0000_0000_0000_1110,       // write data of L1_tag
+                `WRITE,          // read / write signal of data0
+                `READ,          // read / write signal of data1
+                8'b0001_0000,   // address of L1_cache
+                128'h0876547A_00000000_ABF00000_0000123B,         // data_wd
+                128'hx,         // data_rd choosing from data_rd0~data_rd1
+                `DISABLE,         // icache request
+                9'b110_0001_00,
+                32'b1110_0001_0000_0000,
+                1'b1,                    // dirty_wd
+                `WRITE,                    // dirty0_rw
+                `READ                    // dirty1_rw
+                );
+            tag_ram_tb(
+                21'b1_0000_0000_0000_0000_1110,         // read data of tag0
+                21'b0,                                  // read data of tag1
+                1'b1,                                   // number of replacing block of tag next time
+                1'b0                                    // complete write from L2 to L1
+                );
+            data_ram_tb(
+                128'h0876547A_00000000_ABF00000_123BC000,   // read data of cache_data0
+                128'h0                                      // read data of cache_data1
+                ); 
+        end
+        #STEP begin // read l1_ram & l2_IDLE        
+            $display("\n========= Clock 15 ========");
+            tag_ram_tb(
+                21'b1_0000_0000_0000_0000_1110,         // read data of tag0
+                21'b0,                                  // read data of tag1
+                1'b1,                                   // number of replacing block of tag next time
+                1'b1                                    // complete write from L2 to L1
+                );
+            data_ram_tb(
+                128'h0876547A_00000000_ABF00000_0000123B,   // read data of cache_data0
+                128'h0                                      // read data of cache_data1
+                );     
             $finish;
         end
     end

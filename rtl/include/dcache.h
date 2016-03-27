@@ -27,6 +27,6 @@
     `define L2_ACCESS            3'h2  // access L2_icache
     `define WAIT_L2_BUSY         3'h3  // wait for L2_icache
     `define WRITE_L1             3'h4  // write block to L1_icache
-    `define LOAD_BLOCK			 3'h4  // load dirty block to L2
-   
+    `define LOAD_BLOCK			 3'h5  // load dirty block to L2
+    `define WRITE_HIT            3'h6  // write block to L1_icache
 `endif

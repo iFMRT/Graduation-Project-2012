@@ -142,10 +142,13 @@ module dcache_ctrl(
                     end
                 end
                 `L1_ACCESS:begin
-                    miss_stall  <= `DISABLE;
                     if (tagcomp_hit == `ENABLE) begin // cache hit
                         if(memwrite_m == `READ) begin // read hit
-                            state <= `L1_IDLE;
+                            if(access_mem_ex == `ENABLE) begin
+                                state  <= `L1_ACCESS;
+                            end else begin
+                                state  <= `L1_IDLE;
+                            end
                             case(hitway)
                                 `WAY0:begin
                                     data0_rw  <= `READ;
@@ -183,7 +186,7 @@ module dcache_ctrl(
                                 end // hitway == 1
                             endcase // case(hitway) 
                         end else if (memwrite_m == `WRITE) begin  // begin: write hit
-                            state          <= `WRITE_L1;
+                            state          <= `WRITE_HIT;
                             dirty_wd       <= 1'b1;
                             data_wd_dc_en  <= `ENABLE;
                             case(hitway)
@@ -191,6 +194,7 @@ module dcache_ctrl(
                                     data0_rw  <= `WRITE;
                                     // dirty0_wd <= 1'b1;
                                     dirty0_rw <= `WRITE;
+                                    tag0_rw   <= `WRITE;
                                     case(offset)
                                         `WORD0:begin
                                             data_wd_dc  <= {data0_rd[127:32],wr_data_m};
@@ -210,6 +214,7 @@ module dcache_ctrl(
                                     data1_rw  <= `WRITE;
                                     // dirty1_wd <= 1'b1;
                                     dirty1_rw <= `WRITE;
+                                    tag0_rw   <= `WRITE;
                                     case(offset)
                                         `WORD0:begin
                                             data_wd_dc  <= {data1_rd[127:32],wr_data_m};
@@ -227,12 +232,6 @@ module dcache_ctrl(
                                 end // hitway == 1
                             endcase // case(hitway) 
                         end // end：write hit
-                        // after reading hit
-                        if(access_mem_ex == `ENABLE) begin
-                            state  <= `L1_ACCESS;
-                        end else begin
-                            state  <= `L1_IDLE;
-                        end
                     end else begin // cache miss
                         miss_stall <= `ENABLE;  
                         if(l2_busy == `ENABLE && (valid == `DISABLE || dirty == `DISABLE)) begin
@@ -317,8 +316,7 @@ module dcache_ctrl(
                 end
                 `WRITE_L1:begin // Write to L1,read from L2
                     if(complete == `ENABLE)begin
-                        irq           <= `DISABLE;
-                        data_wd_dc_en <= `DISABLE;
+                        irq        <= `DISABLE;
                         miss_stall <= `DISABLE;
                         data0_rw   <= `READ;
                         data1_rw   <= `READ;
@@ -329,8 +327,25 @@ module dcache_ctrl(
                         state      <= `L1_ACCESS;
                     end else begin
                         state  <= `WRITE_L1;
-                    end
-                            
+                    end        
+                end
+                `WRITE_HIT:begin // Write to L1,read from CPU
+                    if(complete == `ENABLE)begin
+                        data_wd_dc_en <= `DISABLE;
+                        data0_rw   <= `READ;
+                        data1_rw   <= `READ;
+                        tag0_rw    <= `READ;
+                        tag1_rw    <= `READ;
+                        dirty0_rw  <= `READ;
+                        dirty1_rw  <= `READ;
+                        if(access_mem_ex == `ENABLE) begin
+                            state  <= `L1_ACCESS;
+                        end else begin
+                            state  <= `L1_IDLE;
+                        end
+                    end else begin
+                        state  <= `WRITE_L1;
+                    end        
                 end
             endcase
         end
