@@ -27,7 +27,7 @@ module sram_256 #(parameter WIDTH = 128)
         end
     end
 
-    assign rd = (wr == `WRITE) ? wd : ram[a];
+    assign rd = ram[a];
 
     always @(posedge clk) begin
         if (wr == `WRITE) begin
@@ -52,7 +52,7 @@ module sram_512 #(parameter WIDTH = 32)
         end
     end
 
-    assign  rd = (wr == `WRITE) ? wd : ram[a];
+    assign  rd = ram[a];
 
     always @(posedge clk) begin
         if (wr == `WRITE) begin
@@ -66,7 +66,7 @@ module tag_ram(
     input               tag0_rw,        // read / write signal of tag0
     input               tag1_rw,        // read / write signal of tag1
     input       [7:0]   index,          // address of cache
-    // input       [19:0]  tag_wd,      // write data of tag
+    // input       [19:0]  tag_wd,         // write data of tag
     input       [20:0]  tag_wd,         // write data of tag
     output      [20:0]  tag0_rd,        // read data of tag0
     output      [20:0]  tag1_rd,        // read data of tag1
@@ -225,9 +225,9 @@ module L2_tag_ram(
     input               L2_tag2_rw,        // read / write signal of tag2
     input               L2_tag3_rw,        // read / write signal of tag3
     input       [8:0]   L2_index,          // address of cache
-    input       [2:0]   plru_now,          // the value of plur now
+    //input       [2:0]   plru_now,          // the value of plur now
     input       [18:0]  L2_tag_wd,         // write data of tag
-    // input       [16:0]  L2_tag_wd,      // write data of tag
+    // input       [16:0]  L2_tag_wd,         // write data of tag
     output      [18:0]  L2_tag0_rd,        // read data of tag0
     output      [18:0]  L2_tag1_rd,        // read data of tag1
     output      [18:0]  L2_tag2_rd,        // read data of tag2
@@ -240,16 +240,20 @@ module L2_tag_ram(
 
     always @(*) begin
         if (L2_tag0_rw == `WRITE) begin
-            plru_wd   <= {plru_now[2],2'b11};
+            // plru_wd   <= {plru_now[2],2'b11};
+            plru_wd   <= {plru[2],2'b11};
             plru_we   <= `WRITE;    
         end else if (L2_tag1_rw == `WRITE) begin
-            plru_wd   <= {plru_now[2],2'b01}; 
+            // plru_wd   <= {plru_now[2],2'b01}; 
+            plru_wd   <= {plru[2],2'b01};
             plru_we   <= `WRITE;    
         end else if (L2_tag2_rw == `WRITE) begin  
-            plru_wd   <= {1'b1,plru_now[1],1'b0};
+            // plru_wd   <= {1'b1,plru_now[1],1'b0};
+            plru_wd   <= {1'b1,plru[1],1'b0};
             plru_we   <= `WRITE;    
         end else if (L2_tag3_rw == `WRITE) begin
-            plru_wd   <= {1'b0,plru_now[1],1'b0}; 
+            // plru_wd   <= {1'b0,plru_now[1],1'b0}; 
+            plru_wd   <= {1'b0,plru[1],1'b0}; 
             plru_we   <= `WRITE;    
         end else begin
             plru_we   <= `READ;

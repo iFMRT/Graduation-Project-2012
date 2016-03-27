@@ -19,8 +19,8 @@ module if_reg(
     input                   reset,       // Reset
     /******** Read Instruction ********/
     input  [`WORD_DATA_BUS] insn,        // Reading instruction
-
     input                   stall,       // Stall
+    input                   data_rdy, // tag hit mark
     input                   flush,       // Flush
     input  [`WORD_DATA_BUS] new_pc,      // New value of program counter
     input                   br_taken,                    // Branch taken
@@ -36,30 +36,34 @@ module if_reg(
         if (reset == `ENABLE) begin
             /******** Reset ********/
             pc      <= #1 `WORD_DATA_W'h0;
-            if_pc   <= #1 `WORD_DATA_W'h0;
+            if_pc   <= #1 `WORD_DATA_W'b0;
             if_insn <= #1 `ISA_NOP;
             if_en   <= #1 `DISABLE;
         end else begin
             /******** Update pipeline ********/
-            if (stall == `DISABLE) begin
-                if (flush == `ENABLE) begin
-                    /* Flush */
-                    if_pc   <= #1 new_pc;
-                    if_insn <= #1 `ISA_NOP;
-                    if_en   <= #1 `DISABLE;
-                end else if (br_taken == `ENABLE) begin
-                    /* Branch taken */
-                    if_pc   <= #1 br_addr;
-                    if_insn <= #1 `ISA_NOP;
-                    if_en   <= #1 `DISABLE;
-                end else begin
-                    /* Next PC */
-                    pc      <= #1 if_pc;
-                    if_pc   <= #2 if_pc + `WORD_DATA_W'd4;
-                    if_insn <= #1 insn;
-                    if_en   <= #1 `ENABLE;
-                end // else: !if(br_taken == `ENABLE)
-            end // if (stall == `DISABLE)
+            if(data_rdy == `ENABLE) begin
+                if (stall == `DISABLE) begin
+                    if (flush == `ENABLE) begin
+                        /* Flush */
+                        if_pc   <= #1 new_pc;
+                        if_insn <= #1 `ISA_NOP;
+                        if_en   <= #1 `DISABLE;
+                    end else if (br_taken == `ENABLE) begin
+                        /* Branch taken */
+                        if_pc   <= #1 br_addr;
+                        if_insn <= #1 `ISA_NOP;
+                        if_en   <= #1 `DISABLE;
+                    end else begin
+                        /* Next PC */
+                        pc      <= #1 if_pc;
+                        if_pc   <= #2 if_pc + `WORD_DATA_W'd4;
+                        if_insn <= #1 insn; 
+                        if_en   <= #1 `ENABLE;
+                    end // else: !if(br_taken == `ENABLE)
+                end 
+            end else begin 
+                if_en <= `DISABLE;
+            end
         end // else: !if(reset == `ENABLE)
     end // always @ (posedge clk)
 

@@ -21,10 +21,10 @@
 module ctrl (
     /********* pipeline control signals ********/
     //  State of Pipeline
-//  input  wire                   if_busy,      // IF busy mark
+    input  wire                   if_busy,      // IF busy mark // miss stall of if_stage
     input  wire                   br_taken,    // branch hazard mark
 //  input  wire                   br_flag,      // branch instruction flag
-//  input  wire                   mem_busy,     // MEM busy mark
+    input  wire                   mem_busy,     // MEM busy mark // miss stall of mem_stage
 
     /********** Data Forward **********/
     input      [1:0]             src_reg_used,
@@ -68,18 +68,18 @@ module ctrl (
 );
 
     reg     ld_hazard;       // LOAD hazard
-
+    wire   stall;
     /********** pipeline control **********/
     // stall
-    assign if_stall  = ld_hazard;
-    assign id_stall  = `DISABLE;
-    assign ex_stall  = `DISABLE;
-    assign mem_stall = `DISABLE;
-//  wire   stall     = if_busy | mem_busy;
-//  assign if_stall  = stall   | ld_hazard;
-//  assign id_stall  = stall;
-//  assign ex_stall  = stall;
-//  assign mem_stall = stall;
+    // assign if_stall  = ld_hazard;
+    // assign id_stall  = `DISABLE;
+    // assign ex_stall  = `DISABLE;
+    // assign mem_stall = `DISABLE;
+    assign stall     = if_busy | mem_busy;
+    assign if_stall  = stall   | ld_hazard;
+    assign id_stall  = stall;
+    assign ex_stall  = stall;
+    assign mem_stall = stall;
 
     // flush
     assign if_flush  = `DISABLE;

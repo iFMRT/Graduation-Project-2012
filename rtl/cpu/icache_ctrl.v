@@ -28,67 +28,82 @@ module icache_ctrl(
     input      [127:0] data1_rd,      // read data of data1
     output reg         tag0_rw,       // read / write signal of L1_tag0
     output reg         tag1_rw,       // read / write signal of L1_tag1
-    output     [20:0]  tag_wd,        // write data of L1_tag
-    // output     [19:0]  tag_wd,        // write data of L1_tag
+    output reg [20:0]  tag_wd,        // write data of L1_tag
     output reg         data0_rw,      // read / write signal of data0
     output reg         data1_rw,      // read / write signal of data1
     output     [7:0]   index,         // address of L1_cache
     /* L2_cache part */
-    input              L2_busy,       // busy signal of L2_cache
-    input              L2_rdy,        // ready signal of L2_cache
+    input              l2_busy,       // busy signal of L2_cache
+    input              l2_rdy,        // ready signal of L2_cache
     input              complete,      // complete op writing to L1
-    output reg         irq            // icache request
+    output reg         irq,           // icache request
+    output reg [8:0]   l2_index,
+    output reg [31:0]  l2_addr,
+    output reg         l2_cache_rw,
+    output reg         data_rdy    // tag hit mark
     );
-    wire       [1:0]   offset;        // offset of block
-    reg                hitway;        // path hit mark
-    reg                hitway0;       // the mark of choosing path0 
-    reg                hitway1;       // the mark of choosing path1
-    reg                tagcomp_hit;   // tag hit mark
-    reg        [2:0]   state;         // state of control
-    wire               valid0,valid1; // valid signal of tag
-    reg                clk_tmp;       // temporary clk
-    
+    reg                tagcomp_hit;
+    wire       [1:0]   offset;           // offset of block
+    reg                hitway;           // path hit mark
+    reg                hitway0;          // the mark of choosing path0 
+    reg                hitway1;          // the mark of choosing path1    
+    reg        [2:0]   state;  // state of control
+    wire               valid0,valid1;    // valid signal of tag
+    reg                 clk_tmp;            // temporary clk   
     assign valid0        = tag0_rd[20];
     assign valid1        = tag1_rd[20];
     assign index         = if_addr [11:4];
     assign offset        = if_addr [3:2];
-    // assign tag_wd        = if_addr [31:12];
-    assign tag_wd        = {1'b1,if_addr [31:12]};
-    always @(*) begin
-        clk_tmp = #1 clk;
-    end
+    // assign tag_wd        = if_addr [31:12]; 
+
     always @(*)begin // path choose
         hitway0 = (tag0_rd[19:0] == if_addr[31:12]) & valid0;
         hitway1 = (tag1_rd[19:0] == if_addr[31:12]) & valid1;
         if(hitway0 == `ENABLE)begin
             tagcomp_hit = `ENABLE;
-            hitway = `WAY0;
+            hitway      = `WAY0;
         end
         else if(hitway1 == `ENABLE)begin
             tagcomp_hit = `ENABLE;
-            hitway = `WAY1;
+            hitway      = `WAY1;
         end
         else begin
             tagcomp_hit = `DISABLE;
         end
     end
 
+    always @(*) begin
+        clk_tmp = #1 clk;
+    end
+    // always @(posedge clk_tmp) begin 
+    //     if (rst == `ENABLE) begin // reset
+    //         state  <= `L1_IDLE;
+    //     end else begin
+    //         state  <= state;
+    //     end
+    // end
+
     always @(posedge clk_tmp) begin // cache control
         if (rst == `ENABLE) begin // reset
-            state  <= `L1_IDLE;
+            state       <= `L1_IDLE;
+            data0_rw    <= `READ;
+            data1_rw    <= `READ;                    
+            tag0_rw     <= `READ;
+            tag1_rw     <= `READ;
+            miss_stall  <= `DISABLE;
+            irq         <= `DISABLE;
+            data_rdy    <= `DISABLE;
         end else begin
             case(state)
                 `L1_IDLE:begin
-                    state      <= `L1_ACCESS;
+                    state  <= `L1_ACCESS;
                 end
                 `L1_ACCESS:begin
-                    data0_rw  <= rw;
-                    data1_rw  <= rw;                    
-                    tag0_rw   <= rw;
-                    tag1_rw   <= rw;
+                    data_rdy  <= `DISABLE;
                     if ( rw == `READ && tagcomp_hit == `ENABLE) begin // cache hit
                         miss_stall  <= `DISABLE;
                         state       <= `L1_ACCESS;
+                        data_rdy    <= `ENABLE;
                         case(hitway)
                             `WAY0:begin
                                 data0_rw  <= `READ;
@@ -126,18 +141,22 @@ module icache_ctrl(
                             end // hitway == 1
                         endcase // case(hitway) 
                     end else begin // cache miss
-                        miss_stall    = `ENABLE;  
-                        if(L2_busy == `ENABLE) begin
+                        miss_stall = `ENABLE;  
+                        if(l2_busy == `ENABLE) begin
                             state  <= `WAIT_L2_BUSY;
                         end else begin
-                            irq <= `ENABLE;
+                            irq    <= `ENABLE;
+                            l2_cache_rw <= rw;
+                            l2_index <= if_addr[14:6];
+                            l2_addr  <= if_addr;
                             state  <= `L2_ACCESS;
                         end
                     end 
                 end
                 `L2_ACCESS:begin // access L2, wait L2 reading right 
-                    if(L2_rdy == `ENABLE)begin
+                    if(l2_rdy == `ENABLE)begin
                         state  <= `WRITE_IC;
+                        tag_wd <= {1'b1,if_addr[31:12]};
                         if (valid0 == 1'b1) begin
                             if (valid1 == 1'b1) begin
                                 if(lru == 1'b0) begin
@@ -160,28 +179,34 @@ module icache_ctrl(
                     end
                 end
                 `WAIT_L2_BUSY:begin
-                    if(L2_busy == `ENABLE) begin
+                    if(l2_busy == `ENABLE) begin
                         state  <= `WAIT_L2_BUSY;
                     end else begin
+                        irq    <= `ENABLE;
+                        l2_index <= if_addr[14:6];
+                        l2_addr  <= if_addr;
+                        l2_cache_rw <= rw;
                         state  <= `L2_ACCESS;
                     end
                 end
                 `WRITE_IC:begin // 使用L2返回的指令块填充IC
-                    irq  <= `DISABLE;
                     if(complete == `ENABLE)begin
-                        state <= `L1_ACCESS;
-                        data0_rw  <= rw;
-                        data1_rw  <= rw;                    
-                        tag0_rw   <= rw;
-                        tag1_rw   <= rw;
+                        irq  <= `DISABLE;
+                        miss_stall  <= `DISABLE;
+                        state    <= `L1_ACCESS;
+                        data0_rw <= `READ;
+                        data1_rw <= `READ;                    
+                        tag0_rw  <= `READ;
+                        tag1_rw  <= `READ;
                     end else begin
-                        state <= `WRITE_IC;
+                        state    <= `WRITE_IC;
                     end
                             
                 end
             endcase
         end
     end
+
 endmodule
 
 

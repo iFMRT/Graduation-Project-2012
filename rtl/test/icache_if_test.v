@@ -1,25 +1,35 @@
 /*
- -- ============================================================================
- -- FILE NAME   : icache_test.v
+ -- ===============================================================================
+ -- FILE NAME   : icache_if_test.v
  -- DESCRIPTION : testbench of icache
- -- ----------------------------------------------------------------------------
+ --               force the signal if_pc to initially load 32'b1110_0001_0000_0000
+ -- -------------------------------------------------------------------------------
  -- Date:2016/1/18        Coding_by:kippy
- -- ============================================================================
+ -- ===============================================================================
 */
 `timescale 1ns/1ps
 /********** header file **********/
 `include "stddef.h"
 `include "icache.h"
 `include "l2_cache.h"
+`include "isa.h"
+`include "alu.h"
+`include "cmp.h"
+`include "ctrl.h"
+`include "cpu.h"
+`include "mem.h"
+`include "ex_stage.h"
 
-module icache_test();
+module icache_if_test();
     // icache part
     reg              clk;           // clock
     reg              rst;           // reset
     /* CPU part */
-    reg      [31:0]  if_addr;       // address of fetching instruction
-    reg              rw;            // read / write signal of CPU
-    wire     [31:0]  cpu_data;      // read data of CPU
+    // wire      [31:0]  if_pc;       // address of fetching instruction
+    // wire     [31:0]  pc;      
+    // wire             if_en;
+    // reg              rw;            // read / write signal of CPU
+    wire     [31:0]  if_insn;      // read data of CPU
     wire             miss_stall;    // the signal of stall caused by cache miss
     /* L1_cache part */
     wire             tag0_rw;       // read / write signal of L1_tag0
@@ -98,14 +108,109 @@ module icache_test();
     wire             l2_dirty2;
     wire             l2_dirty3;
     reg              clk_tmp;        // temporary clock of L2C
+    
+    /********* pipeline control signals ********/
+    //  State of Pipeline
+     wire                  br_taken;    // branch hazard mark
+    //   wire                   br_flag;      // branch instruction flag
+    reg                    mem_busy;     // MEM busy mark // miss stall of mem_stage
 
-    icache_ctrl icache_ctrl(
+    /********** Data Forward **********/
+    wire     [1:0]         src_reg_used;
+    // LOAD Hazard
+    wire                   id_en;          // Pipeline Register enable
+    wire [`REG_ADDR_BUS]   id_dst_addr;    // GPR write address
+    wire                   id_gpr_we_;     // GPR write enable
+    wire [`MEM_OP_BUS]     id_mem_op;      // Mem operation
+
+    wire [`INS_OP_BUS]     op; 
+    wire [`REG_ADDR_BUS]   ra_addr;
+    wire [`REG_ADDR_BUS]   rb_addr;
+    // LOAD STORE Forward
+    wire [`REG_ADDR_BUS]   id_ra_addr;
+    wire [`REG_ADDR_BUS]   id_rb_addr;
+
+    wire                   ex_en;          // Pipeline Register enable
+    wire [`REG_ADDR_BUS]   ex_dst_addr;    // GPR write address
+    wire                   ex_gpr_we_;     // GPR write enable
+    wire [`MEM_OP_BUS]     ex_mem_op;      // Mem operation
+
+    // Stall Signal
+    wire                  if_stall;     // IF stage stall
+    wire                  id_stall;     // ID stage stall
+    wire                  ex_stall;     // EX stage stall
+    wire                  mem_stall;    // MEM stage stall
+    // Flush Signal
+    wire                  if_flush;     // IF stage flush
+    wire                  id_flush;     // ID stage flush
+    wire                  ex_flush;     // EX stage flush
+    wire                  mem_flush;    // MEM stage flush
+    wire [`WORD_DATA_BUS] new_pc;        // New program counter
+
+    // Forward from EX stage
+
+    /********** Forward output **********/
+    wire [`FWD_CTRL_BUS]   ra_fwd_ctrl;
+    wire [`FWD_CTRL_BUS]   rb_fwd_ctrl;
+    wire                   ex_ra_fwd_en;
+    wire                   ex_rb_fwd_en;
+    // if_stage
+    wire [`WORD_DATA_BUS] pc;             // Current Program counter
+    wire                  if_en;           // Effective mark of pipeline
+    wire [`WORD_DATA_BUS] br_addr;     // Branch target
+    
+    ctrl ctrl(
+	    /********* pipeline control signals ********/
+	    //  State of Pipeline
+	    .if_busy		(miss_stall),      // IF busy mark // miss stall of if_stage
+	    .br_taken		(br_taken),    // branch hazard mark
+	    //  br_flag,      // branch instruction flag
+	    .mem_busy		(mem_busy),     // MEM busy mark // miss stall of mem_stage
+
+	    /********** Data Forward **********/
+	    .src_reg_used	(src_reg_used),
+	    // LOAD Hazard
+	    .id_en			(id_en),          // Pipeline Register enable
+	    .id_dst_addr	(id_dst_addr),    // GPR write address
+	    .id_gpr_we_		(id_gpr_we_),     // GPR write enable
+	    .id_mem_op		(id_mem_op),      // Mem operation
+
+	    .op				(op), 
+	    .ra_addr		(ra_addr),
+	    .rb_addr        (rb_addr),
+	     // LOAD STORE Forward
+	    .id_ra_addr		(id_ra_addr),
+	    .id_rb_addr		(id_rb_addr),
+
+	    .ex_en			(ex_en),          // Pipeline Register enable
+	    .ex_dst_addr	(ex_dst_addr),    // GPR write address
+	    .ex_gpr_we_		(ex_gpr_we_),     // GPR write enable
+	    .ex_mem_op		(ex_mem_op),      // Mem operation
+
+	    // Stall Signal
+	    .if_stall		(if_stall),     // IF stage stall
+	    .id_stall		(id_stall),     // ID stage stall
+	    .ex_stall		(ex_stall),     // EX stage stall
+	    .mem_stall		(mem_stall),    // MEM stage stall
+	    // Flush Signal
+	    .if_flush		(if_flush),     // IF stage flush
+	    .id_flush		(id_flush),     // ID stage flush
+	    .ex_flush		(ex_flush),     // EX stage flush
+	    .mem_flush		(mem_flush),    // MEM stage flush
+	    .new_pc			(new_pc),        // New program counter
+
+	    // Forward from EX stage
+
+	    /********** Forward Output **********/
+	    .ra_fwd_ctrl	(ra_fwd_ctrl),
+	    .rb_fwd_ctrl	(rb_fwd_ctrl),
+	    .ex_ra_fwd_en	(ex_ra_fwd_en),
+	    .ex_rb_fwd_en	(ex_rb_fwd_en)
+		);
+    if_stage if_stage(
         .clk            (clk),           // clock
-        .rst            (rst),           // reset
+        .reset          (rst),           // reset
         /* CPU part */
-        .if_addr        (if_addr),       // address of fetching instruction
-        .rw             (rw),            // read / write signal of CPU
-        .cpu_data       (cpu_data),      // read data of CPU
         .miss_stall     (miss_stall),    // the signal of stall caused by cache miss
         /* L1_cache part */
         .lru            (lru),           // mark of replacing
@@ -126,8 +231,19 @@ module icache_test();
         .irq            (irq),
         .l2_index       (l2_index),        
         .l2_addr        (l2_addr),        
-        .l2_cache_rw    (l2_cache_rw)        
+        .l2_cache_rw    (l2_cache_rw),
+        /* Pipeline control */
+        .stall          (if_stall),       // busy signal of l2_cache
+        .flush          (if_flush),        // ready signal of l2_cache
+        .new_pc         (new_pc),      // complete op writing to L1
+        .br_taken       (br_taken),
+        .br_addr        (br_addr),        
+        /* IF/ID Pipeline Register */
+        .pc        		(pc),        
+        .if_insn        (if_insn),        
+        .if_en    		(if_en)
         );
+
     l2_cache_ctrl l2_cache_ctrl(
         .clk            (clk_tmp),       // clock of L2C
         .rst            (rst),           // reset
@@ -186,6 +302,7 @@ module icache_test();
         .mem_addr       (mem_addr),     // address of memory
         .mem_rw         (mem_rw)        // read / write signal of memory
     );
+    
     itag_ram itag_ram(
         .clk            (clk),           // clock
         .tag0_rw        (tag0_rw),       // read / write signal of tag0
@@ -247,8 +364,8 @@ module icache_test();
         .l2_dirty3      (l2_dirty3)
     );
 
-    task icache_ctrl_tb;
-        input  [31:0]  _cpu_data;        // read data of CPU
+    task if_stage_tb;
+        input  [31:0]  _if_insn;        // read data of CPU
         input          _miss_stall;      // the signal of stall caused by cache miss
         /* L1_cache part */
         input          _tag0_rw;         // read / write signal of L1_tag0
@@ -261,8 +378,11 @@ module icache_test();
         input          _irq;             // icache request
         input  [8:0]   _l2_index;
         input  [31:0]  _l2_addr;
+        input  [`WORD_DATA_BUS] _pc;
+        // input  [`WORD_DATA_BUS] _if_pc;
+        input                   _if_en; 
         begin 
-            if( (cpu_data   === _cpu_data)          && 
+            if( (if_insn   === _if_insn)            && 
                 (miss_stall === _miss_stall)        && 
                 (tag0_rw    === _tag0_rw)           && 
                 (tag1_rw    === _tag1_rw)           && 
@@ -272,14 +392,23 @@ module icache_test();
                 (index      === _index)             && 
                 (irq        === _irq)               && 
                 (l2_index   === _l2_index)          && 
-                (l2_addr    === _l2_addr)    
+                (l2_addr    === _l2_addr)           && 
+                (pc         === _pc)                && 
+                // (if_pc      === _if_pc)             && 
+                (if_en      === _if_en)    
                ) begin 
-                 $display("Icache Test Succeeded !"); 
+                 $display("if_stage Test Succeeded !"); 
             end else begin 
-                 $display("Icache Test Failed !"); 
+                 $display("if_stage Test Failed !"); 
             end 
-            if (cpu_data   !== _cpu_data) begin
-                $display("cpu_data:%b(excepted %b)",cpu_data,_cpu_data); 
+            if (pc   !== _pc) begin
+                $display("pc:%b(excepted %b)",pc,_pc); 
+            end
+            if (if_en !== _if_en) begin
+                $display("if_en:%b(excepted %b)",if_en,_if_en); 
+            end
+            if (if_insn   !== _if_insn) begin
+                $display("if_insn:%b(excepted %b)",if_insn,_if_insn); 
             end
             if (miss_stall !== _miss_stall) begin
                 $display("miss_stall:%b(excepted %b)",miss_stall,_miss_stall); 
@@ -548,7 +677,7 @@ module icache_test();
         begin
             clk <= ~clk;  
         end
-    always #STEP
+     always #STEP
         begin
             clk_tmp <= ~clk_tmp;  
         end          
@@ -563,8 +692,9 @@ module icache_test();
         #STEP begin 
             /******** Initialize Test Output ********/
             rst        <= `DISABLE;      
-            if_addr    <= 32'b1110_0001_0000_0000;
-            rw         <= `READ;
+            // if_addr    <= 32'b1110_0001_0000_0000;
+            // rw         <= `READ;
+            mem_busy <= `DISABLE;
             mem_rd <= 512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000;      // write data of l2_cache
             // l2_busy <= `DISABLE;                                      // busy signal of l2_cache
             // l2_rdy  <= `ENABLE;                                       // ready signal of l2_cache
@@ -572,6 +702,21 @@ module icache_test();
         end
         #STEP begin // L1_IDLE & L2_IDLE 
             $display("\n========= Clock 1 ========");
+            if_stage_tb(
+                32'b0,          // read data of CPU
+                `DISABLE,        // the signal of stall caused by cache miss
+                `READ,          // read / write signal of L1_tag0
+                `READ,          // read / write signal of L1_tag1
+                21'bx,       // write data of L1_tag
+                `READ,          // read / write signal of data0
+                `READ,          // read / write signal of data1
+                8'b0001_0000,   // address of L1_cache
+                `DISABLE,         // icache request
+                9'bx,
+                32'bx,     // l2_addr
+                32'b0,     // pc
+                `DISABLE    //
+                );
         end
         #STEP begin // L1_ACCESS & L2_IDLE 
             $display("\n========= Clock 2 ========");
@@ -698,8 +843,8 @@ module icache_test();
                 512'b0,             // read data of cache_data2
                 512'b0              // read data of cache_data3
              );
-            icache_ctrl_tb(
-                32'bx,          // read data of CPU
+            if_stage_tb(
+                32'b0,          // read data of CPU
                 `ENABLE,        // the signal of stall caused by cache miss
                 `READ,          // read / write signal of L1_tag0
                 `READ,          // read / write signal of L1_tag1
@@ -709,7 +854,9 @@ module icache_test();
                 8'b0001_0000,   // address of L1_cache
                 `ENABLE,         // icache request
                 9'b110_0001_00,
-                32'b1110_0001_0000_0000
+                32'b1110_0001_0000_0000,
+                32'b0,
+                `DISABLE
                 );
             l2_cache_ctrl_tb(
                 `ENABLE,            // miss caused by L2C             
@@ -744,15 +891,15 @@ module icache_test();
         #STEP begin // l2_ACCESS  & WRITE_L1 
             $display("\n========= Clock 11 ========"); 
             l2_cache_ctrl_tb(
-                `DISABLE,           // miss caused by L2C             
+                `DISABLE,            // miss caused by L2C             
                 `ENABLE,            // L2C busy mark
-                128'h0876547A_00000000_ABF00000_123BC000,  // write data to L1_IC
+                128'h0876547A_00000000_ABF00000_123BC000,             // write data to L1_IC
                 `READ,              // read / write signal of tag0
                 `READ,              // read / write signal of tag1
                 `READ,              // read / write signal of tag2
                 `READ,              // read / write signal of tag3
-                18'b1_0000_0000_0000_0000_1,  // write data of tag
-                `ENABLE,            // ready signal of l2_cache
+                18'b1_0000_0000_0000_0000_1,              // write data of tag
+                `ENABLE,           // ready signal of l2_cache
                 `READ,              // the mark of cache_data0 write signal 
                 `READ,              // the mark of cache_data1 write signal 
                 `READ,              // the mark of cache_data2 write signal 
@@ -769,18 +916,20 @@ module icache_test();
                 26'b1110_0001_00,   // address of memory
                 `READ               // read / write signal of memory                
                 ); 
-            icache_ctrl_tb(
-                32'bx,          // read data of CPU
+            if_stage_tb(
+                32'b0,          // read data of CPU
                 `ENABLE,        // the signal of stall caused by cache miss
                 `READ,          // read / write signal of L1_tag0
                 `READ,          // read / write signal of L1_tag1
-                21'bx,           // write data of L1_tag
+                21'bx,       // write data of L1_tag
                 `READ,          // read / write signal of data0
                 `READ,          // read / write signal of data1
                 8'b0001_0000,   // address of L1_cache
-                `ENABLE,        // icache request
+                `ENABLE,         // icache request
                 9'b110_0001_00,
-                32'b1110_0001_0000_0000
+                32'b1110_0001_0000_0000,
+                32'b0,
+                `DISABLE
                 );
             tag_ram_tb(
                 21'b0,                                  // read data of tag0
@@ -795,8 +944,8 @@ module icache_test();
         end        
         #STEP begin // WRITE_IC  & 2* clk state change to WRITE_L1 really    
             $display("\n========= Clock 12 ========"); 
-            icache_ctrl_tb(
-                32'bx,          // read data of CPU
+            if_stage_tb(
+                32'b0,          // read data of CPU
                 `ENABLE,        // the signal of stall caused by cache miss
                 `WRITE,          // read / write signal of L1_tag0
                 `READ,          // read / write signal of L1_tag1
@@ -806,7 +955,9 @@ module icache_test();
                 8'b0001_0000,   // address of L1_cache
                 `ENABLE,         // icache request
                 9'b110_0001_00,
-                32'b1110_0001_0000_0000
+                32'b1110_0001_0000_0000,
+                32'b0,
+                `DISABLE
                 );
         end        
         #STEP begin // L1_ACCESS  & l2_IDLE        
@@ -837,8 +988,8 @@ module icache_test();
                 26'b1110_0001_00,   // address of memory
                 `READ               // read / write signal of memory                
                 );
-            icache_ctrl_tb(
-                32'bx,          // read data of CPU
+            if_stage_tb(
+                32'b0,          // read data of CPU
                 `DISABLE,        // the signal of stall caused by cache miss
                 `READ,          // read / write signal of L1_tag0
                 `READ,          // read / write signal of L1_tag1
@@ -848,7 +999,9 @@ module icache_test();
                 8'b0001_0000,   // address of L1_cache
                 `DISABLE,         // icache request
                 9'b110_0001_00,
-                32'b1110_0001_0000_0000
+                32'b1110_0001_0000_0000,
+                32'b0,
+                `DISABLE
                 );
             tag_ram_tb(
                 21'b1_0000_0000_0000_0000_1110,         // read data of tag0
@@ -860,12 +1013,48 @@ module icache_test();
                 128'h0876547A_00000000_ABF00000_123BC000,   // read data of cache_data0
                 128'h0                                      // read data of cache_data1
                 ); 
+        end
+        #STEP begin // L1_ACCESS  & l2_IDLE   
+            $display("\n========= Clock 14 ========");
+            if_stage_tb(
+                32'h0,          // read data of CPU
+                `DISABLE,       // the signal of stall caused by cache miss
+                `READ,          // read / write signal of L1_tag0
+                `READ,          // read / write signal of L1_tag1
+                21'b1_0000_0000_0000_0000_1110,       // write data of L1_tag
+                `READ,          // read / write signal of data0
+                `READ,          // read / write signal of data1
+                8'b0001_0000,   // address of L1_cache
+                `DISABLE,       // icache request
+                9'b110_0001_00,
+                32'b1110_0001_0000_0000,
+                32'b0,
+                `DISABLE
+                );
+        end
+        #STEP begin
+            $display("\n========= Clock 15 ========");
+            if_stage_tb(
+                32'h123BC000,          // read data of CPU
+                `DISABLE,        // the signal of stall caused by cache miss
+                `READ,          // read / write signal of L1_tag0
+                `READ,          // read / write signal of L1_tag1
+                21'b1_0000_0000_0000_0000_1110,       // write data of L1_tag
+                `READ,          // read / write signal of data0
+                `READ,          // read / write signal of data1
+                8'b0001_0000,   // address of L1_cache
+                `DISABLE,         // icache request
+                9'b110_0001_00,
+                32'b1110_0001_0000_0000,
+                32'b1110_0001_0000_0000,
+                `ENABLE
+                );        
             $finish;
         end
     end
     /********** output wave **********/
     initial begin
-        $dumpfile("icache.vcd");
-        $dumpvars(0,icache_ctrl,itag_ram,data_ram,l2_tag_ram,l2_data_ram,l2_cache_ctrl);
+        $dumpfile("icache_if_test.vcd");
+        $dumpvars(0,if_stage,ctrl,itag_ram,data_ram,l2_tag_ram,l2_data_ram,l2_cache_ctrl);
     end
 endmodule 
