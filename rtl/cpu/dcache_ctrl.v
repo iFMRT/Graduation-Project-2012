@@ -16,7 +16,7 @@ module dcache_ctrl(
     input              clk,           // clock
     input              rst,           // reset
     /* CPU part */
-    input      [31:0]  aluout_m,      // address of fetching instruction
+    input      [31:0]  addr,      // address of fetching instruction
     input      [31:0]  wr_data_m,
     input              memwrite_m,    // read / write signal of CPU
     input              access_mem,
@@ -39,7 +39,7 @@ module dcache_ctrl(
     output reg         tag1_rw,       // read / write signal of L1_tag1
     output     [20:0]  tag_wd,        // write data of L1_tag
     output reg         data_wd_dc_en, // choose signal of data_wd
-    // output reg         hitway,        // path hit mark            
+    output reg         hitway,        // path hit mark            
     output reg         data0_rw,      // read / write signal of data0
     output reg         data1_rw,      // read / write signal of data1
     output     [7:0]   index,         // address of L1_cache
@@ -58,7 +58,7 @@ module dcache_ctrl(
     wire       [1:0]   offset;              // offset of block
     reg                hitway0;             // the mark of choosing path0
     reg                hitway1;             // the mark of choosing path1
-    reg                hitway;
+    // reg                hitway;
     reg                tagcomp_hit;         // tag hit mark
     reg                choose_way;          // the way of L1 we choose to replace
     reg        [2:0]   state;               // state of control
@@ -68,16 +68,16 @@ module dcache_ctrl(
 
     assign valid0        = tag0_rd[20];
     assign valid1        = tag1_rd[20];
-    assign index         = aluout_m[11:4];
-    assign offset        = aluout_m[3:2];
-    // assign byte_offset   = aluout_m[1:0];
-    assign tag_wd        = {1'b1,aluout_m [31:12]};  // 写入 tag，valid恒为 1。
+    assign index         = addr[11:4];
+    assign offset        = addr[3:2];
+    // assign byte_offset   = addr[1:0];
+    assign tag_wd        = {1'b1,addr [31:12]};  // 写入 tag，valid恒为 1。
     always @(*) begin
         clk_tmp = #1 clk;
     end
     always @(*)begin // path choose
-        hitway0 = (tag0_rd[19:0] == aluout_m[31:12]) & valid0;
-        hitway1 = (tag1_rd[19:0] == aluout_m[31:12]) & valid1;
+        hitway0 = (tag0_rd[19:0] == addr[31:12]) & valid0;
+        hitway1 = (tag1_rd[19:0] == addr[31:12]) & valid1;
         if(hitway0 == `ENABLE)begin
             tagcomp_hit = `ENABLE;
             hitway      = `WAY0;
@@ -239,8 +239,8 @@ module dcache_ctrl(
                             state  <= `WAIT_L2_BUSY;
                         end else if(l2_busy == `DISABLE && (valid == `DISABLE || dirty == `DISABLE)) begin
                             irq      <= `ENABLE;
-                            l2_addr  <= aluout_m;
-                            l2_index <= aluout_m[14:6]; 
+                            l2_addr  <= addr;
+                            l2_index <= addr[14:6]; 
                             state    <= `L2_ACCESS;
                         end
                         if(valid == `ENABLE && dirty == `ENABLE) begin 
@@ -276,8 +276,8 @@ module dcache_ctrl(
                         state  <= `WAIT_L2_BUSY;
                     end else begin
                         irq      <= `ENABLE;
-                        l2_addr  <= aluout_m;
-                        l2_index <= aluout_m[14:6]; 
+                        l2_addr  <= addr;
+                        l2_index <= addr[14:6]; 
                         state    <= `L2_ACCESS;
                     end
                 end
@@ -307,8 +307,8 @@ module dcache_ctrl(
                             state <= `WAIT_L2_BUSY;
                         end else begin
                             l2_cache_rw <= `READ;  
-                            l2_addr     <= aluout_m;
-                            l2_index    <= aluout_m[14:6]; // new index of L2
+                            l2_addr     <= addr;
+                            l2_index    <= addr[14:6]; // new index of L2
                             state       <= `L2_ACCESS;
                         end
                     end else begin
@@ -326,15 +326,7 @@ module dcache_ctrl(
                         tag1_rw    <= `READ;
                         dirty0_rw  <= `READ;
                         dirty1_rw  <= `READ;
-                        if(access_mem == `ENABLE) begin
-                            state <= `L1_ACCESS;
-                        end else begin 
-                            if (access_mem_ex == `ENABLE) begin
-                                state <= `L1_ACCESS;
-                            end else begin
-                                state <= `L1_IDLE;
-                            end
-                        end
+                        state      <= `L1_ACCESS;
                     end else begin
                         state  <= `WRITE_L1;
                     end

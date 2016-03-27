@@ -1,7 +1,7 @@
 /*
  -- ============================================================================
  -- FILE NAME   : dcache_test.v
- -- DESCRIPTION : testbench of icache
+ -- DESCRIPTION : testbench of dcache
  -- ----------------------------------------------------------------------------
  -- Date:2016/3/24        Coding_by:kippy
  -- ============================================================================
@@ -17,7 +17,7 @@ module dcache_test();
     reg              clk;           // clock
     reg              rst;           // reset
     /* CPU part */
-    reg      [31:0]  aluout_m;       // address of fetching instruction
+    reg      [31:0]  addr;       // address of fetching instruction
     reg      [31:0]  wr_data_m;
     reg              memwrite_m;            // read / write signal of CPU
     reg              access_mem;
@@ -101,14 +101,14 @@ module dcache_test();
     wire             l2_dirty1;
     wire             l2_dirty2;
     wire             l2_dirty3;
-    
+    wire             hitway;
     reg              clk_tmp;        // temporary clock of L2C
 
     dcache_ctrl dcache_ctrl(
         .clk            (clk),           // clock
         .rst            (rst),           // reset
         /* CPU part */
-        .aluout_m       (aluout_m),       // address of fetching instruction
+        .addr           (addr),       // address of fetching instruction
         .wr_data_m      (wr_data_m),
         .memwrite_m     (memwrite_m),            // read / write signal of CPU
         .access_mem     (access_mem), 
@@ -131,7 +131,7 @@ module dcache_test();
         .tag1_rw        (tag1_rw),       // read / write signal of L1_tag1
         .tag_wd         (tag_wd),        // write data of L1_tag
         .data_wd_dc_en  (data_wd_dc_en),
-        // .hitway         (hitway),
+        .hitway         (hitway),
         .data0_rw       (data0_rw),      // read / write signal of data0
         .data1_rw       (data1_rw),      // read / write signal of data1
         .index          (index),         // address of L1_cache
@@ -619,7 +619,7 @@ module dcache_test();
         #STEP begin 
             /******** Initialize Test Output ********/
             rst        <= `DISABLE;      
-            aluout_m   <= 32'b1110_0001_0000_0000;
+            addr   <= 32'b1110_0001_0000_0000;
             access_mem <= `ENABLE;
             memwrite_m <= `READ;
             mem_rd <= 512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000;      // write data of l2_cache
@@ -1006,7 +1006,7 @@ module dcache_test();
         #STEP begin // L1_ACCESS(read hit)  & l2_IDLE    
             $display("\n========= Clock 14 ========");
             dcache_ctrl_tb(
-                32'h123BC000,          // read data of CPU
+                32'h123BC000,    // read data of CPU
                 `DISABLE,        // the signal of stall caused by cache miss
                 `READ,          // read / write signal of L1_tag0
                 `READ,          // read / write signal of L1_tag1
