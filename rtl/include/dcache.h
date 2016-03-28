@@ -29,4 +29,5 @@
     `define WRITE_L1             3'h4  // write block to L1_icache
     `define LOAD_BLOCK			 3'h5  // load dirty block to L2
     `define WRITE_HIT            3'h6  // write block to L1_icache
+    `define WRITE_L2             3'h7  // write block to L1_icache
 `endif

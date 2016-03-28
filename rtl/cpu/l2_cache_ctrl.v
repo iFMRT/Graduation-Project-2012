@@ -1,7 +1,7 @@
 /*
  -- ============================================================================
  -- FILE NAME   : l2_cache_ctrl.v
- -- DESCRIPTION : 二级高速缓存器控制
+ -- DESCRIPTION : 二级指令高速缓存器控制
  -- ----------------------------------------------------------------------------
  -- Date:2016/1/16         Coding_by:kippy
  -- ============================================================================
@@ -159,7 +159,7 @@ reg [127:0] s;
     end
 
     always @(*) begin
-        clk_tmp = #1 clk;
+        clk_tmp = #2 clk;
     end
 
      // always @(posedge clk_tmp) begin
@@ -173,31 +173,29 @@ reg [127:0] s;
         if (rst) begin
             state  <= `L2_IDLE;
             l2_busy     <= `DISABLE;
+            l2_rdy      <= `DISABLE;
+            l2_tag0_rw  <= `READ;
+            l2_tag1_rw  <= `READ;
+            l2_tag2_rw  <= `READ;
+            l2_tag3_rw  <= `READ;
+            l2_data0_rw <= `READ;
+            l2_data1_rw <= `READ;
+            l2_data2_rw <= `READ;
+            l2_data3_rw <= `READ;
+            l2_dirty0_rw<= `READ;
+            l2_dirty1_rw<= `READ;
+            l2_dirty2_rw<= `READ;
+            l2_dirty3_rw<= `READ;
+            l2_miss_stall <= `DISABLE;
         end else begin   
             case(state)
                 `L2_IDLE:begin
-                    l2_busy     <= `DISABLE;
-                    l2_rdy      <= `DISABLE;
-                    l2_tag0_rw  <= `READ;
-                    l2_tag1_rw  <= `READ;
-                    l2_tag2_rw  <= `READ;
-                    l2_tag3_rw  <= `READ;
-                    l2_data0_rw <= `READ;
-                    l2_data1_rw <= `READ;
-                    l2_data2_rw <= `READ;
-                    l2_data3_rw <= `READ;
-                    l2_dirty0_rw<= `READ;
-                    l2_dirty1_rw<= `READ;
-                    l2_dirty2_rw<= `READ;
-                    l2_dirty3_rw<= `READ;
-                    l2_miss_stall <= `DISABLE;
                     if (irq == `ENABLE) begin  // 先不考虑drq
                         l2_busy     <= `ENABLE;
                         state   <= `ACCESS_L2;
                     end    
                 end
                 `ACCESS_L2:begin
-                    // l2_busy     <= `ENABLE;
                     // read hit
                     if ( l2_cache_rw == `READ && tagcomp_hit == `ENABLE) begin 
                         l2_miss_stall <= `DISABLE;
@@ -271,9 +269,8 @@ reg [127:0] s;
                             end // hitway == 3
                         endcase // case(hitway) 
                     end else if( l2_cache_rw == `WRITE && tagcomp_hit == `ENABLE) begin // write hit
-                        l2_rdy        <= `ENABLE;
                         l2_miss_stall <= `DISABLE;
-                        state         <= `WRITE_L2;
+                        state         <= `WRITE_HIT;
                         l2_tag_wd     <= {1'b1,l2_addr[31:15]};
                             case(hitway)
                                 `WAY0:begin
@@ -359,8 +356,7 @@ reg [127:0] s;
                             mem_rw        <= `READ;;
                             mem_addr      <= l2_addr[31:6];
                             state <= `MEM_ACCESS;
-                        end
-                        if(valid == `ENABLE && dirty == `ENABLE) begin 
+                        end else if(valid == `ENABLE && dirty == `ENABLE) begin 
                             state  <= `LOAD_BLOCK;
                         end
                     end
@@ -409,9 +405,8 @@ reg [127:0] s;
                         state <= `WRITE_L1;
                     end
                 end
-                `WRITE_L2:begin // 等待l2返回指令块 
+                `WRITE_L2:begin // write into l2_cache from memory 
                     if(l2_complete == `ENABLE)begin
-                        l2_rdy <= `DISABLE;
                         l2_tag0_rw   <=  `READ;
                         l2_tag1_rw   <=  `READ;
                         l2_tag2_rw   <=  `READ;
@@ -422,17 +417,28 @@ reg [127:0] s;
                         l2_data3_rw  <=  `READ;  
                         l2_dirty0_rw <=  `READ;
                         l2_dirty1_rw <=  `READ;  
-                        if (irq == `ENABLE) begin
-                            state  <=  `ACCESS_L2;                        
-                        end else begin
-                            l2_busy      <= `DISABLE;
-                            state  <=  `L2_IDLE;
-                        end                   
+                        state  <=  `ACCESS_L2;                                         
                     end else begin
                         state <=  `WRITE_L2;
                     end
                 end
-
+                `WRITE_HIT:begin // write into l2_cache from L1 
+                    if(l2_complete == `ENABLE)begin
+                        l2_tag0_rw   <=  `READ;
+                        l2_tag1_rw   <=  `READ;
+                        l2_tag2_rw   <=  `READ;
+                        l2_tag3_rw   <=  `READ;
+                        l2_data0_rw  <=  `READ;
+                        l2_data1_rw  <=  `READ;
+                        l2_data2_rw  <=  `READ;
+                        l2_data3_rw  <=  `READ;  
+                        l2_dirty0_rw <=  `READ;
+                        l2_dirty1_rw <=  `READ;  
+                        state  <=  `L2_IDLE;                                         
+                    end else begin
+                        state <=  `WRITE_HIT;
+                    end
+                end
                 `LOAD_BLOCK:begin // load block of L2 with dirty to mem.                     
                     mem_rw <= l2_cache_rw; 
                     case(choose_way)
