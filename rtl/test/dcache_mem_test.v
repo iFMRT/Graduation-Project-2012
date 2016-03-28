@@ -87,13 +87,10 @@ module dcache_mem_test();
     wire     [511:0] l2_data2_rd;    // read data of cache_data2
     wire     [511:0] l2_data3_rd;    // read data of cache_data3 
     // l2_dirty
-    wire             l2_dirty0_wd;
+    wire             l2_dirty_wd;
     wire             l2_dirty0_rw;
-    wire             l2_dirty1_wd;
     wire             l2_dirty1_rw;
-    wire             l2_dirty2_wd;
     wire             l2_dirty2_rw;
-    wire             l2_dirty3_wd;
     wire             l2_dirty3_rw;
     wire             l2_dirty0;
     wire             l2_dirty1;
@@ -296,13 +293,10 @@ module dcache_mem_test();
         .l2_data2_rw    (l2_data2_rw),   // the mark of cache_data2 write signal 
         .l2_data3_rw    (l2_data3_rw),   // the mark of cache_data3 write signal         
         // l2_dirty part
-        .l2_dirty0_wd   (l2_dirty0_wd),
+        .l2_dirty_wd    (l2_dirty_wd),
         .l2_dirty0_rw   (l2_dirty0_rw),
-        .l2_dirty1_wd   (l2_dirty1_wd),
         .l2_dirty1_rw   (l2_dirty1_rw),
-        .l2_dirty2_wd   (l2_dirty2_wd),
         .l2_dirty2_rw   (l2_dirty2_rw),
-        .l2_dirty3_wd   (l2_dirty3_wd),
         .l2_dirty3_rw   (l2_dirty3_rw),
         .l2_dirty0      (l2_dirty0),
         .l2_dirty1      (l2_dirty1),
@@ -326,10 +320,9 @@ module dcache_mem_test();
         .tag0_rw        (tag0_rw),       // read / write signal of tag0
         .tag1_rw        (tag1_rw),       // read / write signal of tag1
         .index          (index),         // address of cache
-        .dirty0_rw      (dirty0_rw), 
-        .dirty0_wd      (dirty0_wd),        
+        .dirty0_rw      (dirty0_rw),        
         .dirty1_rw      (dirty1_rw),   
-        .dirty1_wd      (dirty1_wd), 
+        .dirty_wd       (dirty_wd), 
         .tag_wd         (tag_wd),        // write data of tag
         .tag0_rd        (tag0_rd),       // read data of tag0
         .tag1_rd        (tag1_rd),       // read data of tag1
@@ -546,20 +539,17 @@ module dcache_mem_test();
         input           _l2_data3_rw;        // the mark of cache_data3 write signal 
         input   [511:0] _l2_data_wd;
         // l2_dirty part
-        input           _l2_dirty0_wd;
+        input           _l2_dirty_wd;
         input           _l2_dirty0_rw;
-        input           _l2_dirty1_wd;
         input           _l2_dirty1_rw;
-        input           _l2_dirty2_wd;
         input           _l2_dirty2_rw;
-        input           _l2_dirty3_wd;
         input           _l2_dirty3_rw;
         input   [25:0]  _mem_addr;           // address of memory
         input           _mem_rw;             // read / write signal of memory
         begin 
             if( (l2_miss_stall === _l2_miss_stall)  && 
                 (l2_busy       === _l2_busy)        && 
-                (data_wd_l2    === _data_wd_l2)        && 
+                (data_wd_l2    === _data_wd_l2)     && 
                 (l2_tag0_rw    === _l2_tag0_rw)     && 
                 (l2_tag1_rw    === _l2_tag1_rw)     && 
                 (l2_tag2_rw    === _l2_tag2_rw)     && 
@@ -571,13 +561,10 @@ module dcache_mem_test();
                 (l2_data2_rw   === _l2_data2_rw)    && 
                 (l2_data3_rw   === _l2_data3_rw)    && 
                 (l2_data_wd    === _l2_data_wd)     &&
-                (l2_dirty0_wd  === _l2_dirty0_wd)   &&
+                (l2_dirty_wd  === _l2_dirty_wd)     &&
                 (l2_dirty0_rw  === _l2_dirty0_rw)   &&
-                (l2_dirty1_wd  === _l2_dirty1_wd)   &&
                 (l2_dirty1_rw  === _l2_dirty1_rw)   &&
-                (l2_dirty2_wd  === _l2_dirty2_wd)   &&
                 (l2_dirty2_rw  === _l2_dirty2_rw)   &&
-                (l2_dirty3_wd  === _l2_dirty3_wd)   &&
                 (l2_dirty3_rw  === _l2_dirty3_rw)   &&
                 (mem_addr      === _mem_addr)       && 
                 (mem_rw        === _mem_rw)  
@@ -588,63 +575,57 @@ module dcache_mem_test();
             end 
             
             // check
-            // if(l2_miss_stall !== _l2_miss_stall)begin 
-            //     $display("l2_miss_stall Test Failed !"); 
-            // end
-            // if(l2_busy       !== _l2_busy)     begin
-            //     $display("l2_busy Test Failed !"); 
-            // end
-            // if(data_wd_l2    !== _data_wd_l2)     begin
-            //     $display("data_wd_l2:%b(excepted %b)",data_wd_l2,_data_wd_l2); 
-            // end
-            // if(l2_tag0_rw    !== _l2_tag0_rw)  begin
-            //     $display("l2_tag0_rw Test Failed !"); 
-            // end
-            // if(l2_tag1_rw    !== _l2_tag1_rw)  begin
-            //     $display("l2_tag1_rw Test Failed !"); 
-            // end
-            // if(l2_tag2_rw    !== _l2_tag2_rw)  begin
-            //     $display("l2_tag2_rw Test Failed !"); 
-            // end
-            // if(l2_tag3_rw    !== _l2_tag3_rw)  begin
-            //     $display("l2_miss_stall Test Failed !"); 
-            // end
-            // if(l2_tag_wd     !== _l2_tag_wd)   begin
-            //     $display("l2_tag_wd Test Failed !"); 
-            // end
-            // if(l2_rdy        !== _l2_rdy)      begin
-            //     $display("l2_rdy Test Failed !"); 
-            // end
-            // if(l2_data0_rw   !== _l2_data0_rw) begin
-            //     $display("l2_data0_rw Test Failed !"); 
-            // end
-            // if(l2_data1_rw   !== _l2_data1_rw) begin
-            //     $display("l2_data1_rw Test Failed !"); 
-            // end
-            // if(l2_data2_rw   !== _l2_data2_rw) begin
-            //     $display("l2_data2_rw Test Failed !"); 
-            // end
-            // if(l2_data3_rw   !== _l2_data3_rw) begin
-            //     $display("l2_data3_rw Test Failed !"); 
-            // end
-            // if (l2_dirty0_wd !== _l2_dirty0_wd) begin
-            //     $display("l2_dirty0_wd Test Failed !"); 
-            // end
-            // if (l2_dirty0_rw !== _l2_dirty0_rw) begin
-            //     $display("l2_dirty0_rw Test Failed !"); 
-            // end
-            // if (l2_dirty1_wd !== _l2_dirty1_wd) begin
-            //     $display("l2_dirty1_wd Test Failed !"); 
-            // end
-            // if (l2_dirty1_rw !== _l2_dirty1_rw) begin
-            //     $display("l2_dirty1_rw Test Failed !"); 
-            // end
-            // if(mem_addr      !== _mem_addr)    begin
-            //     $display("mem_addr Test Failed !"); 
-            // end
-            // if(mem_rw        !== _mem_rw) begin
-            //     $display("mem_rw Test Failed !"); 
-            // end 
+            if(l2_miss_stall !== _l2_miss_stall)begin 
+                $display("l2_miss_stall:%b(excepted %b)",l2_miss_stall,_l2_miss_stall); 
+            end
+            if(l2_busy       !== _l2_busy)     begin
+                $display("l2_busy Test Failed !"); 
+            end
+            if(data_wd_l2    !== _data_wd_l2)     begin
+                $display("data_wd_l2:%b(excepted %b)",data_wd_l2,_data_wd_l2); 
+            end
+            if(l2_tag0_rw    !== _l2_tag0_rw)  begin
+                $display("l2_tag0_rw Test Failed !"); 
+            end
+            if(l2_tag1_rw    !== _l2_tag1_rw)  begin
+                $display("l2_tag1_rw Test Failed !"); 
+            end
+            if(l2_tag2_rw    !== _l2_tag2_rw)  begin
+                $display("l2_tag2_rw Test Failed !"); 
+            end
+            if(l2_tag3_rw    !== _l2_tag3_rw)  begin
+                $display("l2_miss_stall Test Failed !"); 
+            end
+            if(l2_tag_wd     !== _l2_tag_wd)   begin
+                $display("l2_tag_wd Test Failed !"); 
+            end
+            if(l2_rdy        !== _l2_rdy)      begin
+                $display("l2_rdy Test Failed !"); 
+            end
+            if(l2_data0_rw   !== _l2_data0_rw) begin
+                $display("l2_data0_rw Test Failed !"); 
+            end
+            if(l2_data1_rw   !== _l2_data1_rw) begin
+                $display("l2_data1_rw Test Failed !"); 
+            end
+            if(l2_data2_rw   !== _l2_data2_rw) begin
+                $display("l2_data2_rw Test Failed !"); 
+            end
+            if(l2_data3_rw   !== _l2_data3_rw) begin
+                $display("l2_data3_rw Test Failed !"); 
+            end
+            if (l2_dirty0_rw !== _l2_dirty0_rw) begin
+                $display("l2_dirty0_rw Test Failed !"); 
+            end
+            if (l2_dirty1_rw !== _l2_dirty1_rw) begin
+                $display("l2_dirty1_rw Test Failed !"); 
+            end
+            if(mem_addr      !== _mem_addr)    begin
+                $display("mem_addr Test Failed !"); 
+            end
+            if(mem_rw        !== _mem_rw) begin
+                $display("mem_rw Test Failed !"); 
+            end 
         end
     endtask
     task tag_ram_tb;
@@ -870,11 +851,8 @@ module dcache_mem_test();
                 512'bx,
                 1'bx,
                 `READ,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
                 26'bx,              // address of memory
                 1'bx                // read / write signal of memory                
@@ -899,11 +877,8 @@ module dcache_mem_test();
                 512'bx,
                 1'bx,
                 `READ,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
                 26'b1110_0001_00,   // address of memory
                 `READ               // read / write signal of memory                
@@ -932,11 +907,8 @@ module dcache_mem_test();
                 512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,
                 1'b0,
                 `WRITE,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
                 26'b1110_0001_00,   // address of memory
                 `READ               // read / write signal of memory                
@@ -1005,11 +977,8 @@ module dcache_mem_test();
                 512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,
                 1'b0,
                 `READ,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
                 26'b1110_0001_00,   // address of memory
                 `READ               // read / write signal of memory                
@@ -1037,11 +1006,8 @@ module dcache_mem_test();
                 512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,
                 1'b0,
                 `READ,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
                 26'b1110_0001_00,   // address of memory
                 `READ               // read / write signal of memory                
@@ -1094,11 +1060,8 @@ module dcache_mem_test();
                 512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,
                 1'b0,
                 `READ,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
                 26'b1110_0001_00,   // address of memory
                 `READ               // read / write signal of memory                
@@ -1141,18 +1104,15 @@ module dcache_mem_test();
                 512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,
                 1'b0,
                 `READ,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
                 26'b1110_0001_00,   // address of memory
                 `READ               // read / write signal of memory                
                 );
             mem_stage_tb(
                 32'bx,          // out of mem stage
-                `DISABLE,        // the signal of stall caused by cache miss
+                `ENABLE,        // the signal of stall caused by cache miss
                 `READ,          // read / write signal of L1_tag0
                 `READ,          // read / write signal of L1_tag1
                 21'b1_0000_0000_0000_0000_1110,       // write data of L1_tag

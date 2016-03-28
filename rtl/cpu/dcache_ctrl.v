@@ -11,7 +11,9 @@
 
 /********** General header file **********/
 `include "stddef.h"
+
 `include "dcache.h"
+
 module dcache_ctrl(
     input              clk,           // clock
     input              rst,           // reset
@@ -238,7 +240,26 @@ module dcache_ctrl(
                     end else begin // cache miss
                         miss_stall <= `ENABLE; 
                         if(valid == `ENABLE && dirty == `ENABLE) begin 
-                            state  <= `LOAD_BLOCK;
+                                if(l2_busy == `ENABLE) begin
+                                    state <= `WAIT_L2_BUSY;
+                                end else begin 
+                                    l2_cache_rw <= memwrite_m; 
+                                    irq   <= `ENABLE;
+                                    state <= `WRITE_L2;
+                                end
+                                case(choose_way)
+                                    `WAY0:begin
+                                        data_rd    <= data0_rd;
+                                        l2_index   <= {tag0_rd[2:0],index[7:2]}; // old index of L2
+                                        l2_addr    <= {tag0_rd[19:0],index,4'b0};
+                                        // l2_data_wd_dc <= data_rd0;  
+                                    end
+                                    `WAY1:begin
+                                        data_rd    <= data1_rd;
+                                        l2_addr    <= {tag1_rd[19:0],index,4'b0};
+                                        l2_index   <= {tag1_rd[2:0],index[7:2]}; // old index of L2
+                                    end
+                                endcase
                         end else if(l2_busy == `ENABLE && (valid == `DISABLE || dirty == `DISABLE)) begin
                             state  <= `WAIT_L2_BUSY;
                         end else if(l2_busy == `DISABLE && (valid == `DISABLE || dirty == `DISABLE)) begin
@@ -296,27 +317,6 @@ module dcache_ctrl(
                         state  <= `WRITE_L1;
                     end        
                 end
-                `LOAD_BLOCK:begin // load block of L1 with dirty to L2.                     
-                    l2_cache_rw <= memwrite_m; 
-                    if(l2_busy == `ENABLE) begin
-                        state <= `LOAD_BLOCK;
-                    end else begin 
-                        state <= `WRITE_L2;
-                    end
-                    case(choose_way)
-                        `WAY0:begin
-                            data_rd    <= data0_rd;
-                            l2_index   <= {tag0_rd[2:0],index[7:2]}; // old index of L2
-                            l2_addr    <= {tag0_rd[19:0],index,4'b0};
-                            // l2_data_wd_dc <= data_rd0;  
-                        end
-                        `WAY1:begin
-                            data_rd    <= data1_rd;
-                            l2_addr    <= {tag1_rd[19:0],index,4'b0};
-                            l2_index   <= {tag1_rd[2:0],index[7:2]}; // old index of L2
-                        end
-                    endcase
-                end
                  `WRITE_HIT:begin // Write to L1,read from CPU
                     if(complete == `ENABLE)begin
                         data_wd_dc_en <= `DISABLE;
@@ -340,12 +340,7 @@ module dcache_ctrl(
                         l2_cache_rw <= `READ;  
                         l2_addr     <= addr;
                         l2_index    <= addr[14:6]; // new index of L2
-                        if (l2_busy) begin
-                            state <= `WAIT_L2_BUSY;
-                        end else begin
-                            irq   <= `ENABLE;
-                            state <= `L2_ACCESS;
-                        end
+                        state <= `L2_ACCESS;
                     end else begin
                         state <= `WRITE_L2;
                     end

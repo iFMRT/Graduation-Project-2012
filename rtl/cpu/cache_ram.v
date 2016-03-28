@@ -129,9 +129,8 @@ module dtag_ram(
     input               tag1_rw,        // read / write signal of tag1
     input       [7:0]   index,          // address of cache
     input               dirty0_rw,
-    input               dirty0_wd,
     input               dirty1_rw,
-    input               dirty1_wd,
+    input               dirty_wd,
     input       [20:0]  tag_wd,         // write data of tag
     output      [20:0]  tag0_rd,        // read data of tag0
     output      [20:0]  tag1_rd,        // read data of tag1
@@ -170,7 +169,7 @@ module dtag_ram(
         .a      (index),
         .wr     (dirty0_rw),
         .rd     (dirty0),
-        .wd     (dirty0_wd)
+        .wd     (dirty_wd)
         );
     // sram_256x1
     sram_256 #(1) dirty1_field(        
@@ -178,7 +177,7 @@ module dtag_ram(
         .a      (index),
         .wr     (dirty1_rw),
         .rd     (dirty1),
-        .wd     (dirty1_wd)
+        .wd     (dirty_wd)
         );
     // sram_256x1
     sram_256 #(1) lru_field(        
