@@ -1,7 +1,7 @@
 /*
  -- ============================================================================
  -- FILE NAME   : dcache_test.v
- -- DESCRIPTION : testbench of icache
+ -- DESCRIPTION : testbench of dcache
  -- ----------------------------------------------------------------------------
  -- Date:2016/3/24        Coding_by:kippy
  -- ============================================================================
@@ -17,7 +17,7 @@ module dcache_test();
     reg              clk;           // clock
     reg              rst;           // reset
     /* CPU part */
-    reg      [31:0]  aluout_m;       // address of fetching instruction
+    reg      [31:0]  addr;       // address of fetching instruction
     reg      [31:0]  wr_data_m;
     reg              memwrite_m;            // read / write signal of CPU
     reg              access_mem;
@@ -68,6 +68,11 @@ module dcache_test();
     wire     [20:0]  tag1_rd;       // read data of tag1
     wire             lru;           // read data of tag
     wire             complete;      // complete write from L2 to L1
+    wire             dirty_wd;
+    wire             dirty0_rw;
+    wire             dirty1_rw;      
+    wire             dirty0;       
+    wire             dirty1;
     // data_ram part 
     wire     [127:0] data0_rd;      // read data of cache_data0
     wire     [127:0] data1_rd;      // read data of cache_data1
@@ -89,26 +94,23 @@ module dcache_test();
     wire     [511:0] l2_data2_rd;    // read data of cache_data2
     wire     [511:0] l2_data3_rd;    // read data of cache_data3 
     // l2_dirty
-    wire             l2_dirty0_wd;
+    wire             l2_dirty_wd;
     wire             l2_dirty0_rw;
-    wire             l2_dirty1_wd;
     wire             l2_dirty1_rw;
-    wire             l2_dirty2_wd;
     wire             l2_dirty2_rw;
-    wire             l2_dirty3_wd;
     wire             l2_dirty3_rw;
     wire             l2_dirty0;
     wire             l2_dirty1;
     wire             l2_dirty2;
     wire             l2_dirty3;
-    
+    wire             hitway;
     reg              clk_tmp;        // temporary clock of L2C
 
     dcache_ctrl dcache_ctrl(
         .clk            (clk),           // clock
         .rst            (rst),           // reset
         /* CPU part */
-        .aluout_m       (aluout_m),       // address of fetching instruction
+        .addr           (addr),       // address of fetching instruction
         .wr_data_m      (wr_data_m),
         .memwrite_m     (memwrite_m),            // read / write signal of CPU
         .access_mem     (access_mem), 
@@ -131,7 +133,7 @@ module dcache_test();
         .tag1_rw        (tag1_rw),       // read / write signal of L1_tag1
         .tag_wd         (tag_wd),        // write data of L1_tag
         .data_wd_dc_en  (data_wd_dc_en),
-        // .hitway         (hitway),
+        .hitway         (hitway),
         .data0_rw       (data0_rw),      // read / write signal of data0
         .data1_rw       (data1_rw),      // read / write signal of data1
         .index          (index),         // address of L1_cache
@@ -184,13 +186,10 @@ module dcache_test();
         .l2_data2_rw    (l2_data2_rw),   // the mark of cache_data2 write signal 
         .l2_data3_rw    (l2_data3_rw),   // the mark of cache_data3 write signal         
         // l2_dirty part
-        .l2_dirty0_wd   (l2_dirty0_wd),
+        .l2_dirty_wd    (l2_dirty_wd),
         .l2_dirty0_rw   (l2_dirty0_rw),
-        .l2_dirty1_wd   (l2_dirty1_wd),
         .l2_dirty1_rw   (l2_dirty1_rw),
-        .l2_dirty2_wd   (l2_dirty2_wd),
         .l2_dirty2_rw   (l2_dirty2_rw),
-        .l2_dirty3_wd   (l2_dirty3_wd),
         .l2_dirty3_rw   (l2_dirty3_rw),
         .l2_dirty0      (l2_dirty0),
         .l2_dirty1      (l2_dirty1),
@@ -208,10 +207,9 @@ module dcache_test();
         .tag0_rw        (tag0_rw),       // read / write signal of tag0
         .tag1_rw        (tag1_rw),       // read / write signal of tag1
         .index          (index),         // address of cache
-        .dirty0_rw      (dirty0_rw), 
-        .dirty0_wd      (dirty0_wd),        
-        .dirty1_rw      (dirty1_rw),   
-        .dirty1_wd      (dirty1_wd), 
+        .dirty0_rw      (dirty0_rw),     
+        .dirty1_rw      (dirty1_rw), 
+        .dirty_wd       (dirty_wd),   
         .tag_wd         (tag_wd),        // write data of tag
         .tag0_rd        (tag0_rd),       // read data of tag0
         .tag1_rd        (tag1_rd),       // read data of tag1
@@ -304,12 +302,11 @@ module dcache_test();
                 (irq        === _irq)               && 
                 (l2_index   === _l2_index)          && 
                 (l2_addr    === _l2_addr)           && 
-                (data_wd_dc   === _data_wd_dc)          && 
+                (data_wd_dc   === _data_wd_dc)      && 
                 (dirty0_rw  === _dirty0_rw)         && 
                 (dirty1_rw  === _dirty1_rw)         && 
                 (data_rd    === _data_rd)           && 
-                // (hitway     === _hitway)            &&
-                (data_wd_dc    === _data_wd_dc)
+                (dirty_wd    === _dirty_wd)
                ) begin 
                  $display("Dcache Test Succeeded !"); 
             end else begin 
@@ -378,13 +375,10 @@ module dcache_test();
         input           _l2_data3_rw;        // the mark of cache_data3 write signal 
         input   [511:0] _l2_data_wd;
         // l2_dirty part
-        input           _l2_dirty0_wd;
+        input           _l2_dirty_wd;
         input           _l2_dirty0_rw;
-        input           _l2_dirty1_wd;
         input           _l2_dirty1_rw;
-        input           _l2_dirty2_wd;
         input           _l2_dirty2_rw;
-        input           _l2_dirty3_wd;
         input           _l2_dirty3_rw;
         input   [25:0]  _mem_addr;           // address of memory
         input           _mem_rw;             // read / write signal of memory
@@ -403,13 +397,10 @@ module dcache_test();
                 (l2_data2_rw   === _l2_data2_rw)    && 
                 (l2_data3_rw   === _l2_data3_rw)    && 
                 (l2_data_wd    === _l2_data_wd)     &&
-                (l2_dirty0_wd  === _l2_dirty0_wd)   &&
+                (l2_dirty_wd  === _l2_dirty_wd)     &&
                 (l2_dirty0_rw  === _l2_dirty0_rw)   &&
-                (l2_dirty1_wd  === _l2_dirty1_wd)   &&
                 (l2_dirty1_rw  === _l2_dirty1_rw)   &&
-                (l2_dirty2_wd  === _l2_dirty2_wd)   &&
                 (l2_dirty2_rw  === _l2_dirty2_rw)   &&
-                (l2_dirty3_wd  === _l2_dirty3_wd)   &&
                 (l2_dirty3_rw  === _l2_dirty3_rw)   &&
                 (mem_addr      === _mem_addr)       && 
                 (mem_rw        === _mem_rw)  
@@ -458,9 +449,6 @@ module dcache_test();
             // end
             // if(l2_data3_rw   !== _l2_data3_rw) begin
             //     $display("l2_data3_rw Test Failed !"); 
-            // end
-            // if (l2_dirty0_wd !== _l2_dirty0_wd) begin
-            //     $display("l2_dirty0_wd Test Failed !"); 
             // end
             // if (l2_dirty0_rw !== _l2_dirty0_rw) begin
             //     $display("l2_dirty0_rw Test Failed !"); 
@@ -619,7 +607,7 @@ module dcache_test();
         #STEP begin 
             /******** Initialize Test Output ********/
             rst        <= `DISABLE;      
-            aluout_m   <= 32'b1110_0001_0000_0000;
+            addr   <= 32'b1110_0001_0000_0000;
             access_mem <= `ENABLE;
             memwrite_m <= `READ;
             mem_rd <= 512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000;      // write data of l2_cache
@@ -694,11 +682,8 @@ module dcache_test();
                 512'bx,
                 1'bx,
                 `READ,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
                 26'bx,              // address of memory
                 1'bx                // read / write signal of memory                
@@ -723,11 +708,8 @@ module dcache_test();
                 512'bx,
                 1'bx,
                 `READ,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
                 26'b1110_0001_00,   // address of memory
                 `READ               // read / write signal of memory                
@@ -756,11 +738,8 @@ module dcache_test();
                 512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,
                 1'b0,
                 `WRITE,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
                 26'b1110_0001_00,   // address of memory
                 `READ               // read / write signal of memory                
@@ -829,11 +808,8 @@ module dcache_test();
                 512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,
                 1'b0,
                 `READ,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
                 26'b1110_0001_00,   // address of memory
                 `READ               // read / write signal of memory                
@@ -861,11 +837,8 @@ module dcache_test();
                 512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,
                 1'b0,
                 `READ,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
                 26'b1110_0001_00,   // address of memory
                 `READ               // read / write signal of memory                
@@ -918,11 +891,8 @@ module dcache_test();
                 512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,
                 1'b0,
                 `READ,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
                 26'b1110_0001_00,   // address of memory
                 `READ               // read / write signal of memory                
@@ -965,18 +935,15 @@ module dcache_test();
                 512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,
                 1'b0,
                 `READ,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
                 26'b1110_0001_00,   // address of memory
                 `READ               // read / write signal of memory                
                 );
             dcache_ctrl_tb(
                 32'bx,          // read data of CPU
-                `DISABLE,        // the signal of stall caused by cache miss
+                `ENABLE,        // the signal of stall caused by cache miss
                 `READ,          // read / write signal of L1_tag0
                 `READ,          // read / write signal of L1_tag1
                 21'b1_0000_0000_0000_0000_1110,       // write data of L1_tag
@@ -1006,7 +973,7 @@ module dcache_test();
         #STEP begin // L1_ACCESS(read hit)  & l2_IDLE    
             $display("\n========= Clock 14 ========");
             dcache_ctrl_tb(
-                32'h123BC000,          // read data of CPU
+                32'h123BC000,    // read data of CPU
                 `DISABLE,        // the signal of stall caused by cache miss
                 `READ,          // read / write signal of L1_tag0
                 `READ,          // read / write signal of L1_tag1

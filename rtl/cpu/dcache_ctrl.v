@@ -11,12 +11,14 @@
 
 /********** General header file **********/
 `include "stddef.h"
+
 `include "dcache.h"
+
 module dcache_ctrl(
     input              clk,           // clock
     input              rst,           // reset
     /* CPU part */
-    input      [31:0]  aluout_m,      // address of fetching instruction
+    input      [31:0]  addr,      // address of fetching instruction
     input      [31:0]  wr_data_m,
     input              memwrite_m,    // read / write signal of CPU
     input              access_mem,
@@ -39,7 +41,7 @@ module dcache_ctrl(
     output reg         tag1_rw,       // read / write signal of L1_tag1
     output     [20:0]  tag_wd,        // write data of L1_tag
     output reg         data_wd_dc_en, // choose signal of data_wd
-    // output reg         hitway,        // path hit mark            
+    output reg         hitway,        // path hit mark            
     output reg         data0_rw,      // read / write signal of data0
     output reg         data1_rw,      // read / write signal of data1
     output     [7:0]   index,         // address of L1_cache
@@ -58,7 +60,7 @@ module dcache_ctrl(
     wire       [1:0]   offset;              // offset of block
     reg                hitway0;             // the mark of choosing path0
     reg                hitway1;             // the mark of choosing path1
-    reg                hitway;
+    // reg                hitway;
     reg                tagcomp_hit;         // tag hit mark
     reg                choose_way;          // the way of L1 we choose to replace
     reg        [2:0]   state;               // state of control
@@ -68,16 +70,18 @@ module dcache_ctrl(
 
     assign valid0        = tag0_rd[20];
     assign valid1        = tag1_rd[20];
-    assign index         = aluout_m[11:4];
-    assign offset        = aluout_m[3:2];
-    // assign byte_offset   = aluout_m[1:0];
-    assign tag_wd        = {1'b1,aluout_m [31:12]};  // 写入 tag，valid恒为 1。
+    assign index         = addr[11:4];
+    assign offset        = addr[3:2];
+    // assign byte_offset   = addr[1:0];
+    assign tag_wd        = {1'b1,addr [31:12]};  // 写入 tag，valid恒为 1。
+    
     always @(*) begin
         clk_tmp = #1 clk;
     end
+
     always @(*)begin // path choose
-        hitway0 = (tag0_rd[19:0] == aluout_m[31:12]) & valid0;
-        hitway1 = (tag1_rd[19:0] == aluout_m[31:12]) & valid1;
+        hitway0 = (tag0_rd[19:0] == addr[31:12]) & valid0;
+        hitway1 = (tag1_rd[19:0] == addr[31:12]) & valid1;
         if(hitway0 == `ENABLE)begin
             tagcomp_hit = `ENABLE;
             hitway      = `WAY0;
@@ -134,7 +138,6 @@ module dcache_ctrl(
         end else begin
             case(state)
                 `L1_IDLE:begin
-                    miss_stall  <= `DISABLE;
                     if (access_mem == `ENABLE || access_mem_ex == `ENABLE) begin 
                         state <= `L1_ACCESS;
                     end else begin 
@@ -142,10 +145,14 @@ module dcache_ctrl(
                     end
                 end
                 `L1_ACCESS:begin
-                    miss_stall  <= `DISABLE;
                     if (tagcomp_hit == `ENABLE) begin // cache hit
                         if(memwrite_m == `READ) begin // read hit
-                            state <= `L1_IDLE;
+                            miss_stall  <= `DISABLE;
+                            if(access_mem_ex == `ENABLE) begin
+                                state  <= `L1_ACCESS;
+                            end else begin
+                                state  <= `L1_IDLE;
+                            end
                             case(hitway)
                                 `WAY0:begin
                                     data0_rw  <= `READ;
@@ -183,7 +190,8 @@ module dcache_ctrl(
                                 end // hitway == 1
                             endcase // case(hitway) 
                         end else if (memwrite_m == `WRITE) begin  // begin: write hit
-                            state          <= `WRITE_L1;
+                            miss_stall     <= `DISABLE;
+                            state          <= `WRITE_HIT;
                             dirty_wd       <= 1'b1;
                             data_wd_dc_en  <= `ENABLE;
                             case(hitway)
@@ -191,6 +199,7 @@ module dcache_ctrl(
                                     data0_rw  <= `WRITE;
                                     // dirty0_wd <= 1'b1;
                                     dirty0_rw <= `WRITE;
+                                    tag0_rw   <= `WRITE;
                                     case(offset)
                                         `WORD0:begin
                                             data_wd_dc  <= {data0_rd[127:32],wr_data_m};
@@ -210,6 +219,7 @@ module dcache_ctrl(
                                     data1_rw  <= `WRITE;
                                     // dirty1_wd <= 1'b1;
                                     dirty1_rw <= `WRITE;
+                                    tag1_rw   <= `WRITE;
                                     case(offset)
                                         `WORD0:begin
                                             data_wd_dc  <= {data1_rd[127:32],wr_data_m};
@@ -227,25 +237,37 @@ module dcache_ctrl(
                                 end // hitway == 1
                             endcase // case(hitway) 
                         end // end：write hit
-                        // after reading hit
-                        if(access_mem_ex == `ENABLE) begin
-                            state  <= `L1_ACCESS;
-                        end else begin
-                            state  <= `L1_IDLE;
-                        end
                     end else begin // cache miss
-                        miss_stall <= `ENABLE;  
-                        if(l2_busy == `ENABLE && (valid == `DISABLE || dirty == `DISABLE)) begin
+                        miss_stall <= `ENABLE; 
+                        if(valid == `ENABLE && dirty == `ENABLE) begin 
+                                if(l2_busy == `ENABLE) begin
+                                    state <= `WAIT_L2_BUSY;
+                                end else begin 
+                                    l2_cache_rw <= memwrite_m; 
+                                    irq   <= `ENABLE;
+                                    state <= `WRITE_L2;
+                                end
+                                case(choose_way)
+                                    `WAY0:begin
+                                        data_rd    <= data0_rd;
+                                        l2_index   <= {tag0_rd[2:0],index[7:2]}; // old index of L2
+                                        l2_addr    <= {tag0_rd[19:0],index,4'b0};
+                                        // l2_data_wd_dc <= data_rd0;  
+                                    end
+                                    `WAY1:begin
+                                        data_rd    <= data1_rd;
+                                        l2_addr    <= {tag1_rd[19:0],index,4'b0};
+                                        l2_index   <= {tag1_rd[2:0],index[7:2]}; // old index of L2
+                                    end
+                                endcase
+                        end else if(l2_busy == `ENABLE && (valid == `DISABLE || dirty == `DISABLE)) begin
                             state  <= `WAIT_L2_BUSY;
                         end else if(l2_busy == `DISABLE && (valid == `DISABLE || dirty == `DISABLE)) begin
                             irq      <= `ENABLE;
-                            l2_addr  <= aluout_m;
-                            l2_index <= aluout_m[14:6]; 
+                            l2_addr  <= addr;
+                            l2_index <= addr[14:6]; 
                             state    <= `L2_ACCESS;
-                        end
-                        if(valid == `ENABLE && dirty == `ENABLE) begin 
-                            state  <= `LOAD_BLOCK;
-                        end
+                        end 
                     end 
                 end
                 `L2_ACCESS:begin // access L2, wait L2 hit,choose replacement block's signal of L1
@@ -276,69 +298,52 @@ module dcache_ctrl(
                         state  <= `WAIT_L2_BUSY;
                     end else begin
                         irq      <= `ENABLE;
-                        l2_addr  <= aluout_m;
-                        l2_index <= aluout_m[14:6]; 
+                        l2_addr  <= addr;
+                        l2_index <= addr[14:6]; 
                         state    <= `L2_ACCESS;
-                    end
-                end
-                `LOAD_BLOCK:begin // load block of L1 with dirty to L2.                     
-                    irq <= `ENABLE;
-                    l2_cache_rw <= memwrite_m; 
-                    case(choose_way)
-                        `WAY0:begin
-                            data0_rw   <= `READ;
-                            tag0_rw    <= `READ;
-                            data_rd    <= data0_rd;
-                            l2_index   <= {tag0_rd[2:0],index[7:2]}; // old index of L2
-                            l2_addr    <= {tag0_rd,index,4'b0};
-                            // l2_data_wd_dc <= data_rd0;  
-                        end
-                        `WAY1:begin
-                            data1_rw   <= `READ;
-                            tag1_rw    <= `READ;
-                            data_rd    <= data1_rd;
-                            l2_addr    <= {tag1_rd,index,4'b0};
-                            l2_index   <= {tag1_rd[2:0],index[7:2]}; // old index of L2
-                        end
-                    endcase
-
-                    if (l2_complete == `ENABLE) begin
-                        if (l2_busy) begin
-                            state <= `WAIT_L2_BUSY;
-                        end else begin
-                            l2_cache_rw <= `READ;  
-                            l2_addr     <= aluout_m;
-                            l2_index    <= aluout_m[14:6]; // new index of L2
-                            state       <= `L2_ACCESS;
-                        end
-                    end else begin
-                        state <= `LOAD_BLOCK;
                     end
                 end
                 `WRITE_L1:begin // Write to L1,read from L2
                     if(complete == `ENABLE)begin
-                        irq           <= `DISABLE;
-                        data_wd_dc_en <= `DISABLE;
-                        miss_stall <= `DISABLE;
+                        irq        <= `DISABLE;
                         data0_rw   <= `READ;
                         data1_rw   <= `READ;
                         tag0_rw    <= `READ;
                         tag1_rw    <= `READ;
                         dirty0_rw  <= `READ;
                         dirty1_rw  <= `READ;
-                        if(access_mem == `ENABLE) begin
-                            state <= `L1_ACCESS;
-                        end else begin 
-                            if (access_mem_ex == `ENABLE) begin
-                                state <= `L1_ACCESS;
-                            end else begin
-                                state <= `L1_IDLE;
-                            end
-                        end
+                        state      <= `L1_ACCESS;
                     end else begin
                         state  <= `WRITE_L1;
+                    end        
+                end
+                 `WRITE_HIT:begin // Write to L1,read from CPU
+                    if(complete == `ENABLE)begin
+                        data_wd_dc_en <= `DISABLE;
+                        data0_rw   <= `READ;
+                        data1_rw   <= `READ;
+                        tag0_rw    <= `READ;
+                        tag1_rw    <= `READ;
+                        dirty0_rw  <= `READ;
+                        dirty1_rw  <= `READ;
+                        if(access_mem_ex == `ENABLE) begin
+                            state  <= `L1_ACCESS;
+                        end else begin
+                            state  <= `L1_IDLE;
+                        end
+                    end else begin
+                        state  <= `WRITE_HIT;
+                    end        
+                end
+                `WRITE_L2:begin
+                    if (l2_complete == `ENABLE) begin
+                        l2_cache_rw <= `READ;  
+                        l2_addr     <= addr;
+                        l2_index    <= addr[14:6]; // new index of L2
+                        state <= `L2_ACCESS;
+                    end else begin
+                        state <= `WRITE_L2;
                     end
-                            
                 end
             endcase
         end

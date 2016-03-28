@@ -67,7 +67,7 @@ module icache_test();
     wire     [20:0]  tag0_rd;       // read data of tag0
     wire     [20:0]  tag1_rd;       // read data of tag1
     wire             lru;           // read data of tag
-    wire             complete;      // complete write from L2 to L1
+    wire             complete;      // complete write from L2 to L1 
     // data_ram part
     wire     [127:0] data0_rd;      // read data of cache_data0
     wire     [127:0] data1_rd;      // read data of cache_data1
@@ -85,13 +85,10 @@ module icache_test();
     wire     [511:0] l2_data2_rd;    // read data of cache_data2
     wire     [511:0] l2_data3_rd;    // read data of cache_data3 
     // l2_dirty
-    wire             l2_dirty0_wd;
+    wire             l2_dirty_wd;
     wire             l2_dirty0_rw;
-    wire             l2_dirty1_wd;
     wire             l2_dirty1_rw;
-    wire             l2_dirty2_wd;
     wire             l2_dirty2_rw;
-    wire             l2_dirty3_wd;
     wire             l2_dirty3_rw;
     wire             l2_dirty0;
     wire             l2_dirty1;
@@ -167,13 +164,10 @@ module icache_test();
         .l2_data2_rw    (l2_data2_rw),   // the mark of cache_data2 write signal 
         .l2_data3_rw    (l2_data3_rw),   // the mark of cache_data3 write signal         
         // l2_dirty part
-        .l2_dirty0_wd   (l2_dirty0_wd),
+        .l2_dirty_wd   (l2_dirty_wd),
         .l2_dirty0_rw   (l2_dirty0_rw),
-        .l2_dirty1_wd   (l2_dirty1_wd),
         .l2_dirty1_rw   (l2_dirty1_rw),
-        .l2_dirty2_wd   (l2_dirty2_wd),
         .l2_dirty2_rw   (l2_dirty2_rw),
-        .l2_dirty3_wd   (l2_dirty3_wd),
         .l2_dirty3_rw   (l2_dirty3_rw),
         .l2_dirty0      (l2_dirty0),
         .l2_dirty1      (l2_dirty1),
@@ -329,13 +323,10 @@ module icache_test();
         input           _l2_data3_rw;        // the mark of cache_data3 write signal 
         input   [511:0] _l2_data_wd;
         // l2_dirty part
-        input           _l2_dirty0_wd;
+        input           _l2_dirty_wd;
         input           _l2_dirty0_rw;
-        input           _l2_dirty1_wd;
         input           _l2_dirty1_rw;
-        input           _l2_dirty2_wd;
         input           _l2_dirty2_rw;
-        input           _l2_dirty3_wd;
         input           _l2_dirty3_rw;
         input   [25:0]  _mem_addr;           // address of memory
         input           _mem_rw;             // read / write signal of memory
@@ -354,13 +345,10 @@ module icache_test();
                 (l2_data2_rw   === _l2_data2_rw)    && 
                 (l2_data3_rw   === _l2_data3_rw)    && 
                 (l2_data_wd    === _l2_data_wd)     &&
-                (l2_dirty0_wd  === _l2_dirty0_wd)   &&
+                (l2_dirty_wd  === _l2_dirty_wd)     &&
                 (l2_dirty0_rw  === _l2_dirty0_rw)   &&
-                (l2_dirty1_wd  === _l2_dirty1_wd)   &&
                 (l2_dirty1_rw  === _l2_dirty1_rw)   &&
-                (l2_dirty2_wd  === _l2_dirty2_wd)   &&
                 (l2_dirty2_rw  === _l2_dirty2_rw)   &&
-                (l2_dirty3_wd  === _l2_dirty3_wd)   &&
                 (l2_dirty3_rw  === _l2_dirty3_rw)   &&
                 (mem_addr      === _mem_addr)       && 
                 (mem_rw        === _mem_rw)  
@@ -409,14 +397,11 @@ module icache_test();
             if(l2_data3_rw   !== _l2_data3_rw) begin
                 $display("l2_data3_rw Test Failed !"); 
             end
-            if (l2_dirty0_wd !== _l2_dirty0_wd) begin
+            if (l2_dirty_wd !== _l2_dirty_wd) begin
                 $display("l2_dirty0_wd Test Failed !"); 
             end
             if (l2_dirty0_rw !== _l2_dirty0_rw) begin
                 $display("l2_dirty0_rw Test Failed !"); 
-            end
-            if (l2_dirty1_wd !== _l2_dirty1_wd) begin
-                $display("l2_dirty1_wd Test Failed !"); 
             end
             if (l2_dirty1_rw !== _l2_dirty1_rw) begin
                 $display("l2_dirty1_rw Test Failed !"); 
@@ -599,11 +584,8 @@ module icache_test();
                 512'bx,
                 1'bx,
                 `READ,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
                 26'bx,              // address of memory
                 1'bx                // read / write signal of memory                
@@ -628,11 +610,8 @@ module icache_test();
                 512'bx,
                 1'bx,
                 `READ,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
                 26'b1110_0001_00,   // address of memory
                 `READ               // read / write signal of memory                
@@ -661,11 +640,8 @@ module icache_test();
                 512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,
                 1'b0,
                 `WRITE,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
                 26'b1110_0001_00,   // address of memory
                 `READ               // read / write signal of memory                
@@ -728,11 +704,8 @@ module icache_test();
                 512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,
                 1'b0,
                 `READ,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
                 26'b1110_0001_00,   // address of memory
                 `READ               // read / write signal of memory                
@@ -760,11 +733,8 @@ module icache_test();
                 512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,
                 1'b0,
                 `READ,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
                 26'b1110_0001_00,   // address of memory
                 `READ               // read / write signal of memory                
@@ -828,11 +798,8 @@ module icache_test();
                 512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,
                 1'b0,
                 `READ,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
-                1'bx,
                 `READ,
                 26'b1110_0001_00,   // address of memory
                 `READ               // read / write signal of memory                
