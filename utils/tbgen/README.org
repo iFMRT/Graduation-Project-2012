@@ -10,11 +10,22 @@ Generate testbench for a given verilog module file.
 *** Quick Usage
 #+BEGIN_SRC 
 
-python3 tbgen.py input_verilog_file_name [-o output_testbench_file_name]
+python3 tbgen.py input_verilog_file_name -o output_testbench_file_name
 
 #+END_SRC
 
-*** TODO Generate Custom Testcase
+*** Generate Custom Testcase
+1. Generate a yaml template file.
+
+#+BEGIN_SRC bash
+$ python3 tbgen.py input_verilog_file_name -g output_yaml_file_name
+#+END_SRC
+
+2. Generate a testcase by a template file and yaml file.
+
+#+BEGIN_SRC bash
+$ python3 tbgen.py input_verilog_file_name -y yaml_file_name -t template_file_name -o output_testbench_file_name
+#+END_SRC
 
 ** License
 

@@ -1,31 +1,19 @@
 import sys
 import yaml
-sys.path.append("..")
+import argparse
 import re
-from template.template import Template
+from templite import Templite
 
 class TestbenchGenerator(object):
     def __init__(self):
-        self.module_header = ''
-        self.ports_name = []
+        self.module_name = ''
+        self.ports_name  = []
         self.ports_width = {}
-        self.ports_type = {}
+        self.ports_type  = {}
 
-    def open_file(self, src_file_name=None):
-        try:
-            with open(src_file_name, 'r') as src_file:
-                self.src_file_content = src_file.readlines()
-        except Exception as e:
-            print("ERROR: Open and read file error.\n ERROR:    %s" % e)
-            sys.exit(1)
-
-
-    def render(self):
-        context = {'header': self.module_header, 'dut': self.gen_dut()}
-        with open('template.v') as template_flie:
-            self.result = Template(template_flie.read()).render(**context)
-
-    def parse_header(self, line):
+    # Parse each line of module header,
+    # and assign module name to self.module_name.
+    def __parse_header_line(self, line):
         # remove 'wire' and 'reg'
         # remove ')' is the same as replacing ');' to ';'
         line = re.sub('\wire|reg|\(|\)', '', line)
@@ -43,7 +31,8 @@ class TestbenchGenerator(object):
 
         return line
 
-    def parse_ports(self, line):
+
+    def __parse_ports(self, line):
         port_type    = []
         port_width   = []
         port_name    = []
@@ -85,20 +74,35 @@ class TestbenchGenerator(object):
             self.ports_type[name]  = port_type[idx]
 
 
-    def parser(self):
-        for line in self.src_file_content:
+    def parser_header(self, module_src):
+        module_header = ''
+        for line in module_src:
             if 'input' in line or 'output' in line or 'inout' in line:
-                self.parse_ports(line)
+                self.__parse_ports(line)
 
             # break when read to module header end
             if ');' in line:
-                self.module_header += self.parse_header(line)
+                module_header += self.__parse_header_line(line)
                 break
 
-            self.module_header += self.parse_header(line)
+            module_header += self.__parse_header_line(line)
 
+        module_header += '\n'
+        return module_header
+
+
+    def gen_footer(self):
+        module_footer = """\n\t/******** Output Waveform ********/
+    initial begin
+       $dumpfile("gpio.vcd");
+       $dumpvars(0, gpio);
+    end
+
+endmodule"""
+
+        return module_footer
     def gen_dut(self):
-        dut = "    " + self.module_name + " " + self.module_name + " (\n"
+        dut = self.module_name + " " + self.module_name + " (\n"
         last_port = self.ports_name.pop()
 
         for name in self.ports_name:
@@ -109,59 +113,144 @@ class TestbenchGenerator(object):
 
         return dut
 
+
     def gen_dut_task(self):
+
         width_ports = []
         ports       = []
-        with open('template/task.v', 'r') as f:
-            task_template = f.read()
 
         for idx, port in enumerate(self.ports_name):
             if self.ports_type[port] != 'input':
                 ports.append(port)
                 width_ports.append(self.ports_width[port] + ' _' + port )
 
-
         last_port = ports.pop()
-        context   = {'task_name':   'gpio_tb',
+
+        task_ctx   = {'task_name'  : 'gpio_tb',
                      'width_ports': width_ports,
-                     'ports':       ports,
-                     'last_port':   last_port,
+                     'ports'      : ports,
+                     'last_port'  : last_port,
         }
 
-        task = Template(task_template).render(**context)
+        # task context
+        return task_ctx
 
-        return task
 
     def gen_test_case_yaml(self):
         init_input  = {}
         init_output = {'display': 'something you want to display'}
-        
+
         for port in self.ports_name:
             if self.ports_type[port] == 'input':
                 init_input[port]  = "placeholder"
             else:
                 init_output[port] = "placeholder"
 
-        return yaml.dump({
-            'init input': init_input,
-            'init output': init_output,
-        }, indent=4, default_flow_style=False)
+        return yaml.dump_all([init_input, init_output,],
+                             indent=4,
+                             default_flow_style=False
+        )
 
-    def load_yaml(self, testcase):
-        return yaml.load(testcase)
 
-    def write_file(self):
-        # Create Testbench File
-        with open('gpio_test.v', 'w') as f:
-            f.write(self.result)
+    def __convert_to_case_input(self, case):
+
+        case_input = []
+
+        for(k, v) in case.items():
+            case_input.append(k+' <= '+v+';')
+
+        return case_input
+
+    def __convert_to_case_result(self, case):
+
+        case_result = ['gpio_tb(']
+        display_string = ''
+
+        if 'display' in case:
+            display_string = '$display("%s");' % (case.pop('display'))
+
+        for(k, v) in case.items():
+            case_result.append('\t'+v+', '+'// '+k)
+
+        case_result.append(');')
+        return case_result
+
+
+    def gen_testcase(self, yaml_src):
+
+        testcase_list = list(yaml.load_all(yaml_src))
+        testcase      = []
+
+        first_case = self.__convert_to_case_input(testcase_list.pop(0))
+        last_case  = self.__convert_to_case_result(testcase_list.pop())
+
+        testcase_list = list(zip(testcase_list, testcase_list[1:]))[::2]
+
+        for (result, input) in testcase_list:
+            case_pair = []
+            result = self.__convert_to_case_result(result)
+            input  = self.__convert_to_case_input(input)
+
+            case_pair.append(result)
+            case_pair.append(input)
+
+            testcase.append(case_pair)
+
+        testcase_ctx   = {'testcase'  : testcase,
+                          'first_case': first_case,
+                          'last_case' : last_case,
+        }
+
+        # testcase context
+        return testcase_ctx
 
 
 if __name__ == "__main__":
 
+    argparser = argparse.ArgumentParser(description='Testbench Generator')
+    exclusive_group = argparser.add_mutually_exclusive_group()
+
+    argparser.add_argument('src', nargs=1, action ='store', help ='Source file')
+    exclusive_group.add_argument('-g', nargs=1, action ='store', dest = 'yaml_obj', help ='Generate a yaml template file')
+    exclusive_group.add_argument('-y', nargs=1, action ='store', dest = 'yaml_src', help ='Specify a yaml template file')
+    argparser.add_argument('-t', nargs=1, action ='store', dest = 'template_file', help ='Template file')
+    argparser.add_argument('-o', nargs=1, action ='store', dest ='obj_file', help   ='Object file')
+    argparser.add_argument('-v', action ='version', version ='Testbench Generator Version: 0.1')
+
+    args = argparser.parse_args()
+
     tbg = TestbenchGenerator()
-    tbg.open_file('gpio.v')
-    tbg.parser()
-    tbg.render()
-    tbg.write_file()
 
+    with open(args.src[0], 'r') as src_file:
+        module_header = tbg.parser_header(src_file.readlines())
+        module_footer = tbg.gen_footer()
+        dut           = tbg.gen_dut()
+        task_ctx      = tbg.gen_dut_task()
 
+    result = ''
+    if args.yaml_obj:
+        with open(args.yaml_obj[0], 'w') as f:
+            f.write(tbg.gen_test_case_yaml())
+        sys.exit(0)
+    elif args.template_file:
+        if not args.yaml_src:
+            print("You must specify a yaml file!")
+            sys.exit(1)
+
+        with open(args.yaml_src[0], 'r') as yaml_file:
+            testcase_ctx = tbg.gen_testcase(yaml_file)
+
+        task_ctx.update(testcase_ctx)
+        ctx = task_ctx.copy()
+        ctx['header'] = module_header
+        ctx['dut']    = dut
+        ctx['footer'] = module_footer
+
+        with open(args.template_file[0], 'r') as template:
+            result = Templite(template.read()).render(ctx)
+    else:
+        result = module_header + dut + module_footer
+
+    if args.obj_file is not None:
+        with open(args.obj_file[0], 'w') as f:
+            f.write(result)
