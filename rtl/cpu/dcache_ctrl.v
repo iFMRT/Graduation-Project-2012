@@ -349,5 +349,3 @@ module dcache_ctrl(
         end
     end
 endmodule
-
-

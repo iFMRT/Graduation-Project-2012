@@ -38,7 +38,6 @@ module mem_ctrl (
         miss_align = `DISABLE;
         wr_data    = ex_mem_wr_data;
         out        = `WORD_DATA_W'h0;
-        // as_        = `DISABLE_;
         rw         = `READ;
         /* Memory Access */
         if (ex_en == `ENABLE) begin
@@ -47,7 +46,6 @@ module mem_ctrl (
                     /* Check offset */
                     if (offset == `BYTE_OFFSET_WORD) begin      // Align
                         out         = read_data_m;
-                        // as_         = `ENABLE_;
                     end else begin                              // Miss align
                         miss_align  = `ENABLE;
                     end
@@ -55,25 +53,55 @@ module mem_ctrl (
                 `MEM_OP_LH : begin                              // Read a half word
                     /* Check offset */
                     if (offset[0] == 1'b0) begin // Align
-                        out         = { {16{read_data_m[15]}}, read_data_m[15:0]};
-                        // as_         = `ENABLE_;
+                        if (offset[1] == 1'b0) begin
+                            out     = { {16{read_data_m[15]}}, read_data_m[15:0]};
+                        end else begin
+                            out     = { {16{read_data_m[31]}}, read_data_m[31:16]};
+                        end
                     end else begin                              // Miss align
                         miss_align  = `ENABLE;
                     end
                 end
                 `MEM_OP_LB : begin                              // Read a byte
-                    out         = { {24{read_data_m[7]}}, read_data_m[7:0]};
-                    // as_         = `ENABLE_;
+                    case (offset)
+                        `BYTE0:begin
+                            out     = { {24{read_data_m[7]}}, read_data_m[7:0]};
+                        end
+                        `BYTE1:begin
+                            out     = { {24{read_data_m[15]}}, read_data_m[15:8]};
+                        end
+                        `BYTE2:begin
+                            out     = { {24{read_data_m[23]}}, read_data_m[23:16]};
+                        end
+                        `BYTE3:begin
+                            out     = { {24{read_data_m[31]}}, read_data_m[31:24]};
+                        end
+                    endcase
                 end
                 `MEM_OP_LBU : begin                             // Read a unsigned byte
-                    out         = { {24{1'b0}}, read_data_m[7:0]};
-                    // as_         = `ENABLE_;
+                    case (offset)
+                        `BYTE0:begin
+                            out     = { {24{1'b0}}, read_data_m[7:0]};
+                        end
+                        `BYTE1:begin
+                            out     = { {24{1'b0}}, read_data_m[15:8]};
+                        end
+                        `BYTE2:begin
+                            out     = { {24{1'b0}}, read_data_m[23:16]};
+                        end
+                        `BYTE3:begin
+                            out     = { {24{1'b0}}, read_data_m[31:24]};
+                        end
+                    endcase
                 end
                 `MEM_OP_LHU : begin                             // Read a half unsigned word
                     /* Check offset */
                     if (offset[0] == 1'b0) begin // Align
-                        out         = { {16{1'b0}}, read_data_m[15:0]};
-                        // as_         = `ENABLE_;
+                        if (offset[1] == 1'b0) begin
+                            out     = { {16{1'b0}}, read_data_m[15:0]};
+                        end else begin
+                            out     = { {16{1'b0}}, read_data_m[31:16]};
+                        end
                     end else begin                              // Miss align
                         miss_align  = `ENABLE;
                     end
@@ -82,7 +110,6 @@ module mem_ctrl (
                     /* Check offset */
                     if (offset == `BYTE_OFFSET_WORD) begin      // Align
                         rw          = `WRITE;
-                        // as_         = `ENABLE_;
                     end else begin                              // Miss align
                         miss_align  = `ENABLE;
                     end
@@ -90,17 +117,23 @@ module mem_ctrl (
                 `MEM_OP_SH : begin                              // Write a half word
                     /* Check offset */
                     if (offset[0] == 1'b0) begin // Align
-                        // wr_data     = { rd_data[31:16], ex_mem_wr_data[15:0]};
                         case (hitway)
                             `WAY0:begin
-                                wr_data     = { data0_rd[31:16], ex_mem_wr_data[15:0]};  
+                                if (offset[1] == 1'b0) begin
+                                    wr_data     = { data0_rd[31:16], ex_mem_wr_data[15:0]};
+                                end else begin
+                                    wr_data     = { ex_mem_wr_data[15:0],data0_rd[15:0] };
+                                end 
                             end // hitway == 0
                             `WAY1:begin 
-                                wr_data     = { data1_rd[31:16], ex_mem_wr_data[15:0]};  
+                                if (offset[1] == 1'b0) begin
+                                    wr_data     = { data1_rd[31:16], ex_mem_wr_data[15:0]};  
+                                end else begin
+                                    wr_data     = { ex_mem_wr_data[15:0],data1_rd[15:0] };
+                                end 
                             end // hitway == 1
                         endcase
                         rw          = `WRITE;
-                        // as_         = `ENABLE_;
                     end else begin                              // Miss align
                         miss_align  = `ENABLE;
                     end
@@ -109,17 +142,43 @@ module mem_ctrl (
                     // wr_data    = { rd_data[31:8], ex_mem_wr_data[7:0]};
                     case (hitway)
                         `WAY0:begin
-                            wr_data     = { data0_rd[31:8], ex_mem_wr_data[7:0]};  
+                            case (offset)
+                                `BYTE0:begin
+                                    wr_data     = { data0_rd[31:8], ex_mem_wr_data[7:0]};
+                                end
+                                `BYTE1:begin7:0
+                                    wr_data     = { data0_rd[31:16], ex_mem_wr_data[7:0],data0_rd[7:0]};
+                                end
+                                `BYTE2:begin
+                                    wr_data     = { data0_rd[31:24], ex_mem_wr_data[7:0],data0_rd[15:0]};
+                                end
+                                `BYTE3:begin
+                                    wr_data     = { ex_mem_wr_data[7:0],data0_rd[23:0]};
+                                end
+                            endcase
                         end // hitway == 0
                         `WAY1:begin 
-                            wr_data     = { data1_rd[31:8], ex_mem_wr_data[7:0]};  
+                            case (offset)
+                                `BYTE0:begin
+                                    wr_data     = { data1_rd[31:8], ex_mem_wr_data[7:0]};
+                                end
+                                `BYTE1:begin
+                                    wr_data     = { data1_rd[31:16], ex_mem_wr_data[7:0],data1_rd[7:0]};
+                                end
+                                `BYTE2:begin
+                                    wr_data     = { data1_rd[31:24], ex_mem_wr_data[7:0],data1_rd[15:0]};
+                                end
+                                `BYTE3:begin
+                                    wr_data     = { ex_mem_wr_data[7:0],data1_rd[23:0]};
+                                end
+                            endcase 
                         end // hitway == 1
                     endcase
-                    rw         = `WRITE;
+                    rw   = `WRITE;
                     // as_        = `ENABLE_;
                 end
-                default     : begin                             // No memory accessS
-                    out        = ex_out;
+                default : begin                             // No memory accessS
+                    out  = ex_out;
                 end
             endcase
         end
