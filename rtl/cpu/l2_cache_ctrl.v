@@ -23,6 +23,7 @@ module l2_cache_ctrl(
     output reg          l2_miss_stall,      // miss caused by l2C miss
     /*cache part*/
     input               irq,                // icache request
+    input               drq,
     input               complete,           // complete mark of writing into L1C
     input       [127:0] data_rd,            // read data from L1
     output reg  [127:0] data_wd_l2,            // write data to L1    
@@ -187,7 +188,7 @@ reg [127:0] s;
         end else begin   
             case(state)
                 `L2_IDLE:begin
-                    if (irq == `ENABLE) begin  // 先不考虑drq
+                    if (irq || drq == `ENABLE) begin  // 先不考虑drq
                         l2_busy     <= `ENABLE;
                         state   <= `ACCESS_L2;
                     end    
@@ -456,7 +457,7 @@ reg [127:0] s;
                         l2_data3_rw  <=  `READ;  
                         l2_dirty0_rw <=  `READ;
                         l2_dirty1_rw <=  `READ; 
-                        if (irq == `ENABLE) begin
+                        if (irq || drq == `ENABLE) begin
                              state <= `ACCESS_L2;
                          end else begin
                              l2_busy <= `DISABLE;

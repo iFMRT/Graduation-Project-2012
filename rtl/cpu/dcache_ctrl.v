@@ -51,7 +51,7 @@ module dcache_ctrl(
     input              l2_busy,       // busy signal of L2_cache
     input              l2_rdy,        // ready signal of L2_cache
     input              complete,      // complete op writing to L1
-    output reg         irq,           // icache request
+    output reg         drq,           // icache request
     output reg [31:0]  l2_addr, 
     output reg [8:0]   l2_index,
     output reg         l2_cache_rw    // l2_cache read/write signal
@@ -241,10 +241,10 @@ module dcache_ctrl(
                         miss_stall <= `ENABLE; 
                         if(valid == `ENABLE && dirty == `ENABLE) begin 
                                 if(l2_busy == `ENABLE) begin
-                                    state <= `WAIT_L2_BUSY;
+                                    state <= `WAIT_L2_BUSY_DIRTY;
                                 end else begin 
                                     l2_cache_rw <= memwrite_m; 
-                                    irq   <= `ENABLE;
+                                    drq   <= `ENABLE;
                                     state <= `WRITE_L2;
                                 end
                                 case(choose_way)
@@ -261,9 +261,9 @@ module dcache_ctrl(
                                     end
                                 endcase
                         end else if(l2_busy == `ENABLE && (valid == `DISABLE || dirty == `DISABLE)) begin
-                            state  <= `WAIT_L2_BUSY;
+                            state  <= `WAIT_L2_BUSY_CLEAN;
                         end else if(l2_busy == `DISABLE && (valid == `DISABLE || dirty == `DISABLE)) begin
-                            irq      <= `ENABLE;
+                            drq      <= `ENABLE;
                             l2_addr  <= addr;
                             l2_index <= addr[14:6]; 
                             state    <= `L2_ACCESS;
@@ -293,19 +293,28 @@ module dcache_ctrl(
                         state  <= `L2_ACCESS;
                     end         
                 end
-                `WAIT_L2_BUSY:begin
+                `WAIT_L2_BUSY_CLEAN:begin
                     if(l2_busy == `ENABLE) begin
-                        state  <= `WAIT_L2_BUSY;
+                        state  <= `WAIT_L2_BUSY_CLEAN;
                     end else begin
-                        irq      <= `ENABLE;
+                        drq      <= `ENABLE;
                         l2_addr  <= addr;
                         l2_index <= addr[14:6]; 
                         state    <= `L2_ACCESS;
                     end
                 end
+                `WAIT_L2_BUSY_DIRTY:begin
+                    if(l2_busy == `ENABLE) begin
+                        state  <= `WAIT_L2_BUSY_DIRTY;
+                    end else begin
+                        l2_cache_rw <= memwrite_m; 
+                        drq   <= `ENABLE;
+                        state <= `WRITE_L2;
+                    end
+                end
                 `WRITE_L1:begin // Write to L1,read from L2
                     if(complete == `ENABLE)begin
-                        irq        <= `DISABLE;
+                        drq        <= `DISABLE;
                         data0_rw   <= `READ;
                         data1_rw   <= `READ;
                         tag0_rw    <= `READ;

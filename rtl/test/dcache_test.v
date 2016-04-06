@@ -34,6 +34,7 @@ module dcache_test();
     wire     [7:0]   index;         // address of L1_cache
     /* l2_cache part */
     wire             irq;           // icache request
+    wire             drq;           // dcache request
     // reg              l2_busy;    // L2C busy mark
     // reg              l2_rdy;     // L2C ready mark
     // reg      [127:0] data_wd;    // write data to L1_IC
@@ -142,7 +143,7 @@ module dcache_test();
         .l2_busy        (l2_busy),       // busy signal of l2_cache
         .l2_rdy         (l2_rdy),        // ready signal of l2_cache
         .complete       (complete),      // complete op writing to L1
-        .irq            (irq),      
+        .drq            (drq),      
         .l2_addr        (l2_addr), 
         .l2_index       (l2_index),       
         .l2_cache_rw    (l2_cache_rw)        
@@ -156,6 +157,7 @@ module dcache_test();
         .l2_miss_stall  (l2_miss_stall), // stall caused by l2_miss
         /*cache part*/
         .irq            (irq),           // icache request
+        .drq            (drq),  
         .complete       (complete),      // complete write from L2 to L1
         .data_rd        (data_rd),       // write data to L1C       
         .data_wd_l2     (data_wd_l2),       // write data to L1C       
@@ -282,7 +284,7 @@ module dcache_test();
         input  [127:0] _data_wd_dc;
         input  [127:0] _data_rd;        
         /* l2_cache part */
-        input          _irq;             // icache request
+        input          _drq;             // icache request
         input  [8:0]   _l2_index;
         input  [31:0]  _l2_addr;
         // dirty
@@ -299,7 +301,7 @@ module dcache_test();
                 (data0_rw   === _data0_rw)          && 
                 (data1_rw   === _data1_rw)          && 
                 (index      === _index)             && 
-                (irq        === _irq)               && 
+                (drq        === _drq)               && 
                 (l2_index   === _l2_index)          && 
                 (l2_addr    === _l2_addr)           && 
                 (data_wd_dc   === _data_wd_dc)      && 
@@ -348,8 +350,8 @@ module dcache_test();
             // if (index      !== _index) begin
             //     $display("index:%b(excepted %b)",index,_index); 
             // end
-            // if (irq   !== _irq) begin
-            //     $display("irq:%b(excepted %b)",irq,_irq); 
+            // if (drq   !== _drq) begin
+            //     $display("drq:%b(excepted %b)",drq,_drq); 
             // end
             // if (l2_index   !== _l2_index) begin
             //     $display("l2_index:%b(excepted %b)",l2_index,_l2_index); 

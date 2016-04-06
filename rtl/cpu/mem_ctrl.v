@@ -146,7 +146,7 @@ module mem_ctrl (
                                 `BYTE0:begin
                                     wr_data     = { data0_rd[31:8], ex_mem_wr_data[7:0]};
                                 end
-                                `BYTE1:begin7:0
+                                `BYTE1:begin
                                     wr_data     = { data0_rd[31:16], ex_mem_wr_data[7:0],data0_rd[7:0]};
                                 end
                                 `BYTE2:begin
