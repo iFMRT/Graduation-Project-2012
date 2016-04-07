@@ -27,8 +27,7 @@
     `define L2_IDLE              3'h0  // free
     `define ACCESS_L2            3'h1  // access L2_icache
     `define WRITE_MEM			 3'h2  // load L2_icache's dirty block to memory
-    `define MEM_ACCESS           3'h3  // access memory
-    `define WRITE_L1             3'h4  // write block to L1_icache
-    `define WRITE_L2             3'h5  // write block to L2_icache from memory
-    `define WRITE_HIT            3'h6  // write block to L2_icache from L1
+    `define WRITE_L1             3'h3  // write block to L1_icache
+    `define WRITE_L2             3'h4  // write block to L2_icache from memory
+    `define WRITE_HIT            3'h5  // write block to L2_icache from L1
 `endif

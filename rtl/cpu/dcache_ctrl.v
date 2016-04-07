@@ -67,7 +67,9 @@ module dcache_ctrl(
     wire               valid0,valid1;
     reg                valid,dirty;               // valid signal of tag
     reg                clk_tmp;             // temporary clk
-
+    reg        [127:0] data_wd_dc_copy;
+    reg        [127:0] data_rd_copy;
+    reg        [31:0]  read_data_m_copy;
     assign valid0        = tag0_rd[20];
     assign valid1        = tag1_rd[20];
     assign index         = addr[11:4];
@@ -83,16 +85,34 @@ module dcache_ctrl(
         hitway0 = (tag0_rd[19:0] == addr[31:12]) & valid0;
         hitway1 = (tag1_rd[19:0] == addr[31:12]) & valid1;
         if(hitway0 == `ENABLE)begin
-            tagcomp_hit = `ENABLE;
-            hitway      = `WAY0;
+            tagcomp_hit  = `ENABLE;
+            hitway       = `WAY0;
+            data_rd_copy = data0_rd;
+        end else if(hitway1 == `ENABLE)begin
+            tagcomp_hit  = `ENABLE;
+            hitway       = `WAY1;
+            data_rd_copy = data1_rd;
+        end else begin
+            tagcomp_hit  = `DISABLE;
         end
-        else if(hitway1 == `ENABLE)begin
-            tagcomp_hit = `ENABLE;
-            hitway      = `WAY1;
-        end
-        else begin
-            tagcomp_hit = `DISABLE;
-        end
+        case(offset)
+            `WORD0:begin
+                data_wd_dc_copy  = {data_rd_copy[127:32],wr_data_m};
+                read_data_m_copy = data_rd_copy[31:0];
+            end
+            `WORD1:begin
+                data_wd_dc_copy  = {data_rd_copy[127:64],wr_data_m,data_rd_copy[31:0]};
+                read_data_m_copy = data_rd_copy[63:32];
+            end
+            `WORD2:begin
+                data_wd_dc_copy  = {data_rd_copy[127:96],wr_data_m,data_rd_copy[63:0]};
+                read_data_m_copy = data_rd_copy[95:64];
+            end
+            `WORD3:begin
+                data_wd_dc_copy  = {wr_data_m,data_rd_copy[95:0]};
+                read_data_m_copy = data_rd_copy[127:96];
+            end
+        endcase // case(offset) 
     end
 
     // if cache miss ,the way of L1 we choose to replace.
@@ -149,91 +169,91 @@ module dcache_ctrl(
                         if(memwrite_m == `READ) begin // read hit
                             miss_stall  <= `DISABLE;
                             if(access_mem_ex == `ENABLE) begin
-                                state  <= `L1_ACCESS;
+                                state   <= `L1_ACCESS;
                             end else begin
-                                state  <= `L1_IDLE;
+                                state   <= `L1_IDLE;
                             end
-                            case(hitway)
-                                `WAY0:begin
-                                    data0_rw  <= `READ;
-                                    case(offset)
-                                        `WORD0:begin
-                                            read_data_m <= data0_rd[31:0];
-                                        end
-                                        `WORD1:begin
-                                            read_data_m <= data0_rd[63:32];
-                                        end
-                                        `WORD2:begin
-                                            read_data_m <= data0_rd[95:64];
-                                        end
-                                        `WORD3:begin
-                                            read_data_m <= data0_rd[127:96];
-                                        end
-                                    endcase // case(offset)  
-                                end // hitway == 0
-                                `WAY1:begin
-                                    data1_rw  <= `READ;
-                                    case(offset)
-                                        `WORD0:begin
-                                            read_data_m <= data1_rd[31:0];
-                                        end
-                                        `WORD1:begin
-                                            read_data_m <= data1_rd[63:32];
-                                        end
-                                        `WORD2:begin
-                                            read_data_m <= data1_rd[95:64];
-                                        end
-                                        `WORD3:begin
-                                            read_data_m <= data1_rd[127:96];
-                                        end
-                                    endcase // case(offset)  
-                                end // hitway == 1
-                            endcase // case(hitway) 
+                            read_data_m <= read_data_m_copy;
+                            // case(hitway)
+                            //     `WAY0:begin
+                            //         data0_rw  <= `READ;
+                            //         case(offset)
+                            //             `WORD0:begin
+                            //                 read_data_m <= data0_rd[31:0];
+                            //             end
+                            //             `WORD1:begin
+                            //                 read_data_m <= data0_rd[63:32];
+                            //             end
+                            //             `WORD2:begin
+                            //                 read_data_m <= data0_rd[95:64];
+                            //             end
+                            //             `WORD3:begin
+                            //                 read_data_m <= data0_rd[127:96];
+                            //             end
+                            //         endcase // case(offset)  
+                            //     end // hitway == 0
+                            //     `WAY1:begin
+                            //         data1_rw  <= `READ;
+                            //         case(offset)
+                            //             `WORD0:begin
+                            //                 read_data_m <= data1_rd[31:0];
+                            //             end
+                            //             `WORD1:begin
+                            //                 read_data_m <= data1_rd[63:32];
+                            //             end
+                            //             `WORD2:begin
+                            //                 read_data_m <= data1_rd[95:64];
+                            //             end
+                            //             `WORD3:begin
+                            //                 read_data_m <= data1_rd[127:96];
+                            //             end
+                            //         endcase // case(offset)  
+                            //     end // hitway == 1
+                            // endcase // case(hitway) 
                         end else if (memwrite_m == `WRITE) begin  // begin: write hit
                             miss_stall     <= `DISABLE;
                             state          <= `WRITE_HIT;
                             dirty_wd       <= 1'b1;
                             data_wd_dc_en  <= `ENABLE;
+                            data_wd_dc     <= data_wd_dc_copy;
                             case(hitway)
                                 `WAY0:begin
                                     data0_rw  <= `WRITE;
-                                    // dirty0_wd <= 1'b1;
                                     dirty0_rw <= `WRITE;
                                     tag0_rw   <= `WRITE;
-                                    case(offset)
-                                        `WORD0:begin
-                                            data_wd_dc  <= {data0_rd[127:32],wr_data_m};
-                                        end
-                                        `WORD1:begin
-                                            data_wd_dc  <= {data0_rd[127:64],wr_data_m,data0_rd[31:0]};
-                                        end
-                                        `WORD2:begin
-                                            data_wd_dc  <= {data0_rd[127:96],wr_data_m,data0_rd[63:0]};
-                                        end
-                                        `WORD3:begin
-                                            data_wd_dc  <= {wr_data_m,data0_rd[95:0]};
-                                        end
-                                    endcase // case(offset)  
+                                    // case(offset)
+                                    //     `WORD0:begin
+                                    //         data_wd_dc  <= {data0_rd[127:32],wr_data_m};
+                                    //     end
+                                    //     `WORD1:begin
+                                    //         data_wd_dc  <= {data0_rd[127:64],wr_data_m,data0_rd[31:0]};
+                                    //     end
+                                    //     `WORD2:begin
+                                    //         data_wd_dc  <= {data0_rd[127:96],wr_data_m,data0_rd[63:0]};
+                                    //     end
+                                    //     `WORD3:begin
+                                    //         data_wd_dc  <= {wr_data_m,data0_rd[95:0]};
+                                    //     end
+                                    // endcase // case(offset)  
                                 end // hitway == 0
                                 `WAY1:begin
                                     data1_rw  <= `WRITE;
-                                    // dirty1_wd <= 1'b1;
                                     dirty1_rw <= `WRITE;
                                     tag1_rw   <= `WRITE;
-                                    case(offset)
-                                        `WORD0:begin
-                                            data_wd_dc  <= {data1_rd[127:32],wr_data_m};
-                                        end
-                                        `WORD1:begin
-                                            data_wd_dc  <= {data1_rd[127:64],wr_data_m,data1_rd[31:0]};
-                                        end
-                                        `WORD2:begin
-                                            data_wd_dc  <= {data1_rd[127:96],wr_data_m,data1_rd[63:0]};
-                                        end
-                                        `WORD3:begin
-                                            data_wd_dc  <= {wr_data_m,data1_rd[95:0]};
-                                        end
-                                    endcase // case(offset)  
+                                    // case(offset)
+                                    //     `WORD0:begin
+                                    //         data_wd_dc  <= {data1_rd[127:32],wr_data_m};
+                                    //     end
+                                    //     `WORD1:begin
+                                    //         data_wd_dc  <= {data1_rd[127:64],wr_data_m,data1_rd[31:0]};
+                                    //     end
+                                    //     `WORD2:begin
+                                    //         data_wd_dc  <= {data1_rd[127:96],wr_data_m,data1_rd[63:0]};
+                                    //     end
+                                    //     `WORD3:begin
+                                    //         data_wd_dc  <= {wr_data_m,data1_rd[95:0]};
+                                    //     end
+                                    // endcase // case(offset)  
                                 end // hitway == 1
                             endcase // case(hitway) 
                         end // end：write hit
@@ -344,7 +364,7 @@ module dcache_ctrl(
                         state  <= `WRITE_HIT;
                     end        
                 end
-                `WRITE_L2:begin
+                `WRITE_L2:begin // load dirty block to L2
                     if (l2_complete == `ENABLE) begin
                         l2_cache_rw <= `READ;  
                         l2_addr     <= addr;

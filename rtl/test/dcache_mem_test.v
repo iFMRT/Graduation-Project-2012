@@ -860,38 +860,38 @@ module dcache_mem_test();
                 1'bx                // read / write signal of memory                
                 );        
         end
-        #STEP begin // L2_ACCESS & MEM_ACCESS first clk
-            $display("\n========= Clock 5 ========");
-            l2_cache_ctrl_tb(
-                `ENABLE,            // miss caused by L2C             
-                `ENABLE,            // L2C busy mark
-                128'bx,             // write data to L1_IC
-                `READ,              // read / write signal of tag0
-                `READ,              // read / write signal of tag1
-                `READ,              // read / write signal of tag2
-                `READ,              // read / write signal of tag3
-                18'bx,              // write data of tag
-                `DISABLE,           // ready signal of l2_cache
-                `READ,              // the mark of cache_data0 write signal 
-                `READ,              // the mark of cache_data1 write signal 
-                `READ,              // the mark of cache_data2 write signal 
-                `READ,              // the mark of cache_data3 write signal 
-                512'bx,
-                1'bx,
-                `READ,
-                `READ,
-                `READ,
-                `READ,
-                26'b1110_0001_00,   // address of memory
-                `READ               // read / write signal of memory                
-                );
-        end
-        #STEP begin // l2_ACCESS & 2* MEM_ACCESS last clk
-            $display("\n========= Clock 6 ========");
-            // mem op
-        end        
+        // #STEP begin // L2_ACCESS & MEM_ACCESS first clk
+        //     $display("\n========= Clock 5 ========");
+        //     l2_cache_ctrl_tb(
+        //         `ENABLE,            // miss caused by L2C             
+        //         `ENABLE,            // L2C busy mark
+        //         128'bx,             // write data to L1_IC
+        //         `READ,              // read / write signal of tag0
+        //         `READ,              // read / write signal of tag1
+        //         `READ,              // read / write signal of tag2
+        //         `READ,              // read / write signal of tag3
+        //         18'bx,              // write data of tag
+        //         `DISABLE,           // ready signal of l2_cache
+        //         `READ,              // the mark of cache_data0 write signal 
+        //         `READ,              // the mark of cache_data1 write signal 
+        //         `READ,              // the mark of cache_data2 write signal 
+        //         `READ,              // the mark of cache_data3 write signal 
+        //         512'bx,
+        //         1'bx,
+        //         `READ,
+        //         `READ,
+        //         `READ,
+        //         `READ,
+        //         26'b1110_0001_00,   // address of memory
+        //         `READ               // read / write signal of memory                
+        //         );
+        // end
+        // #STEP begin // l2_ACCESS & 2* MEM_ACCESS last clk
+        //     $display("\n========= Clock 6 ========");
+        //     // mem op
+        // end        
         #STEP begin // l2_ACCESS & WRITE_L2 & access l2_ram
-            $display("\n========= Clock 7 ========");            
+            $display("\n========= Clock 5 ========");            
             l2_cache_ctrl_tb(
                 `ENABLE,            // miss caused by L2C             
                 `ENABLE,            // L2C busy mark
@@ -917,7 +917,7 @@ module dcache_mem_test();
                 );
         end
         #STEP begin // l2_ACCESS & WRITE_L2 & access l2_ram
-            $display("\n========= Clock 8 ========"); 
+            $display("\n========= Clock 6 ========"); 
             l2_tag_ram_tb(   
                 18'b0,            // read data of tag0
                 18'b0,            // read data of tag1
@@ -928,7 +928,7 @@ module dcache_mem_test();
             );
         end
         #STEP begin // l2_ACCESS  &  ACCESS_L2
-            $display("\n========= Clock 9 ========"); 
+            $display("\n========= Clock 7 ========"); 
             l2_tag_ram_tb(   
                 18'b1_0000_0000_0000_0000_1,    // read data of tag0
                 18'b0,                          // read data of tag1
@@ -987,10 +987,10 @@ module dcache_mem_test();
                 );        
         end
         #STEP begin // l2_ACCESS  & 2* clk state change to ACCESS_L2 really  
-            $display("\n========= Clock 10 ========"); 
+            $display("\n========= Clock 8 ========"); 
         end
         #STEP begin // l2_ACCESS  & WRITE_L1 
-            $display("\n========= Clock 11 ========"); 
+            $display("\n========= Clock 9 ========"); 
             l2_cache_ctrl_tb(
                 `DISABLE,            // miss caused by L2C             
                 `ENABLE,            // L2C busy mark
@@ -1044,7 +1044,7 @@ module dcache_mem_test();
                 );           
         end        
         #STEP begin // WRITE_L1  & 2* clk state change to WRITE_L1 really    
-            $display("\n========= Clock 12 ========"); 
+            $display("\n========= Clock 10 ========"); 
             l2_cache_ctrl_tb(
                 `DISABLE,            // miss caused by L2C             
                 `ENABLE,            // L2C busy mark
@@ -1088,7 +1088,7 @@ module dcache_mem_test();
                 );
         end        
         #STEP begin // L1_ACCESS  & l2_IDLE        
-            $display("\n========= Clock 13 ========");
+            $display("\n========= Clock 11 ========");
             l2_cache_ctrl_tb(
                 `DISABLE,            // miss caused by L2C             
                 `DISABLE,            // L2C busy mark
@@ -1142,7 +1142,7 @@ module dcache_mem_test();
                 ); 
         end
         #STEP begin // MEM stage // L1_IDLE(read hit)  & l2_IDLE    
-            $display("\n========= Clock 14 ========");
+            $display("\n========= Clock 12 ========");
             mem_stage_tb(
                 32'hx,    // read data of CPU
                 `DISABLE,        // the signal of stall caused by cache miss
@@ -1163,7 +1163,7 @@ module dcache_mem_test();
                 );
         end
         #STEP begin // WB stage
-            $display("\n========= Clock 15 ========");
+            $display("\n========= Clock 13 ========");
             mem_stage_tb(
                 32'h123BC000,    // read data of CPU
                 `DISABLE,        // the signal of stall caused by cache miss

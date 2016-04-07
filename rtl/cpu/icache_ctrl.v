@@ -40,6 +40,7 @@ module icache_ctrl(
     output reg [8:0]   l2_index,
     output reg [31:0]  l2_addr,
     output reg         l2_cache_rw,
+    /* if_reg part */
     output reg         data_rdy    // tag hit mark
     );
     reg                tagcomp_hit;
@@ -47,9 +48,12 @@ module icache_ctrl(
     reg                hitway;           // path hit mark
     reg                hitway0;          // the mark of choosing path0 
     reg                hitway1;          // the mark of choosing path1    
-    reg        [2:0]   state;  // state of control
+    reg        [2:0]   state;            // state of control
     wire               valid0,valid1;    // valid signal of tag
-    reg                 clk_tmp;            // temporary clk   
+    reg                clk_tmp;          // temporary clk   
+    reg        [127:0] data_rd;          // read data of data
+    reg        [31:0]  cpu_data_copy;
+    
     assign valid0        = tag0_rd[20];
     assign valid1        = tag1_rd[20];
     assign index         = if_addr [11:4];
@@ -62,26 +66,35 @@ module icache_ctrl(
         if(hitway0 == `ENABLE)begin
             tagcomp_hit = `ENABLE;
             hitway      = `WAY0;
+            data_rd     = data0_rd;
         end
         else if(hitway1 == `ENABLE)begin
             tagcomp_hit = `ENABLE;
             hitway      = `WAY1;
+            data_rd     = data1_rd;
         end
         else begin
             tagcomp_hit = `DISABLE;
         end
+        case(offset)
+            `WORD0:begin
+                cpu_data_copy = data_rd[31:0];
+            end
+            `WORD1:begin
+                cpu_data_copy = data_rd[63:32];
+            end
+            `WORD2:begin
+                cpu_data_copy = data_rd[95:64];
+            end
+            `WORD3:begin
+                cpu_data_copy = data_rd[127:96];
+            end
+        endcase // case(offset)  
     end
 
     always @(*) begin
         clk_tmp = #1 clk;
     end
-    // always @(posedge clk_tmp) begin 
-    //     if (rst == `ENABLE) begin // reset
-    //         state  <= `L1_IDLE;
-    //     end else begin
-    //         state  <= state;
-    //     end
-    // end
 
     always @(posedge clk_tmp) begin // cache control
         if (rst == `ENABLE) begin // reset
@@ -96,7 +109,7 @@ module icache_ctrl(
         end else begin
             case(state)
                 `L1_IDLE:begin
-                    state  <= `L1_ACCESS;
+                    state     <= `L1_ACCESS;
                 end
                 `L1_ACCESS:begin
                     data_rdy  <= `DISABLE;
@@ -104,52 +117,53 @@ module icache_ctrl(
                         miss_stall  <= `DISABLE;
                         state       <= `L1_ACCESS;
                         data_rdy    <= `ENABLE;
-                        case(hitway)
-                            `WAY0:begin
-                                data0_rw  <= `READ;
-                                case(offset)
-                                    `WORD0:begin
-                                        cpu_data <= data0_rd[31:0];
-                                    end
-                                    `WORD1:begin
-                                        cpu_data <= data0_rd[63:32];
-                                    end
-                                    `WORD2:begin
-                                        cpu_data <= data0_rd[95:64];
-                                    end
-                                    `WORD3:begin
-                                        cpu_data <= data0_rd[127:96];
-                                    end
-                                endcase // case(offset)  
-                            end // hitway == 0
-                            `WAY1:begin
-                                data1_rw  <= `READ;
-                                case(offset)
-                                    `WORD0:begin
-                                        cpu_data <= data1_rd[31:0];
-                                    end
-                                    `WORD1:begin
-                                        cpu_data <= data1_rd[63:32];
-                                    end
-                                    `WORD2:begin
-                                        cpu_data <= data1_rd[95:64];
-                                    end
-                                    `WORD3:begin
-                                        cpu_data <= data1_rd[127:96];
-                                    end
-                                endcase // case(offset)  
-                            end // hitway == 1
-                        endcase // case(hitway) 
+                        cpu_data    <= cpu_data_copy;
+                        // case(hitway)
+                        //     `WAY0:begin
+                        //         data0_rw  <= `READ;
+                        //         case(offset)
+                        //             `WORD0:begin
+                        //                 cpu_data <= data0_rd[31:0];
+                        //             end
+                        //             `WORD1:begin
+                        //                 cpu_data <= data0_rd[63:32];
+                        //             end
+                        //             `WORD2:begin
+                        //                 cpu_data <= data0_rd[95:64];
+                        //             end
+                        //             `WORD3:begin
+                        //                 cpu_data <= data0_rd[127:96];
+                        //             end
+                        //         endcase // case(offset)  
+                        //     end // hitway == 0
+                        //     `WAY1:begin
+                        //         data1_rw  <= `READ;
+                        //         case(offset)
+                        //             `WORD0:begin
+                        //                 cpu_data <= data1_rd[31:0];
+                        //             end
+                        //             `WORD1:begin
+                        //                 cpu_data <= data1_rd[63:32];
+                        //             end
+                        //             `WORD2:begin
+                        //                 cpu_data <= data1_rd[95:64];
+                        //             end
+                        //             `WORD3:begin
+                        //                 cpu_data <= data1_rd[127:96];
+                        //             end
+                        //         endcase // case(offset)  
+                        //     end // hitway == 1
+                        // endcase // case(hitway) 
                     end else begin // cache miss
                         miss_stall = `ENABLE;  
                         if(l2_busy == `ENABLE) begin
-                            state  <= `WAIT_L2_BUSY;
+                            state       <= `WAIT_L2_BUSY;
                         end else begin
-                            irq    <= `ENABLE;
+                            irq         <= `ENABLE;
                             l2_cache_rw <= rw;
-                            l2_index <= if_addr[14:6];
-                            l2_addr  <= if_addr;
-                            state  <= `L2_ACCESS;
+                            l2_index    <= if_addr[14:6];
+                            l2_addr     <= if_addr;
+                            state       <= `L2_ACCESS;
                         end
                     end 
                 end
@@ -180,26 +194,26 @@ module icache_ctrl(
                 end
                 `WAIT_L2_BUSY:begin
                     if(l2_busy == `ENABLE) begin
-                        state  <= `WAIT_L2_BUSY;
+                        state    <= `WAIT_L2_BUSY;
                     end else begin
-                        irq    <= `ENABLE;
+                        irq      <= `ENABLE;
                         l2_index <= if_addr[14:6];
                         l2_addr  <= if_addr;
                         l2_cache_rw <= rw;
-                        state  <= `L2_ACCESS;
+                        state    <= `L2_ACCESS;
                     end
                 end
                 `WRITE_IC:begin // 使用L2返回的指令块填充IC
                     if(complete == `ENABLE)begin
-                        irq  <= `DISABLE;
-                        miss_stall  <= `DISABLE;
-                        state    <= `L1_ACCESS;
-                        data0_rw <= `READ;
-                        data1_rw <= `READ;                    
-                        tag0_rw  <= `READ;
-                        tag1_rw  <= `READ;
+                        irq        <= `DISABLE;
+                        miss_stall <= `DISABLE;
+                        state      <= `L1_ACCESS;
+                        data0_rw   <= `READ;
+                        data1_rw   <= `READ;                    
+                        tag0_rw    <= `READ;
+                        tag1_rw    <= `READ;
                     end else begin
-                        state    <= `WRITE_IC;
+                        state      <= `WRITE_IC;
                     end
                             
                 end
