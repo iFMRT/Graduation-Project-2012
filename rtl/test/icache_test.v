@@ -95,7 +95,7 @@ module icache_test();
     wire             l2_dirty2;
     wire             l2_dirty3;
     reg              clk_tmp;        // temporary clock of L2C
-    // wire             data_rdy;
+    wire             data_rdy;
     icache_ctrl icache_ctrl(
         .clk            (clk),           // clock
         .rst            (rst),           // reset
@@ -533,11 +533,11 @@ module icache_test();
     /******* Generated Clocks *******/
     always #(STEP / 2)
         begin
-            clk <= ~clk;  
+            clk = ~clk;  
         end
     always #STEP
         begin
-            clk_tmp <= ~clk_tmp;  
+            clk_tmp = ~clk_tmp;  
         end          
     /********** Testbench **********/
     initial begin
@@ -559,19 +559,9 @@ module icache_test();
         end
         #STEP begin // L1_IDLE & L2_IDLE 
             $display("\n========= Clock 1 ========");
-        end
-        #STEP begin // L1_ACCESS & L2_IDLE 
-            $display("\n========= Clock 2 ========");
-        end
-        #STEP begin // L2_ACCESS & L2_IDLE // ACCESS_L2 
-            $display("\n========= Clock 3 ========");
-        end      
-        // 2* clk state ACCESS_L2 really 
-        #STEP begin // L2_ACCESS & 2* clk state change to ACCESS_L2 really 
-            $display("\n========= Clock 4 ========");
             l2_cache_ctrl_tb(
                 `DISABLE,           // miss caused by L2C             
-                `ENABLE,            // L2C busy mark
+                `DISABLE,            // L2C busy mark
                 128'bx,             // write data to L1_IC
                 `READ,              // read / write signal of tag0
                 `READ,              // read / write signal of tag1
@@ -591,40 +581,13 @@ module icache_test();
                 `READ,
                 26'bx,              // address of memory
                 1'bx                // read / write signal of memory                
-                );        
+                );  
         end
-        // #STEP begin // L2_ACCESS & MEM_ACCESS first clk
-        //     $display("\n========= Clock 5 ========");
-        //     l2_cache_ctrl_tb(
-        //         `ENABLE,            // miss caused by L2C             
-        //         `ENABLE,            // L2C busy mark
-        //         128'bx,             // write data to L1_IC
-        //         `READ,              // read / write signal of tag0
-        //         `READ,              // read / write signal of tag1
-        //         `READ,              // read / write signal of tag2
-        //         `READ,              // read / write signal of tag3
-        //         18'bx,              // write data of tag
-        //         `DISABLE,           // ready signal of l2_cache
-        //         `READ,              // the mark of cache_data0 write signal 
-        //         `READ,              // the mark of cache_data1 write signal 
-        //         `READ,              // the mark of cache_data2 write signal 
-        //         `READ,              // the mark of cache_data3 write signal 
-        //         512'bx,
-        //         1'bx,
-        //         `READ,
-        //         `READ,
-        //         `READ,
-        //         `READ,
-        //         26'b1110_0001_00,   // address of memory
-        //         `READ               // read / write signal of memory                
-        //         );
-        // end
-        // #STEP begin // l2_ACCESS & 2* MEM_ACCESS last clk
-        //     $display("\n========= Clock 6 ========");
-        //     // mem op
-        // end        
-        #STEP begin // l2_ACCESS & WRITE_L2 & access l2_ram
-            $display("\n========= Clock 5 ========");            
+        #STEP begin // L1_ACCESS & L2_IDLE 
+            $display("\n========= Clock 2 ========");
+        end
+        #STEP begin // L2_ACCESS & ACCESS_L2 
+            $display("\n========= Clock 3 ========");
             l2_cache_ctrl_tb(
                 `ENABLE,            // miss caused by L2C             
                 `ENABLE,            // L2C busy mark
@@ -648,9 +611,6 @@ module icache_test();
                 26'b1110_0001_00,   // address of memory
                 `READ               // read / write signal of memory                
                 );
-        end
-        #STEP begin // l2_ACCESS & WRITE_L2 & access l2_ram
-            $display("\n========= Clock 6 ========"); 
             l2_tag_ram_tb(   
                 18'b0,            // read data of tag0
                 18'b0,            // read data of tag1
@@ -659,9 +619,14 @@ module icache_test();
                 3'b000,           // read data of tag
                 `DISABLE          // complete write from L2 to L1
             );
-        end
-        #STEP begin // l2_ACCESS  &  ACCESS_L2
-            $display("\n========= Clock 7 ========"); 
+        end      
+        // 2* clk state ACCESS_L2 really 
+        #STEP begin // L2_ACCESS & 2* clk state change to ACCESS_L2 really 
+            $display("\n========= Clock 4 ========");
+                  
+        end       
+        #STEP begin // l2_ACCESS & WRITE_L2 & access l2_ram
+            $display("\n========= Clock 5 ========");            
             l2_tag_ram_tb(   
                 18'b1_0000_0000_0000_0000_1,    // read data of tag0
                 18'b0,                          // read data of tag1
@@ -711,13 +676,14 @@ module icache_test();
                 `READ,
                 26'b1110_0001_00,   // address of memory
                 `READ               // read / write signal of memory                
-                );        
+                );     
         end
-        #STEP begin // l2_ACCESS  & 2* clk state change to ACCESS_L2 really  
-            $display("\n========= Clock 8 ========"); 
+        #STEP begin // l2_ACCESS & WRITE_L2 & access l2_ram
+            $display("\n========= Clock 6 ========"); 
+            
         end
-        #STEP begin // l2_ACCESS  & WRITE_L1 
-            $display("\n========= Clock 9 ========"); 
+        #STEP begin // l2_ACCESS  &  ACCESS_L2
+            $display("\n========= Clock 7 ========"); 
             l2_cache_ctrl_tb(
                 `DISABLE,           // miss caused by L2C             
                 `ENABLE,            // L2C busy mark
@@ -744,10 +710,10 @@ module icache_test();
             icache_ctrl_tb(
                 32'bx,          // read data of CPU
                 `ENABLE,        // the signal of stall caused by cache miss
-                `READ,          // read / write signal of L1_tag0
+                `WRITE,          // read / write signal of L1_tag0
                 `READ,          // read / write signal of L1_tag1
-                21'bx,           // write data of L1_tag
-                `READ,          // read / write signal of data0
+                21'b1_0000_0000_0000_0000_1110,           // tag_wd
+                `WRITE,          // read / write signal of data0
                 `READ,          // read / write signal of data1
                 8'b0001_0000,   // address of L1_cache
                 `ENABLE,        // icache request
@@ -763,26 +729,10 @@ module icache_test();
             data_ram_tb(
                 128'h0,   // read data of cache_data0
                 128'h0                                      // read data of cache_data1
-                );           
-        end        
-        #STEP begin // WRITE_IC  & 2* clk state change to WRITE_L1 really    
-            $display("\n========= Clock 10 ========"); 
-            icache_ctrl_tb(
-                32'bx,          // read data of CPU
-                `ENABLE,        // the signal of stall caused by cache miss
-                `WRITE,          // read / write signal of L1_tag0
-                `READ,          // read / write signal of L1_tag1
-                21'b1_0000_0000_0000_0000_1110,       // write data of L1_tag
-                `WRITE,          // read / write signal of data0
-                `READ,          // read / write signal of data1
-                8'b0001_0000,   // address of L1_cache
-                `ENABLE,         // icache request
-                9'b110_0001_00,
-                32'b1110_0001_0000_0000
-                );
-        end        
-        #STEP begin // L1_ACCESS  & l2_IDLE        
-            $display("\n========= Clock 11 ========");
+                );   
+        end       
+        #STEP begin // WRITE_IC  & 2* clk state change to ACCESS_L2 really    
+            $display("\n========= Clock 8 ========"); 
             l2_cache_ctrl_tb(
                 `DISABLE,            // miss caused by L2C             
                 `DISABLE,            // L2C busy mark
@@ -828,9 +778,23 @@ module icache_test();
             data_ram_tb(
                 128'h0876547A_00000000_ABF00000_123BC000,   // read data of cache_data0
                 128'h0                                      // read data of cache_data1
+                );
+        end        
+        #STEP begin // L1_ACCESS  & l2_IDLE        
+            $display("\n========= Clock 9 ========");
+            tag_ram_tb(
+                21'b1_0000_0000_0000_0000_1110,         // read data of tag0
+                21'b0,                                  // read data of tag1
+                1'b1,                                   // number of replacing block of tag next time
+                1'b0                                    // complete write from L2 to L1
+                );
+            data_ram_tb(
+                128'h0876547A_00000000_ABF00000_123BC000,   // read data of cache_data0
+                128'h0                                      // read data of cache_data1
                 ); 
-            $finish;
+            $finish;     // iverilog
         end
+        // #10 $stop;       // modelsim       
     end
     /********** output wave **********/
     initial begin

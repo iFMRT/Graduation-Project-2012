@@ -639,35 +639,9 @@ module dcache_write_test();
                 `READ,                    // dirty0_rw
                 `READ                     // dirty1_rw
                 );
-        end
-        #STEP begin // L2_ACCESS & ACCESS_L2 
-            $display("\n========= Clock 3 ========");
-            dcache_ctrl_tb(
-                32'bx,          // read_data_m of CPU
-                `ENABLE,        // the signal of stall caused by cache miss
-                // 1'bx,           // hitway
-                `READ,          // read / write signal of L1_tag0
-                `READ,          // read / write signal of L1_tag1
-                21'b1_0000_0000_0000_0000_1110,       // write data of L1_tag
-                `READ,          // read / write signal of data0
-                `READ,          // read / write signal of data1
-                8'b0001_0000,   // address of L1_cache
-                128'bx,         // data_wd
-                128'bx,         // data_rd choosing from data_rd1~data_rd3
-                `ENABLE,         // icache request
-                9'b110_0001_00,
-                32'b1110_0001_0000_0000,
-                1'bx,                    // dirty_wd
-                `READ,                    // dirty0_rw
-                `READ                    // dirty1_rw
-                );
-        end      
-        // 2* clk state ACCESS_L2 really 
-        #STEP begin // L2_ACCESS & 2* clk state change to ACCESS_L2 really 
-            $display("\n========= Clock 4 ========");
             l2_cache_ctrl_tb(
                 `DISABLE,           // miss caused by L2C             
-                `ENABLE,            // L2C busy mark
+                `DISABLE,            // L2C busy mark
                 128'bx,             // write data to L1_IC
                 `READ,              // read / write signal of tag0
                 `READ,              // read / write signal of tag1
@@ -687,40 +661,10 @@ module dcache_write_test();
                 `READ,
                 26'bx,              // address of memory
                 1'bx                // read / write signal of memory                
-                );        
+                ); 
         end
-        // #STEP begin // L2_ACCESS & MEM_ACCESS first clk
-        //     $display("\n========= Clock 5 ========");
-        //     l2_cache_ctrl_tb(
-        //         `ENABLE,            // miss caused by L2C             
-        //         `ENABLE,            // L2C busy mark
-        //         128'bx,             // write data to L1_IC
-        //         `READ,              // read / write signal of tag0
-        //         `READ,              // read / write signal of tag1
-        //         `READ,              // read / write signal of tag2
-        //         `READ,              // read / write signal of tag3
-        //         18'bx,              // write data of tag
-        //         `DISABLE,           // ready signal of l2_cache
-        //         `READ,              // the mark of cache_data0 write signal 
-        //         `READ,              // the mark of cache_data1 write signal 
-        //         `READ,              // the mark of cache_data2 write signal 
-        //         `READ,              // the mark of cache_data3 write signal 
-        //         512'bx,
-        //         1'bx,
-        //         `READ,
-        //         `READ,
-        //         `READ,
-        //         `READ,
-        //         26'b1110_0001_00,   // address of memory
-        //         `READ               // read / write signal of memory                
-        //         );
-        // end
-        // #STEP begin // l2_ACCESS & 2* MEM_ACCESS last clk
-        //     $display("\n========= Clock 6 ========");
-        //     // mem op
-        // end        
-        #STEP begin // l2_ACCESS & WRITE_L2 & access l2_ram
-            $display("\n========= Clock 5 ========");            
+        #STEP begin // L2_ACCESS & ACCESS_L2 
+            $display("\n========= Clock 3 ========");
             l2_cache_ctrl_tb(
                 `ENABLE,            // miss caused by L2C             
                 `ENABLE,            // L2C busy mark
@@ -744,9 +688,6 @@ module dcache_write_test();
                 26'b1110_0001_00,   // address of memory
                 `READ               // read / write signal of memory                
                 );
-        end
-        #STEP begin // l2_ACCESS & WRITE_L2 & access l2_ram
-            $display("\n========= Clock 6 ========"); 
             l2_tag_ram_tb(   
                 18'b0,            // read data of tag0
                 18'b0,            // read data of tag1
@@ -755,9 +696,13 @@ module dcache_write_test();
                 3'b000,           // read data of tag
                 `DISABLE          // complete write from L2 to L1
             );
-        end
-        #STEP begin // l2_ACCESS  &  ACCESS_L2
-            $display("\n========= Clock 7 ========"); 
+        end      
+        // 2* clk state ACCESS_L2 really 
+        #STEP begin // L2_ACCESS & 2* clk state change to ACCESS_L2 really 
+            $display("\n========= Clock 4 ========");
+        end    
+        #STEP begin // l2_ACCESS & WRITE_L2 & access l2_ram
+            $display("\n========= Clock 5 ========");            
             l2_tag_ram_tb(   
                 18'b1_0000_0000_0000_0000_1,    // read data of tag0
                 18'b0,                          // read data of tag1
@@ -772,25 +717,6 @@ module dcache_write_test();
                 512'b0,             // read data of cache_data2
                 512'b0              // read data of cache_data3
              );
-            dcache_ctrl_tb(
-                32'bx,          // read_data_m of CPU
-                `ENABLE,        // the signal of stall caused by cache miss
-                // 1'bx,           // hitway
-                `READ,          // read / write signal of L1_tag0
-                `READ,          // read / write signal of L1_tag1
-                21'b1_0000_0000_0000_0000_1110,       // write data of L1_tag
-                `READ,          // read / write signal of data0
-                `READ,          // read / write signal of data1
-                8'b0001_0000,   // address of L1_cache
-                128'bx,         // data_wd
-                128'bx,         // data_rd choosing from data_rd1~data_rd3
-                `ENABLE,         // icache request
-                9'b110_0001_00,
-                32'b1110_0001_0000_0000,
-                1'bx,                    // dirty_wd
-                `READ,                    // dirty0_rw
-                `READ                    // dirty1_rw
-                );
             l2_cache_ctrl_tb(
                 `ENABLE,            // miss caused by L2C             
                 `ENABLE,            // L2C busy mark
@@ -813,13 +739,14 @@ module dcache_write_test();
                 `READ,
                 26'b1110_0001_00,   // address of memory
                 `READ               // read / write signal of memory                
-                );        
+                );      
         end
-        #STEP begin // l2_ACCESS  & 2* clk state change to ACCESS_L2 really  
-            $display("\n========= Clock 8 ========"); 
+        #STEP begin // l2_ACCESS & WRITE_L2 & access l2_ram
+            $display("\n========= Clock 6 ========"); 
+            
         end
-        #STEP begin // l2_ACCESS  & WRITE_L1 
-            $display("\n========= Clock 9 ========"); 
+        #STEP begin // l2_ACCESS  &  ACCESS_L2
+            $display("\n========= Clock 7 ========"); 
             l2_cache_ctrl_tb(
                 `DISABLE,            // miss caused by L2C             
                 `ENABLE,            // L2C busy mark
@@ -844,12 +771,13 @@ module dcache_write_test();
                 `READ               // read / write signal of memory                
                 ); 
             dcache_ctrl_tb(
-                32'bx,          // read data of CPU
+                32'bx,          // read_data_m of CPU
                 `ENABLE,        // the signal of stall caused by cache miss
-                `READ,          // read / write signal of L1_tag0
+                // 1'bx,           // hitway
+                `WRITE,         // read / write signal of L1_tag0
                 `READ,          // read / write signal of L1_tag1
                 21'b1_0000_0000_0000_0000_1110,       // write data of L1_tag
-                `READ,          // read / write signal of data0
+                `WRITE,         // read / write signal of data0
                 `READ,          // read / write signal of data1
                 8'b0001_0000,   // address of L1_cache
                 128'bx,         // data_wd
@@ -858,70 +786,17 @@ module dcache_write_test();
                 9'b110_0001_00,
                 32'b1110_0001_0000_0000,
                 1'bx,                    // dirty_wd
-                `READ,                    // dirty0_rw
+                `WRITE,                   // dirty0_rw
                 `READ                    // dirty1_rw
                 );
-            tag_ram_tb(
-                21'b0,                                  // read data of tag0
-                21'b0,                                  // read data of tag1
-                1'b0,                                   // number of replacing block of tag next time
-                1'b0                                    // complete write from L2 to L1
-                );
-            data_ram_tb(
-                128'h0,   // read data of cache_data0
-                128'h0                                      // read data of cache_data1
-                );           
-        end        
-        #STEP begin // WRITE_L1  & 2* clk state change to WRITE_L1 really    
-            $display("\n========= Clock 10 ========"); 
-            l2_cache_ctrl_tb(
-                `DISABLE,            // miss caused by L2C             
-                `ENABLE,            // L2C busy mark
-                128'h0876547A_00000000_ABF00000_123BC000, // write data to L1
-                `READ,              // read / write signal of tag0
-                `READ,              // read / write signal of tag1
-                `READ,              // read / write signal of tag2
-                `READ,              // read / write signal of tag3
-                18'b1_0000_0000_0000_0000_1,              // write data of tag
-                `ENABLE,           // ready signal of l2_cache
-                `READ,              // the mark of cache_data0 write signal 
-                `READ,              // the mark of cache_data1 write signal 
-                `READ,              // the mark of cache_data2 write signal 
-                `READ,              // the mark of cache_data3 write signal 
-                512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,
-                1'b0,
-                `READ,
-                `READ,
-                `READ,
-                `READ,
-                26'b1110_0001_00,   // address of memory
-                `READ               // read / write signal of memory                
-                );
-            dcache_ctrl_tb(
-                32'bx,          // read data of CPU
-                `ENABLE,        // the signal of stall caused by cache miss
-                `WRITE,          // read / write signal of L1_tag0
-                `READ,          // read / write signal of L1_tag1
-                21'b1_0000_0000_0000_0000_1110,       // write data of L1_tag
-                `WRITE,          // read / write signal of data0
-                `READ,          // read / write signal of data1
-                8'b0001_0000,   // address of L1_cache
-                128'bx,         // data_wd
-                128'bx,         // data_rd choosing from data_rd1~data_rd3
-                `ENABLE,         // icache request
-                9'b110_0001_00,
-                32'b1110_0001_0000_0000,
-                1'b0,                    // dirty_wd
-                `WRITE,                    // dirty0_rw
-                `READ                     // dirty1_rw
-                );
-        end        
-        #STEP begin // L1_ACCESS(write hit)  & l2_IDLE        
-            $display("\n========= Clock 11 ========");
+              
+        end
+        #STEP begin // WRITE_L1  & 2* clk state change to ACCESS_L2 really  
+            $display("\n========= Clock 8 ========"); 
             l2_cache_ctrl_tb(
                 `DISABLE,            // miss caused by L2C             
                 `DISABLE,            // L2C busy mark
-                128'h0876547A_00000000_ABF00000_123BC000,             // write data to L1_IC
+                128'h0876547A_00000000_ABF00000_123BC000, // write data to L1
                 `READ,              // read / write signal of tag0
                 `READ,              // read / write signal of tag1
                 `READ,              // read / write signal of tag2
@@ -957,7 +832,7 @@ module dcache_write_test();
                 32'b1110_0001_0000_0000,
                 1'b0,                    // dirty_wd
                 `READ,                    // dirty0_rw
-                `READ                    // dirty1_rw
+                `READ                     // dirty1_rw
                 );
             tag_ram_tb(
                 21'b1_0000_0000_0000_0000_1110,         // read data of tag0
@@ -970,8 +845,31 @@ module dcache_write_test();
                 128'h0                                      // read data of cache_data1
                 ); 
         end        
-        #STEP begin // WRITE_HIT & l2_IDLE        
-            $display("\n========= Clock 12 ========");
+        #STEP begin // L1_ACCESS(write hit)  & l2_IDLE        
+            $display("\n========= Clock 9 ========");
+            l2_cache_ctrl_tb(
+                `DISABLE,            // miss caused by L2C             
+                `DISABLE,            // L2C busy mark
+                128'h0876547A_00000000_ABF00000_123BC000,             // write data to L1_IC
+                `READ,              // read / write signal of tag0
+                `READ,              // read / write signal of tag1
+                `READ,              // read / write signal of tag2
+                `READ,              // read / write signal of tag3
+                18'b1_0000_0000_0000_0000_1,              // write data of tag
+                `DISABLE,           // ready signal of l2_cache
+                `READ,              // the mark of cache_data0 write signal 
+                `READ,              // the mark of cache_data1 write signal 
+                `READ,              // the mark of cache_data2 write signal 
+                `READ,              // the mark of cache_data3 write signal 
+                512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,
+                1'b0,
+                `READ,
+                `READ,
+                `READ,
+                `READ,
+                26'b1110_0001_00,   // address of memory
+                `READ               // read / write signal of memory                
+                );
             dcache_ctrl_tb(
                 32'bx,          // read data of CPU
                 `DISABLE,        // the signal of stall caused by cache miss
@@ -1000,14 +898,9 @@ module dcache_write_test();
                 128'h0876547A_00000000_ABF00000_123BC000,   // read data of cache_data0
                 128'h0                                      // read data of cache_data1
                 ); 
-        //     aluout_m   <= 32'b1110_0001_0000_0000;
-        //     access_mem <= `ENABLE;
-        //     memwrite_m <= `WRITE;
-        //     wr_data_m  <= 32'h4A985;
-        //     mem_rd     <= 512'h00000000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000;      // write data of l2_cache
-        end
-        #STEP begin // read l1_ram // L1_IDLE & l2_IDLE        
-            $display("\n========= Clock 13 ========");
+        end        
+        #STEP begin // WRITE_HIT & l2_IDLE        
+            $display("\n========= Clock 10 ========");
             dcache_ctrl_tb(
                 32'bx, // read_data_m of CPU
                 `DISABLE, // miss_stall caused by cache miss
@@ -1035,20 +928,16 @@ module dcache_write_test();
             data_ram_tb(
                 128'h0876547A_00000000_ABF00000_0000123B,   // read data of cache_data0
                 128'h0                                      // read data of cache_data1
-                );
-            aluout_m   <= 32'b1110_0_110_0001_00_00_0000;
-            memwrite_m <= `WRITE;
-            wr_data_m  <= 32'h4A985;
-            mem_rd     <= 512'h00000000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_00000000;      // write data of l2_cache
+                ); 
         end
-        #STEP begin // L1_ACCESS & l2_IDLE       
-            $display("\n========= Clock 14 ========");
+        #STEP begin // L1_IDLE // L1_IDLE & l2_IDLE        
+            $display("\n========= Clock 11 ========");
             dcache_ctrl_tb(
                 32'bx, // read_data_m of CPU
                 `DISABLE, // miss_stall caused by cache miss
                 `READ, // tag0_rw
                 `READ, // tag1_rw
-                21'b1_0000_0000_0000_1110_0_110, // tag_wd
+                21'b1_0000_0000_0000_0000_1110, // tag_wd
                 `READ, // data0_rw
                 `READ, // data1_rw
                 8'b0001_0000, // index
@@ -1061,9 +950,23 @@ module dcache_write_test();
                 `READ, // dirty0_rw
                 `READ  // dirty1_rw
                 );
+            tag_ram_tb(
+                21'b1_0000_0000_0000_0000_1110,         // read data of tag0
+                21'b0,                                  // read data of tag1
+                1'b1,                                   // number of replacing block of tag next time
+                1'b0                                    // complete write from L2 to L1
+                );
+            data_ram_tb(
+                128'h0876547A_00000000_ABF00000_0000123B,   // read data of cache_data0
+                128'h0                                      // read data of cache_data1
+                );
+            aluout_m   <= 32'b1110_0_110_0001_00_00_0000;
+            memwrite_m <= `WRITE;
+            wr_data_m  <= 32'h4A985;
+            mem_rd     <= 512'h00000000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_00000000;      // write data of l2_cache
         end
-        #STEP begin // L2_ACCESS & ACCESS_L2 first clk      
-            $display("\n========= Clock 15 ========");
+        #STEP begin // L1_ACCESS & l2_IDLE       
+            $display("\n========= Clock 12 ========");
             dcache_ctrl_tb(
                 32'bx, // read_data_m of CPU
                 `ENABLE, // miss_stall caused by cache miss
@@ -1084,7 +987,7 @@ module dcache_write_test();
                 );
             l2_cache_ctrl_tb(
                 `DISABLE,            // l2_miss_stall              
-                `ENABLE,            // l2_busy 
+                `DISABLE,            // l2_busy 
                 128'h0876547A_00000000_ABF00000_123BC000, // data_wd_l2 to L1_IC
                 `READ,              // l2_tag0_rw
                 `READ,              // l2_tag1_rw
@@ -1107,59 +1010,8 @@ module dcache_write_test();
                 `READ               // mem_rw                
                 );
         end
-        #STEP begin // L2_ACCESS & ACCESS_L2 last clk      
-            $display("\n========= Clock 16 ========");
-        end
-        // #STEP begin // L2_ACCESS & MEM_ACCESS  first clk     
-        //     $display("\n========= Clock 17 ========");
-        //     dcache_ctrl_tb(
-        //         32'bx, // read_data_m of CPU
-        //         `ENABLE, // miss_stall caused by cache miss
-        //         `READ, // tag0_rw
-        //         `READ, // tag1_rw
-        //         21'b1_0000_0000_0000_1110_0_110, // tag_wd
-        //         `READ, // data0_rw
-        //         `READ, // data1_rw
-        //         8'b0001_0000, // index
-        //         128'h0876547A_00000000_ABF00000_0000123B, // data_wd_dc
-        //         128'hx, // data_rd choosing from data_rd0~data_rd1
-        //         `ENABLE, // drq
-        //         9'b110_0001_00, // l2_index
-        //         32'b1110_0_110_0001_00_00_0000, // l2_addr
-        //         1'b1, // dirty_wd
-        //         `READ, // dirty0_rw
-        //         `READ  // dirty1_rw
-        //         );
-        //     l2_cache_ctrl_tb(
-        //         `ENABLE,            // l2_miss_stall              
-        //         `ENABLE,            // l2_busy 
-        //         128'h0876547A_00000000_ABF00000_123BC000, // data_wd_l2 to L1_IC
-        //         `READ,              // l2_tag0_rw
-        //         `READ,              // l2_tag1_rw
-        //         `READ,              // l2_tag2_rw
-        //         `READ,              // l2_tag3_rw
-        //         18'b1_0000_0000_0000_0000_1, // l2_tag_wd
-        //         `DISABLE,           // l2_rdy signal of l2_cache
-        //         `READ,              // _l2_data0_rw
-        //         `READ,              // _l2_data1_rw
-        //         `READ,              // _l2_data2_rw
-        //         `READ,              // _l2_data3_rw
-        //         // l2_data_wd
-        //         512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,
-        //         1'b0,               // l2_dirty_wd
-        //         `READ,              // l2_dirty0_rw
-        //         `READ,              // l2_dirty1_rw
-        //         `READ,              // l2_dirty2_rw
-        //         `READ,              // l2_dirty3_rw
-        //         26'b1110_0110_0001_00, // mem_addr
-        //         `READ               // mem_rw                
-        //         );
-        // end
-        // #STEP begin // L2_ACCESS & MEM_ACCESS last clk        
-        //     $display("\n========= Clock 18 ========");
-        // end
-        #STEP begin // L2_ACCESS & WRITE_L2 first clk       
-            $display("\n========= Clock 17 ========");
+        #STEP begin // L2_ACCESS & ACCESS_L2 first clk      
+            $display("\n========= Clock 13 ========");
             l2_cache_ctrl_tb(
                 `ENABLE,            // l2_miss_stall              
                 `ENABLE,            // l2_busy 
@@ -1185,11 +1037,11 @@ module dcache_write_test();
                 `READ               // mem_rw                
                 );
         end
-        #STEP begin // L2_ACCESS & WRITE_L2 last clk        
-            $display("\n========= Clock 18 ========");
+        #STEP begin // L2_ACCESS & ACCESS_L2 last clk      
+            $display("\n========= Clock 14 ========");
         end
-        #STEP begin // L2_ACCESS & ACCESS_L2 first clk        
-            $display("\n========= Clock 19 ========");
+        #STEP begin // L2_ACCESS & WRITE_L2 first clk       
+            $display("\n========= Clock 15 ========");
             l2_cache_ctrl_tb(
                 `ENABLE,            // l2_miss_stall              
                 `ENABLE,            // l2_busy 
@@ -1229,11 +1081,11 @@ module dcache_write_test();
                 512'b0              // read data of cache_data3
              );
         end
-        #STEP begin // L2_ACCESS & ACCESS_L2 last clk        
-            $display("\n========= Clock 20 ========");
+        #STEP begin // L2_ACCESS & WRITE_L2 last clk        
+            $display("\n========= Clock 16 ========");
         end
-        #STEP begin // L2_ACCESS & WRITE_L1 first clk        
-            $display("\n========= Clock 21 ========");
+        #STEP begin // L2_ACCESS & ACCESS_L2 first clk        
+            $display("\n========= Clock 17 ========");
             l2_cache_ctrl_tb(
                 `DISABLE,           // l2_miss_stall              
                 `ENABLE,            // l2_busy 
@@ -1269,29 +1121,8 @@ module dcache_write_test();
                 128'h0    // read data of cache_data1
                 ); 
         end
-        #STEP begin // WRITE_L1 & WRITE_L1 last clk        
-            $display("\n========= Clock 22 ========");
-            dcache_ctrl_tb(
-                32'bx, // read_data_m of CPU
-                `ENABLE, // miss_stall caused by cache miss
-                `READ, // tag0_rw
-                `WRITE, // tag1_rw
-                21'b1_0000_0000_0000_1110_0_110, // tag_wd
-                `READ, // data0_rw
-                `WRITE, // data1_rw
-                8'b0001_0000, // index
-                128'h0876547A_00000000_ABF00000_0000123B, // data_wd_dc
-                128'hx, // data_rd choosing from data_rd0~data_rd1
-                `ENABLE, // drq
-                9'b110_0001_00, // l2_index = addr[14:6]
-                32'b1110_0_110_0001_00_00_0000, // l2_addr
-                1'b0, // dirty_wd
-                `READ, // dirty0_rw
-                `WRITE // dirty1_rw
-                );
-        end
-        #STEP begin // L1_ACCESS & L2_IDLE       
-            $display("\n========= Clock 23 ========");
+        #STEP begin // WRITE_L1 & ACCESS_L2 last clk        
+            $display("\n========= Clock 18 ========");
             l2_cache_ctrl_tb(
                 `DISABLE,           // l2_miss_stall              
                 `DISABLE,            // l2_busy 
@@ -1345,8 +1176,8 @@ module dcache_write_test();
                 128'h0876547A_00000000_ABF00000_00000000    // read data of cache_data1
                 );
         end
-        #STEP begin // WRITE_HIT & l2_IDLE       
-            $display("\n========= Clock 24 ========");
+        #STEP begin // L1_ACCESS & L2_IDLE first clk       
+            $display("\n========= Clock 19 ========");
             dcache_ctrl_tb(
                 32'bx,          // read data of CPU
                 `DISABLE,       // the signal of stall caused by cache miss
@@ -1366,8 +1197,8 @@ module dcache_write_test();
                 `WRITE           // dirty1_rw
                 ); 
         end
-        #STEP begin // l1_IDLE & l2_IDLE       
-            $display("\n========= Clock 25 ========");
+        #STEP begin // WRITE_HIT & l2_IDLE last clk          
+            $display("\n========= Clock 20 ========");
             dcache_ctrl_tb(
                 32'bx,          // read data of CPU
                 `DISABLE,       // the signal of stall caused by cache miss
@@ -1396,19 +1227,15 @@ module dcache_write_test();
                 128'h0876547A_00000000_ABF00000_0000123B,   // read data of cache_data0
                 128'h0876547A_00000000_ABF00000_0004A985    // read data of cache_data1
                 );
-            aluout_m   <= 32'b0101_1111_0_110_0001_00_00_0000;
-            memwrite_m <= `WRITE;
-            wr_data_m  <= 32'h4A00;
-            mem_rd     <= 512'h00000000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_00123400;      // write data of l2_cache
         end
-        #STEP begin // L1_ACCESS & l2_IDLE       
-            $display("\n========= Clock 26 ========");
+        #STEP begin // l1_IDLE & l2_IDLE first clk           
+            $display("\n========= Clock 21 ========");
             dcache_ctrl_tb(
                 32'bx,          // read data of CPU
                 `DISABLE,       // the signal of stall caused by cache miss
                 `READ,         // read / write signal of L1_tag0
                 `READ,          // read / write signal of L1_tag1
-                21'b1_0000_0000_0101_1111_0_110,       // write data of L1_tag
+                21'b1_0000_0000_0000_1110_0_110,       // write data of L1_tag
                 `READ,         // read / write signal of data0
                 `READ,          // read / write signal of data1
                 8'b0001_0000,   // address of L1_cache
@@ -1420,13 +1247,27 @@ module dcache_write_test();
                 1'b1,           // dirty_wd
                 `READ,          // dirty0_rw
                 `READ           // dirty1_rw
-                );   
+                ); 
+            tag_ram_tb(
+                21'b1_0000_0000_0000_0000_1110, // read data of tag0
+                21'b1_0000_0000_0000_1110_0_110, // read data of tag1
+                1'b0, // number of replacing block of tag next time
+                1'b0  // complete write from L2 to L1
+                );
+            data_ram_tb(
+                128'h0876547A_00000000_ABF00000_0000123B,   // read data of cache_data0
+                128'h0876547A_00000000_ABF00000_0004A985    // read data of cache_data1
+                );
+            aluout_m   <= 32'b0101_1111_0_110_0001_00_00_0000;
+            memwrite_m <= `WRITE;
+            wr_data_m  <= 32'h4A00;
+            mem_rd     <= 512'h00000000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_00123400;      // write data of l2_cache
         end
-        #STEP begin // WRITE_L2 & ACCESS_L2 first clk        
-            $display("\n========= Clock 27 ========");
+        #STEP begin // L1_ACCESS & l2_IDLE last clk          
+            $display("\n========= Clock 22 ========");
             l2_cache_ctrl_tb(
                 `DISABLE,           // l2_miss_stall              
-                `ENABLE,            // l2_busy 
+                `DISABLE,            // l2_busy 
                 128'h0876547A_00000000_ABF00000_00000000, // data_wd_l2 to L1_IC
                 `READ,              // l2_tag0_rw
                 `READ,              // l2_tag1_rw
@@ -1465,32 +1306,11 @@ module dcache_write_test();
                 1'b1,           // dirty_wd
                 `READ,          // dirty0_rw
                 `READ           // dirty1_rw
-                ); 
-        end // WRITE_L2 need two clk       
-        #STEP begin // WRITE_L2 & ACCESS_L2 last clk       
-            $display("\n========= Clock 28 ========"); 
-            dcache_ctrl_tb(
-                32'bx,          // read_data_m of CPU
-                `ENABLE,        // miss_stall caused by cache miss
-                `READ,          // tag0_rw
-                `READ,          // tag1_rw
-                21'b1_0000_0000_0101_1111_0_110, // tag_wd of L1_tag
-                `READ,          // data0_rw
-                `READ,          // data1_rw
-                8'b0001_0000,   // index
-                128'h0876547A_00000000_ABF00000_0004A985,   // data_wd
-                128'h0876547A_00000000_ABF00000_0000123B,   // data_rd choosing from data_rd0~data_rd1
-                `ENABLE,       // drq
-                9'b110_0001_00, // l2_index
-                32'b0000_0000_0000_0000_1110_0001_00_00_0000,// l2_addr
-                1'b1,           // dirty_wd
-                `READ,          // dirty0_rw
-                `READ           // dirty1_rw
-                ); 
+                );   
         end
-        #STEP begin // WRITE_L2 & WRITE_HIT first clk       
-            $display("\n========= Clock 29 ========"); 
-            l2_cache_ctrl_tb(
+        #STEP begin // WRITE_L2 & ACCESS_L2 first clk        
+            $display("\n========= Clock 23 ========");
+             l2_cache_ctrl_tb(
                 `DISABLE,           // l2_miss_stall              
                 `ENABLE,            // l2_busy 
                 128'h0876547A_00000000_ABF00000_00000000, // data_wd_l2 to L1_IC
@@ -1514,12 +1334,30 @@ module dcache_write_test();
                 26'b1110_0110_0001_00, // mem_addr
                 `READ               // mem_rw                
                 );
+        end // WRITE_L2 need two clk       
+        #STEP begin // WRITE_L2 & ACCESS_L2 last clk       
+            $display("\n========= Clock 24 ========"); 
+            dcache_ctrl_tb(
+                32'bx,          // read_data_m of CPU
+                `ENABLE,        // miss_stall caused by cache miss
+                `READ,          // tag0_rw
+                `READ,          // tag1_rw
+                21'b1_0000_0000_0101_1111_0_110, // tag_wd of L1_tag
+                `READ,          // data0_rw
+                `READ,          // data1_rw
+                8'b0001_0000,   // index
+                128'h0876547A_00000000_ABF00000_0004A985,   // data_wd
+                128'h0876547A_00000000_ABF00000_0000123B,   // data_rd choosing from data_rd0~data_rd1
+                `ENABLE,       // drq
+                9'b110_0001_00, // l2_index
+                32'b0000_0000_0000_0000_1110_0001_00_00_0000,// l2_addr
+                1'b1,           // dirty_wd
+                `READ,          // dirty0_rw
+                `READ           // dirty1_rw
+                ); 
         end
-        #STEP begin // WRITE_L2 & WRITE_HIT last clk       
-            $display("\n========= Clock 30 ========");  
-        end
-        #STEP begin // L2_ACCESS & ACCESS_L2 first clk
-            $display("\n========= Clock 31 ========");    
+        #STEP begin // WRITE_L2 & WRITE_HIT first clk       
+            $display("\n========= Clock 25 ========"); 
             l2_cache_ctrl_tb(
                 `DISABLE,           // l2_miss_stall              
                 `ENABLE,            // l2_busy 
@@ -1577,41 +1415,48 @@ module dcache_write_test();
                 512'b0              // read data of cache_data3
              );
         end
-        #STEP begin // L2_ACCESS & ACCESS_L2 last clk
-            $display("\n========= Clock 32 ========");  
+        #STEP begin // L2_ACCESS & WRITE_HIT last clk       
+            $display("\n========= Clock 26 ========"); 
+            dcache_ctrl_tb(
+                32'bx,          // read_data_m of CPU
+                `ENABLE,        // miss_stall caused by cache miss
+                `READ,          // tag0_rw
+                `READ,          // tag1_rw
+                21'b1_0000_0000_0101_1111_0_110, // tag_wd of L1_tag
+                `READ,          // data0_rw
+                `READ,          // data1_rw
+                8'b0001_0000,   // index
+                128'h0876547A_00000000_ABF00000_0004A985,   // data_wd
+                128'h0876547A_00000000_ABF00000_0000123B,   // data_rd choosing from data_rd0~data_rd1
+                `ENABLE,        // drq
+                9'b110_0001_00, // l2_index
+                32'b0101_1111_0_110_0001_00_00_0000,// l2_addr
+                1'b1,           // dirty_wd
+                `READ,          // dirty0_rw
+                `READ           // dirty1_rw
+                );  
         end
-        // #STEP begin // L2_ACCESS & MEM_ACCESS first clk
-        //     $display("\n========= Clock 35 ========"); 
-        //     l2_cache_ctrl_tb(
-        //         `ENABLE,           // l2_miss_stall              
-        //         `ENABLE,            // l2_busy 
-        //         128'h0876547A_00000000_ABF00000_00000000, // data_wd_l2 to L1_IC
-        //         `READ,              // l2_tag0_rw
-        //         `READ,              // l2_tag1_rw
-        //         `READ,              // l2_tag2_rw
-        //         `READ,              // l2_tag3_rw
-        //         18'b1_0000_0000_0000_0000_1, // l2_tag_wd
-        //         `DISABLE,            // l2_rdy 
-        //         `READ,              // _l2_data0_rw
-        //         `READ,              // _l2_data1_rw
-        //         `READ,              // _l2_data2_rw
-        //         `READ,              // _l2_data3_rw
-        //         // l2_data_wd
-        //         512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_0000123B,
-        //         1'b1,               // l2_dirty_wd
-        //         `READ,              // l2_dirty0_rw
-        //         `READ,              // l2_dirty1_rw 
-        //         `READ,              // l2_dirty2_rw
-        //         `READ,              // l2_dirty3_rw
-        //         26'b0101_1111_0_110_0001_00, // mem_addr
-        //         `READ               // mem_rw                
-        //         ); 
-        // end
-        // #STEP begin // L2_ACCESS & MEM_ACCESS last clk
-        //     $display("\n========= Clock 36 ========");      
-        // end
-        #STEP begin // L2_ACCESS & WRITE_L2 first clk
-            $display("\n========= Clock 33 ========");        
+        #STEP begin // L2_ACCESS & ACCESS_L2 first clk
+            $display("\n========= Clock 27 ========");    
+            // dcache no change
+            dcache_ctrl_tb(
+                32'bx,          // read_data_m of CPU
+                `ENABLE,        // miss_stall caused by cache miss
+                `READ,          // tag0_rw
+                `READ,          // tag1_rw
+                21'b1_0000_0000_0101_1111_0_110, // tag_wd of L1_tag
+                `READ,          // data0_rw
+                `READ,          // data1_rw
+                8'b0001_0000,   // index
+                128'h0876547A_00000000_ABF00000_0004A985,   // data_wd
+                128'h0876547A_00000000_ABF00000_0000123B,   // data_rd choosing from data_rd0~data_rd1
+                `ENABLE,        // drq
+                9'b110_0001_00, // l2_index
+                32'b0101_1111_0_110_0001_00_00_0000,// l2_addr
+                1'b1,           // dirty_wd
+                `READ,          // dirty0_rw
+                `READ           // dirty1_rw
+                ); 
             l2_cache_ctrl_tb(
                 `ENABLE,           // l2_miss_stall              
                 `ENABLE,            // l2_busy 
@@ -1636,7 +1481,155 @@ module dcache_write_test();
                 26'b0101_1111_0_110_0001_00, // mem_addr
                 `READ               // mem_rw                
                 );
-            $finish;
+        end
+        #STEP begin // L2_ACCESS & ACCESS_L2 last clk
+            $display("\n========= Clock 28 ========");  
+        end
+        #STEP begin // L2_ACCESS & WRITE_L2 first clk
+            $display("\n========= Clock 29 ========");        
+            l2_cache_ctrl_tb(
+                `ENABLE,           // l2_miss_stall              
+                `ENABLE,            // l2_busy 
+                128'h0876547A_00000000_ABF00000_00000000, // data_wd_l2 to L1_IC
+                `READ,              // l2_tag0_rw
+                `READ,              // l2_tag1_rw
+                `READ,              // l2_tag2_rw
+                `READ,              // l2_tag3_rw
+                18'b1_0000_0000_0101_1111_0, // l2_tag_wd
+                `DISABLE,            // l2_rdy 
+                `READ,              // _l2_data0_rw
+                `READ,              // _l2_data1_rw
+                `READ,              // _l2_data2_rw
+                `READ,              // _l2_data3_rw
+                // l2_data_wd
+                512'h00000000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_00123400,
+                1'b0,               // l2_dirty_wd
+                `READ,              // l2_dirty0_rw
+                `READ,              // l2_dirty1_rw 
+                `READ,              // l2_dirty2_rw
+                `READ,              // l2_dirty3_rw
+                26'b0101_1111_0_110_0001_00, // mem_addr
+                `READ               // mem_rw                
+                );
+            l2_tag_ram_tb(   
+                18'b1_0000_0000_0000_0000_1,    // read data of tag0
+                18'b1_0000_0000_0000_1110_0,    // read data of tag1
+                18'b1_0000_0000_0101_1111_0,    // read data of tag2
+                18'b0,                          // read data of tag3
+                3'b110,                         // read data of tag
+                `ENABLE                         // complete write from L2 to L1
+            );
+            l2_data_ram_tb(
+                512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_0000123B,         // read data of cache_data0
+                512'h00000000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_00000000,             // read data of cache_data1
+                512'h00000000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_00123400,             // read data of cache_data2
+                512'b0              // read data of cache_data3
+             );
+        end
+        #STEP begin // L2_ACCESS & WRITE_L2 last clk
+            $display("\n========= Clock 30 ========");  
+        end
+        #STEP begin // L2_ACCESS & ACCESS_L2 first clk
+            $display("\n========= Clock 31 ========");          
+            l2_cache_ctrl_tb(
+                `DISABLE,           // l2_miss_stall              
+                `ENABLE,            // l2_busy 
+                128'h0876547A_00000000_ABF00000_00123400, // data_wd_l2 to L1_IC
+                `READ,              // l2_tag0_rw
+                `READ,              // l2_tag1_rw
+                `READ,              // l2_tag2_rw
+                `READ,              // l2_tag3_rw
+                18'b1_0000_0000_0101_1111_0, // l2_tag_wd
+                `ENABLE,            // l2_rdy 
+                `READ,              // _l2_data0_rw
+                `READ,              // _l2_data1_rw
+                `READ,              // _l2_data2_rw
+                `READ,              // _l2_data3_rw
+                // l2_data_wd
+                512'h00000000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_00123400,
+                1'b0,               // l2_dirty_wd
+                `READ,              // l2_dirty0_rw
+                `READ,              // l2_dirty1_rw 
+                `READ,              // l2_dirty2_rw
+                `READ,              // l2_dirty3_rw
+                26'b0101_1111_0_110_0001_00, // mem_addr
+                `READ               // mem_rw                
+                );
+            dcache_ctrl_tb(
+                32'bx,          // read_data_m of CPU
+                `ENABLE,        // miss_stall caused by cache miss
+                `WRITE,          // tag0_rw
+                `READ,          // tag1_rw
+                21'b1_0000_0000_0101_1111_0_110, // tag_wd of L1_tag
+                `WRITE,          // data0_rw
+                `READ,          // data1_rw
+                8'b0001_0000,   // index
+                128'h0876547A_00000000_ABF00000_0004A985,   // data_wd
+                128'h0876547A_00000000_ABF00000_0000123B,   // data_rd choosing from data_rd0~data_rd1
+                `ENABLE,        // drq
+                9'b110_0001_00, // l2_index
+                32'b0101_1111_0_110_0001_00_00_0000,// l2_addr
+                1'b0,           // dirty_wd
+                `WRITE,          // dirty0_rw
+                `READ           // dirty1_rw
+                ); 
+        end
+        #STEP begin // WRITE_L1 & ACCESS_L2 first clk
+            $display("\n========= Clock 32 ========");          
+            dcache_ctrl_tb(
+                32'bx,          // read_data_m of CPU
+                `ENABLE,        // miss_stall caused by cache miss
+                `READ ,          // tag0_rw
+                `READ,          // tag1_rw
+                21'b1_0000_0000_0101_1111_0_110, // tag_wd of L1_tag
+                `READ ,          // data0_rw
+                `READ,          // data1_rw
+                8'b0001_0000,   // index
+                128'h0876547A_00000000_ABF00000_0004A985,   // data_wd
+                128'h0876547A_00000000_ABF00000_0000123B,   // data_rd choosing from data_rd0~data_rd1
+                `DISABLE,        // drq
+                9'b110_0001_00, // l2_index
+                32'b0101_1111_0_110_0001_00_00_0000,// l2_addr
+                1'b0,           // dirty_wd
+                `READ ,          // dirty0_rw
+                `READ           // dirty1_rw
+                ); 
+            l2_cache_ctrl_tb(
+                `DISABLE,           // l2_miss_stall              
+                `DISABLE,            // l2_busy 
+                128'h0876547A_00000000_ABF00000_00123400, // data_wd_l2 to L1_IC
+                `READ,              // l2_tag0_rw
+                `READ,              // l2_tag1_rw
+                `READ,              // l2_tag2_rw
+                `READ,              // l2_tag3_rw
+                18'b1_0000_0000_0101_1111_0, // l2_tag_wd
+                `DISABLE,            // l2_rdy 
+                `READ,              // _l2_data0_rw
+                `READ,              // _l2_data1_rw
+                `READ,              // _l2_data2_rw
+                `READ,              // _l2_data3_rw
+                // l2_data_wd
+                512'h00000000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_00123400,
+                1'b0,               // l2_dirty_wd
+                `READ,              // l2_dirty0_rw
+                `READ,              // l2_dirty1_rw 
+                `READ,              // l2_dirty2_rw
+                `READ,              // l2_dirty3_rw
+                26'b0101_1111_0_110_0001_00, // mem_addr
+                `READ               // mem_rw                
+                );
+            tag_ram_tb(
+                21'b1_0000_0000_0101_1111_0_110, // read data of tag0
+                21'b1_0000_0000_0000_1110_0_110, // read data of tag1
+                1'b1, // number of replacing block of tag next time
+                1'b1  // complete write from L2 to L1
+                );
+            data_ram_tb(
+                128'h0876547A_00000000_ABF00000_00123400,   // read data of cache_data0
+                128'h0876547A_00000000_ABF00000_0004A985    // read data of cache_data1
+                );
+            // $stop;       // modelsim
+            $finish;     // iverilog
         end
     end
     

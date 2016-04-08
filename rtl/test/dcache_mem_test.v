@@ -311,7 +311,7 @@ module dcache_mem_test();
         .mem_addr       (mem_addr),     // address of memory
         .mem_rw         (mem_rw)        // read / write signal of memory
     );
-    ram ram(
+    mem mem(
         .clk        (clk_mem),    // Clock
         .rst        (rst),    // Asynchronous reset active low
         .rw         (mem_rw),
@@ -472,7 +472,8 @@ module dcache_mem_test();
                 (dirty0_rw  === _dirty0_rw)         && 
                 (dirty1_rw  === _dirty1_rw)         && 
                 (data_rd    === _data_rd)           && 
-                (data_wd_dc    === _data_wd_dc)
+                (data_wd_dc    === _data_wd_dc)     && 
+                (dirty_wd    === _dirty_wd)
                ) begin 
                  $display("mem_stage Test Succeeded !"); 
             end else begin 
@@ -809,7 +810,30 @@ module dcache_mem_test();
                 1'bx,                    // dirty_wd
                 `READ,                    // dirty0_rw
                 `READ                     // dirty1_rw
-                );
+                ); 
+            l2_cache_ctrl_tb(
+                `DISABLE,           // miss caused by L2C             
+                `DISABLE,            // L2C busy mark
+                128'bx,             // write data to L1_IC
+                `READ,              // read / write signal of tag0
+                `READ,              // read / write signal of tag1
+                `READ,              // read / write signal of tag2
+                `READ,              // read / write signal of tag3
+                18'bx,              // write data of tag
+                `DISABLE,           // ready signal of l2_cache
+                `READ,              // the mark of cache_data0 write signal 
+                `READ,              // the mark of cache_data1 write signal 
+                `READ,              // the mark of cache_data2 write signal 
+                `READ,              // the mark of cache_data3 write signal 
+                512'bx,
+                1'bx,
+                `READ,
+                `READ,
+                `READ,
+                `READ,
+                26'bx,              // address of memory
+                1'bx                // read / write signal of memory                
+                );       
         end
         #STEP begin // L2_ACCESS & ACCESS_L2 
             $display("\n========= Clock 3 ========");
@@ -832,33 +856,41 @@ module dcache_mem_test();
                 `READ,                    // dirty0_rw
                 `READ                    // dirty1_rw
                 );
-        end      
-        // 2* clk state ACCESS_L2 really 
-        #STEP begin // L2_ACCESS & 2* clk state change to ACCESS_L2 really 
-            $display("\n========= Clock 4 ========");
             l2_cache_ctrl_tb(
-                `DISABLE,           // miss caused by L2C             
+                `ENABLE,            // miss caused by L2C             
                 `ENABLE,            // L2C busy mark
                 128'bx,             // write data to L1_IC
-                `READ,              // read / write signal of tag0
+                `WRITE,              // read / write signal of tag0
                 `READ,              // read / write signal of tag1
                 `READ,              // read / write signal of tag2
                 `READ,              // read / write signal of tag3
-                18'bx,              // write data of tag
+                18'b1_0000_0000_0000_0000_1,              // write data of tag
                 `DISABLE,           // ready signal of l2_cache
-                `READ,              // the mark of cache_data0 write signal 
+                `WRITE,              // the mark of cache_data0 write signal 
                 `READ,              // the mark of cache_data1 write signal 
                 `READ,              // the mark of cache_data2 write signal 
                 `READ,              // the mark of cache_data3 write signal 
-                512'bx,
-                1'bx,
+                512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,
+                1'b0,
+                `WRITE,
                 `READ,
                 `READ,
                 `READ,
-                `READ,
-                26'bx,              // address of memory
-                1'bx                // read / write signal of memory                
-                );        
+                26'b1110_0001_00,   // address of memory
+                `READ               // read / write signal of memory                
+                );
+        end      
+        // 2* clk state ACCESS_L2 really 
+        #STEP begin // L2_ACCESS & 2* clk state change to ACCESS_L2 really 
+            $display("\n========= Clock 4 ========");     
+            l2_tag_ram_tb(   
+                18'b0,            // read data of tag0
+                18'b0,            // read data of tag1
+                18'b0,            // read data of tag2
+                18'b0,            // read data of tag3
+                3'b000,           // read data of tag
+                `DISABLE          // complete write from L2 to L1
+            );
         end
         // #STEP begin // L2_ACCESS & MEM_ACCESS first clk
         //     $display("\n========= Clock 5 ========");
@@ -896,39 +928,25 @@ module dcache_mem_test();
                 `ENABLE,            // miss caused by L2C             
                 `ENABLE,            // L2C busy mark
                 128'bx,             // write data to L1_IC
-                `WRITE,              // read / write signal of tag0
+                `READ,              // read / write signal of tag0
                 `READ,              // read / write signal of tag1
                 `READ,              // read / write signal of tag2
                 `READ,              // read / write signal of tag3
                 18'b1_0000_0000_0000_0000_1,              // write data of tag
                 `DISABLE,           // ready signal of l2_cache
-                `WRITE,              // the mark of cache_data0 write signal 
+                `READ,              // the mark of cache_data0 write signal 
                 `READ,              // the mark of cache_data1 write signal 
                 `READ,              // the mark of cache_data2 write signal 
                 `READ,              // the mark of cache_data3 write signal 
                 512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,
                 1'b0,
-                `WRITE,
+                `READ,
                 `READ,
                 `READ,
                 `READ,
                 26'b1110_0001_00,   // address of memory
                 `READ               // read / write signal of memory                
-                );
-        end
-        #STEP begin // l2_ACCESS & WRITE_L2 & access l2_ram
-            $display("\n========= Clock 6 ========"); 
-            l2_tag_ram_tb(   
-                18'b0,            // read data of tag0
-                18'b0,            // read data of tag1
-                18'b0,            // read data of tag2
-                18'b0,            // read data of tag3
-                3'b000,           // read data of tag
-                `DISABLE          // complete write from L2 to L1
-            );
-        end
-        #STEP begin // l2_ACCESS  &  ACCESS_L2
-            $display("\n========= Clock 7 ========"); 
+                ); 
             l2_tag_ram_tb(   
                 18'b1_0000_0000_0000_0000_1,    // read data of tag0
                 18'b0,                          // read data of tag1
@@ -943,56 +961,15 @@ module dcache_mem_test();
                 512'b0,             // read data of cache_data2
                 512'b0              // read data of cache_data3
              );
-            mem_stage_tb(
-                32'bx,          // mem_out of CPU
-                `ENABLE,        // the signal of stall caused by cache miss
-                // 1'bx,           // hitway
-                `READ,          // read / write signal of L1_tag0
-                `READ,          // read / write signal of L1_tag1
-                21'b1_0000_0000_0000_0000_1110,       // write data of L1_tag
-                `READ,          // read / write signal of data0
-                `READ,          // read / write signal of data1
-                8'b0001_0000,   // address of L1_cache
-                128'bx,         // data_wd
-                128'bx,         // data_rd choosing from data_rd1~data_rd3
-                `ENABLE,         // icache request
-                9'b110_0001_00,
-                32'b1110_0001_0000_0000,
-                1'bx,                    // dirty_wd
-                `READ,                    // dirty0_rw
-                `READ                    // dirty1_rw
-                );
-            l2_cache_ctrl_tb(
-                `ENABLE,            // miss caused by L2C             
-                `ENABLE,            // L2C busy mark
-                128'bx,             // write data to L1_IC
-                `READ,              // read / write signal of tag0
-                `READ,              // read / write signal of tag1
-                `READ,              // read / write signal of tag2
-                `READ,              // read / write signal of tag3
-                18'b1_0000_0000_0000_0000_1,              // write data of tag
-                `DISABLE,           // ready signal of l2_cache
-                `READ,              // the mark of cache_data0 write signal 
-                `READ,              // the mark of cache_data1 write signal 
-                `READ,              // the mark of cache_data2 write signal 
-                `READ,              // the mark of cache_data3 write signal 
-                512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,
-                1'b0,
-                `READ,
-                `READ,
-                `READ,
-                `READ,
-                26'b1110_0001_00,   // address of memory
-                `READ               // read / write signal of memory                
-                );        
         end
-        #STEP begin // l2_ACCESS  & 2* clk state change to ACCESS_L2 really  
-            $display("\n========= Clock 8 ========"); 
+        #STEP begin // l2_ACCESS & WRITE_L2 & access l2_ram
+            $display("\n========= Clock 6 ========"); 
+            
         end
-        #STEP begin // l2_ACCESS  & WRITE_L1 
-            $display("\n========= Clock 9 ========"); 
+        #STEP begin // WRITE_L1 &  ACCESS_L2
+            $display("\n========= Clock 7 ========"); 
             l2_cache_ctrl_tb(
-                `DISABLE,            // miss caused by L2C             
+                `DISABLE,           // miss caused by L2C             
                 `ENABLE,            // L2C busy mark
                 128'h0876547A_00000000_ABF00000_123BC000, // write data to L1
                 `READ,              // read / write signal of tag0
@@ -1000,7 +977,7 @@ module dcache_mem_test();
                 `READ,              // read / write signal of tag2
                 `READ,              // read / write signal of tag3
                 18'b1_0000_0000_0000_0000_1,              // write data of tag
-                `ENABLE,           // ready signal of l2_cache
+                `ENABLE,            // ready signal of l2_cache
                 `READ,              // the mark of cache_data0 write signal 
                 `READ,              // the mark of cache_data1 write signal 
                 `READ,              // the mark of cache_data2 write signal 
@@ -1014,60 +991,6 @@ module dcache_mem_test();
                 26'b1110_0001_00,   // address of memory
                 `READ               // read / write signal of memory                
                 ); 
-            mem_stage_tb(
-                32'bx,          // read data of CPU
-                `ENABLE,        // the signal of stall caused by cache miss
-                `READ,          // read / write signal of L1_tag0
-                `READ,          // read / write signal of L1_tag1
-                21'b1_0000_0000_0000_0000_1110,       // write data of L1_tag
-                `READ,          // read / write signal of data0
-                `READ,          // read / write signal of data1
-                8'b0001_0000,   // address of L1_cache
-                128'bx,         // data_wd
-                128'bx,         // data_rd choosing from data_rd1~data_rd3
-                `ENABLE,         // icache request
-                9'b110_0001_00,
-                32'b1110_0001_0000_0000,
-                1'bx,                    // dirty_wd
-                `READ,                    // dirty0_rw
-                `READ                    // dirty1_rw
-                );
-            tag_ram_tb(
-                21'b0,                                  // read data of tag0
-                21'b0,                                  // read data of tag1
-                1'b0,                                   // number of replacing block of tag next time
-                1'b0                                    // complete write from L2 to L1
-                );
-            data_ram_tb(
-                128'h0,   // read data of cache_data0
-                128'h0                                      // read data of cache_data1
-                );           
-        end        
-        #STEP begin // WRITE_L1  & 2* clk state change to WRITE_L1 really    
-            $display("\n========= Clock 10 ========"); 
-            l2_cache_ctrl_tb(
-                `DISABLE,            // miss caused by L2C             
-                `ENABLE,            // L2C busy mark
-                128'h0876547A_00000000_ABF00000_123BC000, // write data to L1
-                `READ,              // read / write signal of tag0
-                `READ,              // read / write signal of tag1
-                `READ,              // read / write signal of tag2
-                `READ,              // read / write signal of tag3
-                18'b1_0000_0000_0000_0000_1,              // write data of tag
-                `ENABLE,           // ready signal of l2_cache
-                `READ,              // the mark of cache_data0 write signal 
-                `READ,              // the mark of cache_data1 write signal 
-                `READ,              // the mark of cache_data2 write signal 
-                `READ,              // the mark of cache_data3 write signal 
-                512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,
-                1'b0,
-                `READ,
-                `READ,
-                `READ,
-                `READ,
-                26'b1110_0001_00,   // address of memory
-                `READ               // read / write signal of memory                
-                );
             mem_stage_tb(
                 32'bx,          // read data of CPU
                 `ENABLE,        // the signal of stall caused by cache miss
@@ -1086,34 +1009,21 @@ module dcache_mem_test();
                 `WRITE,                    // dirty0_rw
                 `READ                     // dirty1_rw
                 );
-        end        
-        #STEP begin // L1_ACCESS  & l2_IDLE        
-            $display("\n========= Clock 11 ========");
-            l2_cache_ctrl_tb(
-                `DISABLE,            // miss caused by L2C             
-                `DISABLE,            // L2C busy mark
-                128'h0876547A_00000000_ABF00000_123BC000,             // write data to L1_IC
-                `READ,              // read / write signal of tag0
-                `READ,              // read / write signal of tag1
-                `READ,              // read / write signal of tag2
-                `READ,              // read / write signal of tag3
-                18'b1_0000_0000_0000_0000_1,              // write data of tag
-                `DISABLE,           // ready signal of l2_cache
-                `READ,              // the mark of cache_data0 write signal 
-                `READ,              // the mark of cache_data1 write signal 
-                `READ,              // the mark of cache_data2 write signal 
-                `READ,              // the mark of cache_data3 write signal 
-                512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,
-                1'b0,
-                `READ,
-                `READ,
-                `READ,
-                `READ,
-                26'b1110_0001_00,   // address of memory
-                `READ               // read / write signal of memory                
+            tag_ram_tb(
+                21'b0,                                  // read data of tag0
+                21'b0,                                  // read data of tag1
+                1'b0,                                   // number of replacing block of tag next time
+                1'b0                                    // complete write from L2 to L1
                 );
+            data_ram_tb(
+                128'h0,   // read data of cache_data0
+                128'h0                                      // read data of cache_data1
+                );        
+        end
+        #STEP begin // WRITE_L1  & 2* clk state change to ACCESS_L2 really  
+            $display("\n========= Clock 8 ========"); 
             mem_stage_tb(
-                32'bx,          // out of mem stage
+                32'bx,          // read data of CPU
                 `ENABLE,        // the signal of stall caused by cache miss
                 `READ,          // read / write signal of L1_tag0
                 `READ,          // read / write signal of L1_tag1
@@ -1123,7 +1033,7 @@ module dcache_mem_test();
                 8'b0001_0000,   // address of L1_cache
                 128'bx,         // data_wd
                 128'bx,         // data_rd choosing from data_rd1~data_rd3
-                `DISABLE,         // icache request
+                `DISABLE,       // drq
                 9'b110_0001_00,
                 32'b1110_0001_0000_0000,
                 1'b0,                    // dirty_wd
@@ -1140,9 +1050,32 @@ module dcache_mem_test();
                 128'h0876547A_00000000_ABF00000_123BC000,   // read data of cache_data0
                 128'h0                                      // read data of cache_data1
                 ); 
+            l2_cache_ctrl_tb(
+                `DISABLE,           // miss caused by L2C             
+                `DISABLE,            // L2_busy mark
+                128'h0876547A_00000000_ABF00000_123BC000, // write data to L1
+                `READ,              // read / write signal of tag0
+                `READ,              // read / write signal of tag1
+                `READ,              // read / write signal of tag2
+                `READ,              // read / write signal of tag3
+                18'b1_0000_0000_0000_0000_1,              // write data of tag
+                `DISABLE,            // l2_rdy
+                `READ,              // the mark of cache_data0 write signal 
+                `READ,              // the mark of cache_data1 write signal 
+                `READ,              // the mark of cache_data2 write signal 
+                `READ,              // the mark of cache_data3 write signal 
+                512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,
+                1'b0,
+                `READ,
+                `READ,
+                `READ,
+                `READ,
+                26'b1110_0001_00,   // address of memory
+                `READ               // read / write signal of memory                
+                );
         end
-        #STEP begin // MEM stage // L1_IDLE(read hit)  & l2_IDLE    
-            $display("\n========= Clock 12 ========");
+        #STEP begin // L1_ACCESS  & L2_IDLE 
+            $display("\n========= Clock 9 ========"); 
             mem_stage_tb(
                 32'hx,    // read data of CPU
                 `DISABLE,        // the signal of stall caused by cache miss
@@ -1160,10 +1093,10 @@ module dcache_mem_test();
                 1'b0,                    // dirty_wd
                 `READ,                    // dirty0_rw
                 `READ                    // dirty1_rw
-                );
-        end
-        #STEP begin // WB stage
-            $display("\n========= Clock 13 ========");
+                );            
+        end        
+        #STEP begin // MEM stage // L1_IDLE(read hit)  & l2_IDLE    
+            $display("\n========= Clock 10 ========");
             mem_stage_tb(
                 32'h123BC000,    // read data of CPU
                 `DISABLE,        // the signal of stall caused by cache miss
@@ -1182,12 +1115,12 @@ module dcache_mem_test();
                 `READ,                    // dirty0_rw
                 `READ                    // dirty1_rw
                 );
-            $finish;
+            $finish;     // iverilog
         end
     end
     /********** output wave **********/
     initial begin
         $dumpfile("dcache_mem_test.vcd");
-        $dumpvars(0,mem_stage,ram,dtag_ram,ddata_ram,l2_tag_ram,l2_data_ram,l2_cache_ctrl);
+        $dumpvars(0,mem_stage,mem,dtag_ram,ddata_ram,l2_tag_ram,l2_data_ram,l2_cache_ctrl);
     end
 endmodule 

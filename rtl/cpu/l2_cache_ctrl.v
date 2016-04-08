@@ -1,7 +1,7 @@
 /*
  -- ============================================================================
  -- FILE NAME   : l2_cache_ctrl.v
- -- DESCRIPTION : 二级指令高速缓存器控制
+ -- DESCRIPTION : 二级指令高速缓存器控制 
  -- ----------------------------------------------------------------------------
  -- Date:2016/1/16         Coding_by:kippy
  -- ============================================================================
@@ -77,15 +77,14 @@ module l2_cache_ctrl(
     reg                 hitway2;            // the mark of choosing path0 
     reg                 hitway3;            // the mark of choosing path1
     reg                 tagcomp_hit;        // tag hit mark
-    reg         [2:0]   state;              // state of l2_icache
-    reg                 clk_tmp;            // temporary clk
+    reg         [2:0]   nextstate,state;              // state of l2_icache
     reg         [1:0]   choose_way;
     reg                 valid;
     reg                 dirty;
     reg        [511:0]  l2_data_rd;
     reg        [127:0]  data_wd_l2_copy;
     reg        [511:0]  l2_data_wd_copy;
-reg [127:0] s;
+
     assign offset     = l2_addr[5:4];
     always @(*)begin // path choose
         hitway0 = (l2_tag0_rd[16:0] == l2_addr[31:15]) & l2_tag0_rd[17];
@@ -181,288 +180,229 @@ reg [127:0] s;
     end
 
     always @(*) begin
-        clk_tmp = #2 clk;
-    end
-
-    always @(posedge clk_tmp) begin // cache control
-        if (rst == `ENABLE) begin
-            state       <= `L2_IDLE;
-            l2_busy     <= `DISABLE;
-            l2_rdy      <= `DISABLE;
-            l2_tag0_rw  <= `READ;
-            l2_tag1_rw  <= `READ;
-            l2_tag2_rw  <= `READ;
-            l2_tag3_rw  <= `READ;
-            l2_data0_rw <= `READ;
-            l2_data1_rw <= `READ;
-            l2_data2_rw <= `READ;
-            l2_data3_rw <= `READ;
-            l2_dirty0_rw<= `READ;
-            l2_dirty1_rw<= `READ;
-            l2_dirty2_rw<= `READ;
-            l2_dirty3_rw<= `READ;
-            l2_miss_stall <= `DISABLE;
-        end else begin   
-            case(state)
-                `L2_IDLE:begin
-                    if (irq || drq == `ENABLE) begin  
-                        l2_busy     <= `ENABLE;
-                        state   <= `ACCESS_L2;
-                    end    
-                end
-                `ACCESS_L2:begin
-                    // read hit
-                    if ( l2_cache_rw == `READ && tagcomp_hit == `ENABLE) begin 
-                        l2_miss_stall <= `DISABLE;
-                        state         <= `WRITE_L1;
-                        l2_rdy        <= `ENABLE;
-                        data_wd_l2_en <= `ENABLE;
-                        data_wd_l2    <= data_wd_l2_copy;
-                        // case(hitway)
-                        //     `WAY0:begin
-                        //         case(offset)
-                        //             `WORD0:begin
-                        //                 data_wd_l2 <= l2_data0_rd[127:0];
-                        //             end
-                        //             `WORD1:begin
-                        //                 data_wd_l2 <= l2_data0_rd[255:128];
-                        //             end
-                        //             `WORD2:begin
-                        //                 data_wd_l2 <= l2_data0_rd[383:256];
-                        //             end
-                        //             `WORD3:begin
-                        //                 data_wd_l2 <= l2_data0_rd[511:384];
-                        //             end
-                        //         endcase // case(offset)  
-                        //     end // hitway == 0
-                        //     `WAY1:begin
-                        //         case(offset)
-                        //             `WORD0:begin
-                        //                 data_wd_l2 <= l2_data1_rd[127:0];
-                        //             end
-                        //             `WORD1:begin
-                        //                 data_wd_l2 <= l2_data1_rd[255:128];
-                        //             end
-                        //             `WORD2:begin
-                        //                 data_wd_l2 <= l2_data1_rd[383:256];
-                        //             end
-                        //             `WORD3:begin
-                        //                 data_wd_l2 <= l2_data1_rd[511:384];
-                        //             end
-                        //         endcase // case(offset)  
-                        //     end // hitway == 1
-                        //     `WAY2:begin
-                        //         case(offset)
-                        //             `WORD0:begin
-                        //                 data_wd_l2 <= l2_data2_rd[127:0]; 
-                        //             end
-                        //             `WORD1:begin
-                        //                 data_wd_l2 <= l2_data2_rd[255:128];
-                        //             end
-                        //             `WORD2:begin
-                        //                 data_wd_l2 <= l2_data2_rd[383:256];
-                        //             end
-                        //             `WORD3:begin
-                        //                 data_wd_l2 <= l2_data2_rd[511:384];
-                        //             end
-                        //         endcase // case(offset)  
-                        //     end // hitway == 2
-                        //     `WAY3:begin
-                        //         case(offset)
-                        //             `WORD0:begin
-                        //                 data_wd_l2 <= l2_data3_rd[127:0];
-                        //             end
-                        //             `WORD1:begin
-                        //                 data_wd_l2 <= l2_data3_rd[255:128];
-                        //             end
-                        //             `WORD2:begin
-                        //                 data_wd_l2 <= l2_data3_rd[383:256];
-                        //             end
-                        //             `WORD3:begin
-                        //                 data_wd_l2 <= l2_data3_rd[511:384];
-                        //             end
-                        //         endcase // case(offset)  
-                        //     end // hitway == 3
-                        // endcase // case(hitway) 
-                    end else if( l2_cache_rw == `WRITE && tagcomp_hit == `ENABLE) begin // write hit
-                        l2_miss_stall <= `DISABLE;
-                        state         <= `WRITE_HIT;
-                        l2_dirty_wd   <= 1'b1;
-                        l2_tag_wd     <= {1'b1,l2_addr[31:15]};
-                        l2_data_wd    <= l2_data_wd_copy;
-                        case(hitway)
-                            `WAY0:begin
-                                l2_data0_rw  <= `WRITE;
-                                l2_dirty0_rw <= `WRITE;
-                                l2_tag0_rw   <= `WRITE;
-                            end // hitway == 00
-                            `WAY1:begin
-                                l2_data1_rw  <= `WRITE;
-                                l2_dirty1_rw <= `WRITE;
-                                l2_tag1_rw   <= `WRITE;
-                            end // hitway == 01
-                            `WAY2:begin
-                                l2_data2_rw  <= `WRITE;
-                                l2_dirty2_rw <= `WRITE;
-                                l2_tag2_rw   <= `WRITE;
-                            end // hitway == 10
-                            `WAY3:begin
-                                l2_data3_rw  <= `WRITE;
-                                l2_dirty3_rw <= `WRITE;
-                                l2_tag3_rw   <= `WRITE;
-                            end // hitway == 11
-                        endcase // case(hitway) 
-                    end else begin // cache miss
-                        l2_miss_stall <= `ENABLE;
-                        if (valid == `DISABLE || dirty == `DISABLE) begin
-                            mem_rw        <= `READ;
-                            mem_addr      <= l2_addr[31:6];
-                            state         <= `WRITE_L2;
-                            l2_dirty_wd   <= 1'b0;
-                            l2_tag_wd     <= {1'b1,l2_addr[31:15]};
-                            l2_data_wd    <= mem_rd;
-                            case(choose_way)
-                                `WAY0:begin
-                                    l2_data0_rw  <= `WRITE;
-                                    l2_tag0_rw   <= `WRITE;
-                                    l2_dirty0_rw <= `WRITE;
-                                end
-                                `WAY1:begin
-                                    l2_data1_rw  <= `WRITE;
-                                    l2_tag1_rw   <= `WRITE;
-                                    l2_dirty1_rw <= `WRITE;
-                                end
-                                `WAY2:begin
-                                    l2_data2_rw  <= `WRITE;
-                                    l2_tag2_rw   <= `WRITE;
-                                    l2_dirty2_rw <= `WRITE;
-                                end
-                                `WAY3:begin
-                                    l2_data3_rw  <= `WRITE;
-                                    l2_tag3_rw   <= `WRITE;
-                                    l2_dirty3_rw <= `WRITE;
-                                end
-                            endcase
-                        end else if(valid == `ENABLE && dirty == `ENABLE) begin 
-                            state  <= `WRITE_MEM;
-                            mem_rw <= l2_cache_rw; 
-                            case(choose_way)
-                                `WAY0:begin
-                                    // l2_data0_rw <= `READ;
-                                    // l2_tag0_rw  <= `READ;
-                                    mem_wd      <= l2_data0_rd;
-                                    mem_addr    <= {l2_tag0_rd,l2_addr[14:6]};
-                                end
-                                `WAY1:begin
-                                    // l2_data1_rw <= `READ;
-                                    // l2_tag1_rw  <= `READ;
-                                    mem_wd      <= l2_data1_rd;
-                                    mem_addr    <= {l2_tag1_rd,l2_addr[14:6]};
-                                end
-                                `WAY2:begin
-                                    // l2_data2_rw <= `READ;
-                                    // l2_tag2_rw  <= `READ;
-                                    mem_wd      <= l2_data2_rd;
-                                    mem_addr    <= {l2_tag2_rd,l2_addr[14:6]}; 
-                                end
-                                `WAY3:begin
-                                    // l2_data3_rw <= `READ;
-                                    // l2_tag3_rw  <= `READ;
-                                    mem_wd      <= l2_data3_rd;
-                                    mem_addr    <= {l2_tag3_rd,l2_addr[14:6]};
-                                end
-                            endcase
-                        end
-                    end
-                end
-                `WRITE_L1:begin
+        case(state)
+            `L2_IDLE:begin
+                if (irq || drq == `ENABLE) begin  
+                    nextstate   = `ACCESS_L2;
+                end    
+            end
+            `ACCESS_L2:begin
+                l2_busy     = `ENABLE;
+                // read hit
+                if ( l2_cache_rw == `READ && tagcomp_hit == `ENABLE) begin 
+                    l2_miss_stall = `DISABLE;
+                    // nextstate     = `WRITE_L1;
+                    l2_rdy        = `ENABLE;
+                    data_wd_l2_en = `ENABLE;
+                    data_wd_l2    = data_wd_l2_copy;
                     if(complete == `ENABLE)begin
-                        l2_rdy <= `DISABLE;
-                        l2_busy <= `DISABLE;
-                        data_wd_l2_en <= `DISABLE;
-                        state   <= `L2_IDLE;
+                        l2_rdy  = `DISABLE;
+                        l2_busy = `DISABLE;
+                        data_wd_l2_en = `DISABLE;
+                        nextstate   = `L2_IDLE;
                     end else begin
-                        state <= `WRITE_L1;
+                        nextstate   = `ACCESS_L2;
                     end
-                end
-                `WRITE_L2:begin // write into l2_cache from memory 
-                    if(l2_complete == `ENABLE)begin
-                        l2_tag0_rw   <=  `READ;
-                        l2_tag1_rw   <=  `READ;
-                        l2_tag2_rw   <=  `READ;
-                        l2_tag3_rw   <=  `READ;
-                        l2_data0_rw  <=  `READ;
-                        l2_data1_rw  <=  `READ;
-                        l2_data2_rw  <=  `READ;
-                        l2_data3_rw  <=  `READ;  
-                        l2_dirty0_rw <=  `READ;
-                        l2_dirty1_rw <=  `READ; 
-                        l2_dirty2_rw <=  `READ;
-                        l2_dirty3_rw <=  `READ;
-                        state  <=  `ACCESS_L2;                                         
-                    end else begin
-                        state <=  `WRITE_L2;
-                    end
-                end
-                `WRITE_HIT:begin // write into l2_cache from L1 
-                    if(l2_complete == `ENABLE)begin
-                        l2_tag0_rw   <=  `READ;
-                        l2_tag1_rw   <=  `READ;
-                        l2_tag2_rw   <=  `READ;
-                        l2_tag3_rw   <=  `READ;
-                        l2_data0_rw  <=  `READ;
-                        l2_data1_rw  <=  `READ;
-                        l2_data2_rw  <=  `READ;
-                        l2_data3_rw  <=  `READ;  
-                        l2_dirty0_rw <=  `READ;
-                        l2_dirty1_rw <=  `READ; 
-                        l2_dirty2_rw <=  `READ;
-                        l2_dirty3_rw <=  `READ;
-                        if (irq || drq == `ENABLE) begin
-                             state <= `ACCESS_L2;
-                         end else begin
-                             l2_busy <= `DISABLE;
-                             state  <=  `L2_IDLE;
-                         end                                      
-                    end else begin
-                        state <=  `WRITE_HIT;
-                    end
-                end
-                `WRITE_MEM:begin // load block of L2 with dirty to mem.                     
-                    if (mem_complete == `ENABLE) begin
-                        mem_addr     <= l2_addr[31:6];
-                        mem_rw       <= `READ; 
-                        state        <= `WRITE_L2;
-                        l2_dirty_wd  <= 1'b0;
-                        l2_tag_wd    <= {1'b1,l2_addr[31:15]};
-                        l2_data_wd   <= mem_rd;
+                end else if( l2_cache_rw == `WRITE && tagcomp_hit == `ENABLE) begin // write hit
+                    l2_miss_stall = `DISABLE;
+                    nextstate         = `L2_WRITE_HIT;
+                    l2_dirty_wd   = 1'b1;
+                    l2_tag_wd     = {1'b1,l2_addr[31:15]};
+                    l2_data_wd    = l2_data_wd_copy;
+                    case(hitway)
+                        `WAY0:begin
+                            l2_data0_rw  = `WRITE;
+                            l2_dirty0_rw = `WRITE;
+                            l2_tag0_rw   = `WRITE;
+                        end // hitway == 00
+                        `WAY1:begin
+                            l2_data1_rw  = `WRITE;
+                            l2_dirty1_rw = `WRITE;
+                            l2_tag1_rw   = `WRITE;
+                        end // hitway == 01
+                        `WAY2:begin
+                            l2_data2_rw  = `WRITE;
+                            l2_dirty2_rw = `WRITE;
+                            l2_tag2_rw   = `WRITE;
+                        end // hitway == 10
+                        `WAY3:begin
+                            l2_data3_rw  = `WRITE;
+                            l2_dirty3_rw = `WRITE;
+                            l2_tag3_rw   = `WRITE;
+                        end // hitway == 11
+                    endcase // case(hitway) 
+                end else begin // cache miss
+                    l2_miss_stall = `ENABLE;
+                    if (valid == `DISABLE || dirty == `DISABLE) begin
+                        mem_rw        = `READ;
+                        mem_addr      = l2_addr[31:6];
+                        nextstate     = `WRITE_TO_L2;
+                        l2_dirty_wd   = 1'b0;
+                        l2_tag_wd     = {1'b1,l2_addr[31:15]};
+                        l2_data_wd    = mem_rd;
                         case(choose_way)
                             `WAY0:begin
-                                l2_data0_rw  <= `WRITE;
-                                l2_tag0_rw   <= `WRITE;
-                                l2_dirty0_rw <= `WRITE;
+                                l2_data0_rw  = `WRITE;
+                                l2_tag0_rw   = `WRITE;
+                                l2_dirty0_rw = `WRITE;
                             end
                             `WAY1:begin
-                                l2_data1_rw  <= `WRITE;
-                                l2_tag1_rw   <= `WRITE;
-                                l2_dirty1_rw <= `WRITE;
+                                l2_data1_rw  = `WRITE;
+                                l2_tag1_rw   = `WRITE;
+                                l2_dirty1_rw = `WRITE;
                             end
                             `WAY2:begin
-                                l2_data2_rw  <= `WRITE;
-                                l2_tag2_rw   <= `WRITE;
-                                l2_dirty2_rw <= `WRITE;
+                                l2_data2_rw  = `WRITE;
+                                l2_tag2_rw   = `WRITE;
+                                l2_dirty2_rw = `WRITE;
                             end
                             `WAY3:begin
-                                l2_data3_rw  <= `WRITE;
-                                l2_tag3_rw   <= `WRITE;
-                                l2_dirty3_rw <= `WRITE;
+                                l2_data3_rw  = `WRITE;
+                                l2_tag3_rw   = `WRITE;
+                                l2_dirty3_rw = `WRITE;
                             end
                         endcase
-                    end else begin
-                        state <= `WRITE_MEM;
+                    end else if(valid == `ENABLE && dirty == `ENABLE) begin 
+                        nextstate  = `WRITE_MEM;
+                        mem_rw = l2_cache_rw; 
+                        case(choose_way)
+                            `WAY0:begin
+                                // l2_data0_rw = `READ;
+                                // l2_tag0_rw  = `READ;
+                                mem_wd      = l2_data0_rd;
+                                mem_addr    = {l2_tag0_rd[16:0],l2_addr[14:6]};
+                            end
+                            `WAY1:begin
+                                // l2_data1_rw = `READ;
+                                // l2_tag1_rw  = `READ;
+                                mem_wd      = l2_data1_rd;
+                                mem_addr    = {l2_tag1_rd[16:0],l2_addr[14:6]};
+                            end
+                            `WAY2:begin
+                                // l2_data2_rw = `READ;
+                                // l2_tag2_rw  = `READ;
+                                mem_wd      = l2_data2_rd;
+                                mem_addr    = {l2_tag2_rd[16:0],l2_addr[14:6]}; 
+                            end
+                            `WAY3:begin
+                                // l2_data3_rw = `READ;
+                                // l2_tag3_rw  = `READ;
+                                mem_wd      = l2_data3_rd;
+                                mem_addr    = {l2_tag3_rd[16:0],l2_addr[14:6]};
+                            end
+                        endcase
                     end
                 end
-            endcase
+            end
+            // `WRITE_L1:begin  // L2 to L1
+            //     if(complete == `ENABLE)begin
+            //         l2_rdy  = `DISABLE;
+            //         l2_busy = `DISABLE;
+            //         data_wd_l2_en = `DISABLE;
+            //         nextstate   = `L2_IDLE;
+            //     end else begin
+            //         nextstate   = `WRITE_L1;
+            //     end
+            // end
+            `WRITE_TO_L2:begin // write into l2_cache from memory 
+                if(l2_complete == `ENABLE)begin
+                    l2_tag0_rw   =  `READ;
+                    l2_tag1_rw   =  `READ;
+                    l2_tag2_rw   =  `READ;
+                    l2_tag3_rw   =  `READ;
+                    l2_data0_rw  =  `READ;
+                    l2_data1_rw  =  `READ;
+                    l2_data2_rw  =  `READ;
+                    l2_data3_rw  =  `READ;  
+                    l2_dirty0_rw =  `READ;
+                    l2_dirty1_rw =  `READ; 
+                    l2_dirty2_rw =  `READ;
+                    l2_dirty3_rw =  `READ;
+                    nextstate  =  `ACCESS_L2;                                         
+                end else begin
+                    nextstate  =  `WRITE_TO_L2;
+                end
+            end
+            `L2_WRITE_HIT:begin // write into l2_cache from L1 
+                if(l2_complete == `ENABLE)begin
+                    l2_tag0_rw   =  `READ;
+                    l2_tag1_rw   =  `READ;
+                    l2_tag2_rw   =  `READ;
+                    l2_tag3_rw   =  `READ;
+                    l2_data0_rw  =  `READ;
+                    l2_data1_rw  =  `READ;
+                    l2_data2_rw  =  `READ;
+                    l2_data3_rw  =  `READ;  
+                    l2_dirty0_rw =  `READ;
+                    l2_dirty1_rw =  `READ; 
+                    l2_dirty2_rw =  `READ;
+                    l2_dirty3_rw =  `READ;
+                    if (irq || drq == `ENABLE) begin
+                        nextstate   = `ACCESS_L2;
+                     end else begin
+                        l2_busy = `DISABLE;
+                        nextstate   =  `L2_IDLE;
+                     end                                      
+                end else begin
+                    nextstate =  `L2_WRITE_HIT;
+                end
+            end
+            `WRITE_MEM:begin // load block of L2 with dirty to mem.                     
+                if (mem_complete == `ENABLE) begin
+                    mem_addr     = l2_addr[31:6];
+                    mem_rw       = `READ; 
+                    nextstate        = `WRITE_TO_L2;
+                    l2_dirty_wd  = 1'b0;
+                    l2_tag_wd    = {1'b1,l2_addr[31:15]};
+                    l2_data_wd   = mem_rd;
+                    case(choose_way)
+                        `WAY0:begin
+                            l2_data0_rw  = `WRITE;
+                            l2_tag0_rw   = `WRITE;
+                            l2_dirty0_rw = `WRITE;
+                        end
+                        `WAY1:begin
+                            l2_data1_rw  = `WRITE;
+                            l2_tag1_rw   = `WRITE;
+                            l2_dirty1_rw = `WRITE;
+                        end
+                        `WAY2:begin
+                            l2_data2_rw  = `WRITE;
+                            l2_tag2_rw   = `WRITE;
+                            l2_dirty2_rw = `WRITE;
+                        end
+                        `WAY3:begin
+                            l2_data3_rw  = `WRITE;
+                            l2_tag3_rw   = `WRITE;
+                            l2_dirty3_rw = `WRITE;
+                        end
+                    endcase
+                end else begin
+                    nextstate = `WRITE_MEM;
+                end
+            end
+        endcase
+    end
+    always @(posedge clk) begin // cache control
+        if (rst == `ENABLE) begin
+            nextstate     <= `L2_IDLE;
+            l2_busy       <= `DISABLE;
+            l2_rdy        <= `DISABLE;
+            l2_tag0_rw    <= `READ;
+            l2_tag1_rw    <= `READ;
+            l2_tag2_rw    <= `READ;
+            l2_tag3_rw    <= `READ;
+            l2_data0_rw   <= `READ;
+            l2_data1_rw   <= `READ;
+            l2_data2_rw   <= `READ;
+            l2_data3_rw   <= `READ;
+            l2_dirty0_rw  <= `READ;
+            l2_dirty1_rw  <= `READ;
+            l2_dirty2_rw  <= `READ;
+            l2_dirty3_rw  <= `READ;
+            l2_miss_stall <= `DISABLE;
+        end else begin   
+            state <= nextstate;
         end
     end
 endmodule
