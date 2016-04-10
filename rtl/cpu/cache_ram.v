@@ -19,13 +19,12 @@ module sram_256 #(parameter WIDTH = 128)
     input  [WIDTH-1:0] wd);
 
     reg    [WIDTH-1:0] ram[255:0]; 
-    integer            i = 0;
-    initial begin
-        while (i <= 255) begin
-            ram[i] = 0;
-            i      = i + 1;
-        end
-    end
+
+    // initial begin
+    //     for (int i = 0; i < 256; i++) begin
+    //         ram[i] = 0;
+    //     end
+    // end
 
     assign rd = ram[a];
 
@@ -44,13 +43,13 @@ module sram_512 #(parameter WIDTH = 32)
     output [WIDTH-1:0] rd,
     input  [WIDTH-1:0] wd);
     reg    [WIDTH-1:0] ram[511:0]; 
-    integer            i = 0;
-    initial begin
-        while (i <= 511) begin
-            ram[i] = 0;
-            i      = i + 1;
-        end
-    end
+    // integer            i = 0;
+    // initial begin
+    //     for (int i = 0; i < 512; i++) begin
+    //         ram[i] = 0;
+    //         i      = i + 1;
+    //     end
+    // end
 
     assign  rd = ram[a];
 

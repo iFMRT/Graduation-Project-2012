@@ -43,16 +43,12 @@ module gpr (
     assign rd_data_1_tmp = ((we_ == `ENABLE_) && (wr_addr == rd_addr_1)) ? wr_data : gpr[rd_addr_1];
 
     /********** 写入访问 **********/
-    always @ (posedge clk or reset) begin
-        if (reset == `ENABLE) begin
-            /* 异步复位 */
-            for (i = 0; i < 32; i = i + 1) begin
-                gpr[i]  <= #1 32'b0;
+    always @ (posedge clk) begin
+        if (reset != `ENABLE) begin
+            if (we_ == `ENABLE_) begin
+                // 写入访问
+                gpr[wr_addr] <= #1 wr_data;
             end
-        end
-        else if (we_ == `ENABLE_) begin
-            // 写入访问
-            gpr[wr_addr] <= #1 wr_data;
         end
     end
 

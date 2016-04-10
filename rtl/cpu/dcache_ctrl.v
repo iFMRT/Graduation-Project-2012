@@ -107,13 +107,11 @@ module dcache_ctrl(
                 read_data_m_copy = data_rd_copy[127:96];
             end
         endcase // case(offset) 
-    end
 
-    // if cache miss ,the way of L1 we choose to replace.
-    always @(*) begin
-        if (valid0 == 1'b1) begin
-            if (valid1 == 1'b1) begin
-                if(lru == 1'b0) begin
+        // if cache miss ,the way of L1 we choose to replace.
+        if (valid0 === 1'b1) begin
+            if (valid1 === 1'b1) begin
+                if(lru !== 1'b1) begin
                     choose_way = `WAY0;
                 end else begin
                     choose_way = `WAY1;
@@ -124,15 +122,30 @@ module dcache_ctrl(
         end else begin
             choose_way = `WAY0;
         end 
-
         case(choose_way)
             `WAY0:begin
-                valid = valid0;
-                dirty = dirty0;
+                if(valid0 === 1'bx) begin
+                    valid = `DISABLE;
+                end else begin
+                    valid = valid0;
+                end
+                if(dirty0 === 1'bx) begin
+                    dirty = `DISABLE;
+                end else begin
+                    dirty = dirty0;
+                end 
             end
             `WAY1:begin
-                valid = valid1;
-                dirty = dirty1;
+                if(valid1 === 1'bx) begin
+                    valid = `DISABLE;
+                end else begin
+                    valid = valid1;
+                end
+                if(dirty1 === 1'bx) begin
+                    dirty = `DISABLE;
+                end else begin
+                    dirty = dirty1;
+                end 
             end
         endcase
     end

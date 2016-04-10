@@ -612,11 +612,11 @@ module icache_test();
                 `READ               // read / write signal of memory                
                 );
             l2_tag_ram_tb(   
-                18'b0,            // read data of tag0
-                18'b0,            // read data of tag1
-                18'b0,            // read data of tag2
-                18'b0,            // read data of tag3
-                3'b000,           // read data of tag
+                18'bx,            // read data of tag0
+                18'bx,            // read data of tag1
+                18'bx,            // read data of tag2
+                18'bx,            // read data of tag3
+                3'bxxx,           // read data of tag
                 `DISABLE          // complete write from L2 to L1
             );
         end      
@@ -629,17 +629,17 @@ module icache_test();
             $display("\n========= Clock 5 ========");            
             l2_tag_ram_tb(   
                 18'b1_0000_0000_0000_0000_1,    // read data of tag0
-                18'b0,                          // read data of tag1
-                18'b0,                          // read data of tag2
-                18'b0,                          // read data of tag3
-                3'b011,                         // read data of tag
+                18'bx,                          // read data of tag1
+                18'bx,                          // read data of tag2
+                18'bx,                          // read data of tag3
+                3'bx11,                         // read data of tag
                 `ENABLE                         // complete write from L2 to L1
             );
             l2_data_ram_tb(
                 512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,         // read data of cache_data0
-                512'b0,             // read data of cache_data1
-                512'b0,             // read data of cache_data2
-                512'b0              // read data of cache_data3
+                512'bx,             // read data of cache_data1
+                512'bx,             // read data of cache_data2
+                512'bx              // read data of cache_data3
              );
             icache_ctrl_tb(
                 32'bx,          // read data of CPU
@@ -721,14 +721,14 @@ module icache_test();
                 32'b1110_0001_0000_0000
                 );
             tag_ram_tb(
-                21'b0,                                  // read data of tag0
-                21'b0,                                  // read data of tag1
-                1'b0,                                   // number of replacing block of tag next time
+                21'bx,                                  // read data of tag0
+                21'bx,                                  // read data of tag1
+                1'bx,                                   // number of replacing block of tag next time
                 1'b0                                    // complete write from L2 to L1
                 );
             data_ram_tb(
-                128'h0,   // read data of cache_data0
-                128'h0                                      // read data of cache_data1
+                128'hx,   // read data of cache_data0
+                128'hx                                      // read data of cache_data1
                 );   
         end       
         #STEP begin // WRITE_IC  & 2* clk state change to ACCESS_L2 really    
@@ -771,26 +771,26 @@ module icache_test();
                 );
             tag_ram_tb(
                 21'b1_0000_0000_0000_0000_1110,         // read data of tag0
-                21'b0,                                  // read data of tag1
+                21'bx,                                  // read data of tag1
                 1'b1,                                   // number of replacing block of tag next time
                 1'b1                                    // complete write from L2 to L1
                 );
             data_ram_tb(
                 128'h0876547A_00000000_ABF00000_123BC000,   // read data of cache_data0
-                128'h0                                      // read data of cache_data1
+                128'hx                                      // read data of cache_data1
                 );
         end        
         #STEP begin // L1_ACCESS  & l2_IDLE        
             $display("\n========= Clock 9 ========");
             tag_ram_tb(
                 21'b1_0000_0000_0000_0000_1110,         // read data of tag0
-                21'b0,                                  // read data of tag1
+                21'bx,                                  // read data of tag1
                 1'b1,                                   // number of replacing block of tag next time
                 1'b0                                    // complete write from L2 to L1
                 );
             data_ram_tb(
                 128'h0876547A_00000000_ABF00000_123BC000,   // read data of cache_data0
-                128'h0                                      // read data of cache_data1
+                128'hx                                      // read data of cache_data1
                 ); 
             $finish;     // iverilog
         end

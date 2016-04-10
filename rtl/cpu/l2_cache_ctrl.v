@@ -128,20 +128,18 @@ module l2_cache_ctrl(
                 l2_data_wd_copy = {data_rd,l2_data_rd[383:0]}; 
             end
         endcase // case(offset)  
-    end
-    // cache miss, replacement policy
-    always @(*) begin
-        if (l2_tag0_rd[17] == `ENABLE) begin
-            if (l2_tag1_rd[17] == `ENABLE) begin
-                if (l2_tag2_rd[17] == `ENABLE) begin
-                    if (l2_tag3_rd[17] == `ENABLE) begin
-                        if (plru[0] == 1'b0) begin
-                            if (plru[1] == 1'b0) begin
+       // cache miss, replacement policy
+        if (l2_tag0_rd[17] === `ENABLE) begin
+            if (l2_tag1_rd[17] === `ENABLE) begin
+                if (l2_tag2_rd[17] === `ENABLE) begin
+                    if (l2_tag3_rd[17] === `ENABLE) begin
+                        if (plru[0] !== 1'b1) begin
+                            if (plru[1] !== 1'b1) begin
                                 choose_way = `L2_WAY0;
                             end else begin // plru[1:0] = 2'b00
                                 choose_way = `L2_WAY1;
                             end // plru[1:0] = 2'b01
-                        end else if (plru[2] == 1'b0) begin
+                        end else if (plru[2] !== 1'b1) begin
                             choose_way = `L2_WAY2;
                         end else begin// plru[0][2] = 2'b01
                             choose_way = `L2_WAY3;
@@ -158,25 +156,57 @@ module l2_cache_ctrl(
         end else begin
             choose_way = `L2_WAY0;
         end // else:l2_tag0_rd[17] == `DISABLE
-        
+      
         case(choose_way)
             `L2_WAY0:begin
-                valid = l2_tag0_rd[17];
-                dirty = l2_dirty0;
+                if(l2_tag0_rd[17] === 1'bx) begin
+                    valid = `DISABLE;
+                end else begin
+                    valid = l2_tag0_rd[17];
+                end
+                if (l2_dirty0 === 1'bx) begin
+                    valid = `DISABLE;
+                end else begin
+                    dirty = l2_dirty0;
+                end   
             end
             `L2_WAY1:begin
-                valid = l2_tag1_rd[17];
-                dirty = l2_dirty1;
+                if(l2_tag1_rd[17] === 1'bx) begin
+                    valid = `DISABLE;
+                end else begin
+                    valid = l2_tag1_rd[17];
+                end
+                if (l2_dirty1 === 1'bx) begin
+                    valid = `DISABLE;
+                end else begin
+                    dirty = l2_dirty1;
+                end 
             end
             `L2_WAY2:begin
-                valid = l2_tag2_rd[17];
-                dirty = l2_dirty2;
+                if(l2_tag2_rd[17] === 1'bx) begin
+                    valid = `DISABLE;
+                end else begin
+                    valid = l2_tag2_rd[17];
+                end
+                if (l2_dirty2 === 1'bx) begin
+                    valid = `DISABLE;
+                end else begin
+                    dirty = l2_dirty2;
+                end
             end
             `L2_WAY3:begin
-                valid = l2_tag3_rd[17];
-                dirty = l2_dirty3;
+                if(l2_tag3_rd[17] === 1'bx) begin
+                    valid = `DISABLE;
+                end else begin
+                    valid = l2_tag3_rd[17];
+                end
+                if (l2_dirty3 === 1'bx) begin
+                    valid = `DISABLE;
+                end else begin
+                    dirty = l2_dirty3;
+                end
             end
-        endcase    
+        endcase   
     end
 
     always @(*) begin

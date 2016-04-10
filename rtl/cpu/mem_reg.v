@@ -30,7 +30,7 @@ module mem_reg (
 );
 
     /********** Pipeline Register **********/
-    always @(posedge clk or negedge reset) begin
+    always @(posedge clk) begin
         if (reset == `ENABLE) begin
             /* Asynchronous Reset */
             // mem_en       <=  `DISABLE;

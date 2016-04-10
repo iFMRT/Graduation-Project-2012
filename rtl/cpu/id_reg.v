@@ -66,7 +66,7 @@ module id_reg (
 );
 
     /********** 寄存器操作 **********/
-    always @(posedge clk or reset) begin
+    always @(posedge clk) begin
         if (reset == `ENABLE) begin
             /* 异步复位 */
             id_en          <= #1 `DISABLE;

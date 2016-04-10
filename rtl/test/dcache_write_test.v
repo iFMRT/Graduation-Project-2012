@@ -689,11 +689,11 @@ module dcache_write_test();
                 `READ               // read / write signal of memory                
                 );
             l2_tag_ram_tb(   
-                18'b0,            // read data of tag0
-                18'b0,            // read data of tag1
-                18'b0,            // read data of tag2
-                18'b0,            // read data of tag3
-                3'b000,           // read data of tag
+                18'bx,            // read data of tag0
+                18'bx,            // read data of tag1
+                18'bx,            // read data of tag2
+                18'bx,            // read data of tag3
+                3'bxxx,           // read data of tag
                 `DISABLE          // complete write from L2 to L1
             );
         end      
@@ -705,17 +705,17 @@ module dcache_write_test();
             $display("\n========= Clock 5 ========");            
             l2_tag_ram_tb(   
                 18'b1_0000_0000_0000_0000_1,    // read data of tag0
-                18'b0,                          // read data of tag1
-                18'b0,                          // read data of tag2
-                18'b0,                          // read data of tag3
-                3'b011,                         // read data of tag
+                18'bx,                          // read data of tag1
+                18'bx,                          // read data of tag2
+                18'bx,                          // read data of tag3
+                3'bx11,                         // read data of tag
                 `ENABLE                         // complete write from L2 to L1
             );
             l2_data_ram_tb(
                 512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,         // read data of cache_data0
-                512'b0,             // read data of cache_data1
-                512'b0,             // read data of cache_data2
-                512'b0              // read data of cache_data3
+                512'bx,             // read data of cache_data1
+                512'bx,             // read data of cache_data2
+                512'bx              // read data of cache_data3
              );
             l2_cache_ctrl_tb(
                 `ENABLE,            // miss caused by L2C             
@@ -836,13 +836,13 @@ module dcache_write_test();
                 );
             tag_ram_tb(
                 21'b1_0000_0000_0000_0000_1110,         // read data of tag0
-                21'b0,                                  // read data of tag1
+                21'bx,                                  // read data of tag1
                 1'b1,                                   // number of replacing block of tag next time
                 1'b1                                    // complete write from L2 to L1
                 );
             data_ram_tb(
                 128'h0876547A_00000000_ABF00000_123BC000,   // read data of cache_data0
-                128'h0                                      // read data of cache_data1
+                128'hx                                      // read data of cache_data1
                 ); 
         end        
         #STEP begin // L1_ACCESS(write hit)  & l2_IDLE        
@@ -890,13 +890,13 @@ module dcache_write_test();
                 );
             tag_ram_tb(
                 21'b1_0000_0000_0000_0000_1110,         // read data of tag0
-                21'b0,                                  // read data of tag1
+                21'bx,                                  // read data of tag1
                 1'b1,                                   // number of replacing block of tag next time
                 1'b0                                    // complete write from L2 to L1
                 );
             data_ram_tb(
                 128'h0876547A_00000000_ABF00000_123BC000,   // read data of cache_data0
-                128'h0                                      // read data of cache_data1
+                128'hx                                      // read data of cache_data1
                 ); 
         end        
         #STEP begin // WRITE_HIT & l2_IDLE        
@@ -921,13 +921,13 @@ module dcache_write_test();
                 );
             tag_ram_tb(
                 21'b1_0000_0000_0000_0000_1110,         // read data of tag0
-                21'b0,                                  // read data of tag1
+                21'bx,                                  // read data of tag1
                 1'b1,                                   // number of replacing block of tag next time
                 1'b1                                    // complete write from L2 to L1
                 );
             data_ram_tb(
                 128'h0876547A_00000000_ABF00000_0000123B,   // read data of cache_data0
-                128'h0                                      // read data of cache_data1
+                128'hx                                      // read data of cache_data1
                 ); 
         end
         #STEP begin // L1_IDLE // L1_IDLE & l2_IDLE        
@@ -952,13 +952,13 @@ module dcache_write_test();
                 );
             tag_ram_tb(
                 21'b1_0000_0000_0000_0000_1110,         // read data of tag0
-                21'b0,                                  // read data of tag1
+                21'bx,                                  // read data of tag1
                 1'b1,                                   // number of replacing block of tag next time
                 1'b0                                    // complete write from L2 to L1
                 );
             data_ram_tb(
                 128'h0876547A_00000000_ABF00000_0000123B,   // read data of cache_data0
-                128'h0                                      // read data of cache_data1
+                128'hx                                      // read data of cache_data1
                 );
             aluout_m   <= 32'b1110_0_110_0001_00_00_0000;
             memwrite_m <= `WRITE;
@@ -1069,16 +1069,16 @@ module dcache_write_test();
             l2_tag_ram_tb(   
                 18'b1_0000_0000_0000_0000_1,    // read data of tag0
                 18'b1_0000_0000_0000_1110_0,    // read data of tag1
-                18'b0,                          // read data of tag2
-                18'b0,                          // read data of tag3
-                3'b001,                         // read data of tag
+                18'bx,                          // read data of tag2
+                18'bx,                          // read data of tag3
+                3'bx01,                         // read data of tag
                 `ENABLE                         // complete write from L2 to L1
             );
             l2_data_ram_tb(
                 512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,         // read data of cache_data0
                 512'h00000000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_00000000,             // read data of cache_data1
-                512'b0,             // read data of cache_data2
-                512'b0              // read data of cache_data3
+                512'bx,             // read data of cache_data2
+                512'bx              // read data of cache_data3
              );
         end
         #STEP begin // L2_ACCESS & WRITE_L2 last clk        
@@ -1112,13 +1112,13 @@ module dcache_write_test();
                 ); 
             tag_ram_tb(
                 21'b1_0000_0000_0000_0000_1110,         // read data of tag0
-                21'b0,        // read data of tag1
+                21'bx,                                  // read data of tag1
                 1'b1,                                   // number of replacing block of tag next time
                 1'b0                                    // complete write from L2 to L1
                 );
             data_ram_tb(
                 128'h0876547A_00000000_ABF00000_0000123B,   // read data of cache_data0
-                128'h0    // read data of cache_data1
+                128'hx    // read data of cache_data1
                 ); 
         end
         #STEP begin // WRITE_L1 & ACCESS_L2 last clk        
@@ -1403,16 +1403,16 @@ module dcache_write_test();
             l2_tag_ram_tb(   
                 18'b1_0000_0000_0000_0000_1,    // read data of tag0
                 18'b1_0000_0000_0000_1110_0,    // read data of tag1
-                18'b0,                          // read data of tag2
-                18'b0,                          // read data of tag3
-                3'b011,                         // read data of tag
+                18'bx,                          // read data of tag2
+                18'bx,                          // read data of tag3
+                3'bx11,                         // read data of tag
                 `ENABLE                         // complete write from L2 to L1
             );
             l2_data_ram_tb(
                 512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_0000123B,         // read data of cache_data0
                 512'h00000000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_00000000,             // read data of cache_data1
-                512'b0,             // read data of cache_data2
-                512'b0              // read data of cache_data3
+                512'bx,             // read data of cache_data2
+                512'bx              // read data of cache_data3
              );
         end
         #STEP begin // L2_ACCESS & WRITE_HIT last clk       
@@ -1515,7 +1515,7 @@ module dcache_write_test();
                 18'b1_0000_0000_0000_0000_1,    // read data of tag0
                 18'b1_0000_0000_0000_1110_0,    // read data of tag1
                 18'b1_0000_0000_0101_1111_0,    // read data of tag2
-                18'b0,                          // read data of tag3
+                18'bx,                          // read data of tag3
                 3'b110,                         // read data of tag
                 `ENABLE                         // complete write from L2 to L1
             );
@@ -1523,7 +1523,7 @@ module dcache_write_test();
                 512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_0000123B,         // read data of cache_data0
                 512'h00000000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_00000000,             // read data of cache_data1
                 512'h00000000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_00123400,             // read data of cache_data2
-                512'b0              // read data of cache_data3
+                512'bx              // read data of cache_data3
              );
         end
         #STEP begin // L2_ACCESS & WRITE_L2 last clk
