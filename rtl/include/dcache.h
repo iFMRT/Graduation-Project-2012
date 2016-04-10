@@ -13,14 +13,7 @@
 //------------------------------------------------------------------------------
 // Operation
 //------------------------------------------------------------------------------
-    // path chooses
-    `define WAY0                 1'h0  // first WAY
-    `define WAY1                 1'h1  // second WAY
-    // word chooses
-    `define WORD0                 2'h0  // first word
-    `define WORD1                 2'h1  // second word
-    `define WORD2                 2'h2  // third word
-    `define WORD3                 2'h3  // forth word
+    
     // state of L1_icache
     `define L1_IDLE              3'h0  // free
     `define L1_ACCESS            3'h1  // access L1_icache

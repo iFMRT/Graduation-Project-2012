@@ -237,6 +237,7 @@ module dcache_mem_test();
         .l2_busy        (l2_busy),       // busy signal of l2_cache
         .l2_rdy         (l2_rdy),        // ready signal of l2_cache
         .complete       (complete),      // complete op writing to L1
+        .l2_complete    (l2_complete),
         .drq            (drq),      
         .l2_addr        (l2_addr), 
         .l2_index       (l2_index),       
@@ -891,37 +892,7 @@ module dcache_mem_test();
                 3'b000,           // read data of tag
                 `DISABLE          // complete write from L2 to L1
             );
-        end
-        // #STEP begin // L2_ACCESS & MEM_ACCESS first clk
-        //     $display("\n========= Clock 5 ========");
-        //     l2_cache_ctrl_tb(
-        //         `ENABLE,            // miss caused by L2C             
-        //         `ENABLE,            // L2C busy mark
-        //         128'bx,             // write data to L1_IC
-        //         `READ,              // read / write signal of tag0
-        //         `READ,              // read / write signal of tag1
-        //         `READ,              // read / write signal of tag2
-        //         `READ,              // read / write signal of tag3
-        //         18'bx,              // write data of tag
-        //         `DISABLE,           // ready signal of l2_cache
-        //         `READ,              // the mark of cache_data0 write signal 
-        //         `READ,              // the mark of cache_data1 write signal 
-        //         `READ,              // the mark of cache_data2 write signal 
-        //         `READ,              // the mark of cache_data3 write signal 
-        //         512'bx,
-        //         1'bx,
-        //         `READ,
-        //         `READ,
-        //         `READ,
-        //         `READ,
-        //         26'b1110_0001_00,   // address of memory
-        //         `READ               // read / write signal of memory                
-        //         );
-        // end
-        // #STEP begin // l2_ACCESS & 2* MEM_ACCESS last clk
-        //     $display("\n========= Clock 6 ========");
-        //     // mem op
-        // end        
+        end       
         #STEP begin // l2_ACCESS & WRITE_L2 & access l2_ram
             $display("\n========= Clock 5 ========");            
             l2_cache_ctrl_tb(

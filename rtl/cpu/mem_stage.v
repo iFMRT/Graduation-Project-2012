@@ -1,9 +1,6 @@
 `include "stddef.h"
 `include "cpu.h"
 `include "mem.h"
-// `include "dcache_ctrl.v"
-// `include "mem_reg.v"
-// `include "mem_ctrl.v"
 
 module mem_stage (
     /********** Clock & Reset *********/
@@ -41,6 +38,7 @@ module mem_stage (
     input                        l2_busy,       // busy signal of L2_cache
     input                        l2_rdy,        // ready signal of L2_cache
     input                        complete,      // complete op writing to L1
+    input                        l2_complete,
     output                       drq,           // icache request
     output     [`WORD_DATA_BUS]  l2_addr, 
     output     [8:0]             l2_index,
@@ -166,6 +164,7 @@ module mem_stage (
         .index          (index),         // address of L1_cache
         .data_rd        (data_rd),
         /* l2_cache part */
+        .l2_complete    (l2_complete),
         .l2_busy        (l2_busy),       // busy signal of l2_cache
         .l2_rdy         (l2_rdy),        // ready signal of l2_cache
         .complete       (complete),      // complete op writing to L1

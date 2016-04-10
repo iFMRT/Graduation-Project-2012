@@ -95,13 +95,20 @@ module icache_ctrl(
     always @(*) begin
         case(state)
             `L1_IDLE:begin
-                nextstate     = `L1_ACCESS;
+                data0_rw    = `READ;
+                data1_rw    = `READ;                    
+                tag0_rw     = `READ;
+                tag1_rw     = `READ;
+                miss_stall  = `DISABLE;
+                irq         = `DISABLE;
+                data_rdy    = `DISABLE;
+                nextstate   = `L1_ACCESS;
             end
             `L1_ACCESS:begin
                 data_rdy  = `DISABLE;
                 if ( rw == `READ && tagcomp_hit == `ENABLE) begin // cache hit
                     miss_stall  = `DISABLE;
-                    nextstate       = `L1_ACCESS;
+                    nextstate   = `L1_ACCESS;
                     data_rdy    = `ENABLE;
                     cpu_data    = cpu_data_copy;
                 end else begin // cache miss
@@ -113,7 +120,7 @@ module icache_ctrl(
                         l2_cache_rw = rw;
                         l2_index    = if_addr[14:6];
                         l2_addr     = if_addr;
-                        nextstate       = `L2_ACCESS;
+                        nextstate   = `L2_ACCESS;
                     end
                 end 
             end
@@ -163,23 +170,16 @@ module icache_ctrl(
                     tag0_rw    = `READ;
                     tag1_rw    = `READ;
                 end else begin
-                    nextstate      = `WRITE_IC;
+                    nextstate  = `WRITE_IC;
                 end
                         
             end
-        endcase
+        endcase      
     end
 
     always @(posedge clk) begin // cache control
         if (rst == `ENABLE) begin // reset
-            nextstate       <= `L1_IDLE;
-            data0_rw    <= `READ;
-            data1_rw    <= `READ;                    
-            tag0_rw     <= `READ;
-            tag1_rw     <= `READ;
-            miss_stall  <= `DISABLE;
-            irq         <= `DISABLE;
-            data_rdy    <= `DISABLE;
+            state <= `L1_IDLE;
         end else begin
             state <= nextstate;
         end

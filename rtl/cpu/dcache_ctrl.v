@@ -136,9 +136,18 @@ module dcache_ctrl(
             end
         endcase
     end
+
     always @(*) begin
         case(state)
             `L1_IDLE:begin
+                data0_rw    =  `READ;
+                data1_rw    =  `READ;                    
+                tag0_rw     =  `READ;
+                tag1_rw     =  `READ;
+                dirty0_rw   =  `READ;
+                dirty1_rw   =  `READ;
+                miss_stall  =  `DISABLE;
+                l2_cache_rw =  `READ;
                 if (access_mem == `ENABLE || access_mem_ex == `ENABLE) begin 
                     nextstate =  `L1_ACCESS;
                 end else begin 
@@ -291,19 +300,11 @@ module dcache_ctrl(
                     nextstate   =  `WRITE_L2;
                 end
             end
-        endcase
+        endcase       
     end
     always @(posedge clk) begin // cache control
         if (rst == `ENABLE) begin // reset
-            state       <=  `L1_IDLE;
-            data0_rw    <=  `READ;
-            data1_rw    <=  `READ;                    
-            tag0_rw     <=  `READ;
-            tag1_rw     <=  `READ;
-            dirty0_rw   <=  `READ;
-            dirty1_rw   <=  `READ;
-            miss_stall  <=  `DISABLE;
-            l2_cache_rw <=  `READ;
+            state  <=  `L1_IDLE;
         end else begin
             state  <= nextstate;
         end
