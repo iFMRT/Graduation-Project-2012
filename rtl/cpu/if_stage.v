@@ -40,6 +40,7 @@ module if_stage(
     input              l2_rdy,        // ready signal of L2_cache
     input              complete,      // complete op writing to L1
     output             irq,           // icache request
+    output             ic_rw_en,
     // output     [8:0]   l2_index,
     output     [31:0]  l2_addr,
     output             l2_cache_rw,
@@ -104,6 +105,7 @@ module if_stage(
         .l2_rdy         (l2_rdy),        // ready signal of l2_cache
         .complete       (complete),      // complete op writing to L1
         .irq            (irq),
+        .ic_rw_en       (ic_rw_en), 
         // .l2_index       (l2_index),        
         .l2_addr        (l2_addr),        
         .l2_cache_rw    (l2_cache_rw),

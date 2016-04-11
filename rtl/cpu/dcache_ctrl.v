@@ -51,7 +51,8 @@ module dcache_ctrl(
     input              l2_busy,       // busy signal of L2_cache
     input              l2_rdy,        // ready signal of L2_cache
     input              complete,      // complete op writing to L1
-    output reg         drq,           // icache request
+    output reg         drq,           // dcache request
+    output reg         dc_rw_en,      // enable signal of writing dcache 
     output reg [31:0]  l2_addr, 
     // output reg [8:0]   l2_index,
     output reg         l2_cache_rw    // l2_cache read/write signal
@@ -152,16 +153,19 @@ module dcache_ctrl(
     end
 
     always @(*) begin
+        if(rst == `ENABLE) begin
+            data0_rw    =  `READ;
+            data1_rw    =  `READ;                    
+            tag0_rw     =  `READ;
+            tag1_rw     =  `READ;
+            dirty0_rw   =  `READ;
+            dirty1_rw   =  `READ;
+            miss_stall  =  `DISABLE;
+            l2_cache_rw =  `READ;
+            dc_rw_en    = `DISABLE;
+        end
         case(state)
             `L1_IDLE:begin
-                data0_rw    =  `READ;
-                data1_rw    =  `READ;                    
-                tag0_rw     =  `READ;
-                tag1_rw     =  `READ;
-                dirty0_rw   =  `READ;
-                dirty1_rw   =  `READ;
-                miss_stall  =  `DISABLE;
-                l2_cache_rw =  `READ;
                 if (access_mem == `ENABLE || access_mem_ex == `ENABLE) begin 
                     nextstate =  `L1_ACCESS;
                 end else begin 
@@ -169,6 +173,7 @@ module dcache_ctrl(
                 end
             end
             `L1_ACCESS:begin
+                dc_rw_en  = `DISABLE;
                 if (tagcomp_hit == `ENABLE) begin // cache hit
                     if(memwrite_m == `READ) begin // read hit
                         miss_stall  =  `DISABLE;
@@ -233,8 +238,9 @@ module dcache_ctrl(
             `L2_ACCESS:begin // access L2, wait L2 hit,choose replacement block's signal of L1
                 //  L2 hit. Write to L1,read from L2
                 if(l2_rdy == `ENABLE)begin
-                    nextstate    =  `WRITE_L1;
-                    dirty_wd =  1'b0;
+                    dc_rw_en  = `ENABLE;
+                    nextstate =  `WRITE_L1;
+                    dirty_wd  =  1'b0;
                     case(choose_way)
                         `WAY0:begin
                             data0_rw  =  `WRITE;

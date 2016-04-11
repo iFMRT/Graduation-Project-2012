@@ -39,6 +39,7 @@ module icache_ctrl(
     input              l2_rdy,        // ready signal of L2_cache
     input              complete,      // complete op writing to L1
     output reg         irq,           // icache request
+    output reg         ic_rw_en,      // enable signal of writing icache 
     // output reg [8:0]   l2_index,
     output reg [31:0]  l2_addr,
     output reg         l2_cache_rw,
@@ -94,18 +95,22 @@ module icache_ctrl(
     end
 
     always @(*) begin
+        if(rst == `ENABLE) begin
+            data0_rw    = `READ;
+            data1_rw    = `READ;                    
+            tag0_rw     = `READ;
+            tag1_rw     = `READ;
+            miss_stall  = `DISABLE;
+            irq         = `DISABLE;
+            data_rdy    = `DISABLE;
+            ic_rw_en    = `DISABLE;
+        end
         case(state)
             `L1_IDLE:begin
-                data0_rw    = `READ;
-                data1_rw    = `READ;                    
-                tag0_rw     = `READ;
-                tag1_rw     = `READ;
-                miss_stall  = `DISABLE;
-                irq         = `DISABLE;
-                data_rdy    = `DISABLE;
                 nextstate   = `L1_ACCESS;
             end
             `L1_ACCESS:begin
+                ic_rw_en  = `DISABLE;
                 data_rdy  = `DISABLE;
                 if ( rw == `READ && tagcomp_hit == `ENABLE) begin // cache hit
                     miss_stall  = `DISABLE;
@@ -127,6 +132,7 @@ module icache_ctrl(
             end
             `L2_ACCESS:begin // access L2, wait L2 reading right 
                 if(l2_rdy == `ENABLE)begin
+                    ic_rw_en   = `ENABLE;
                     nextstate  = `WRITE_IC;
                     tag_wd = {1'b1,if_addr[31:12]};
                     if (valid0 == 1'b1) begin
@@ -187,5 +193,3 @@ module icache_ctrl(
     end
 
 endmodule
-
-

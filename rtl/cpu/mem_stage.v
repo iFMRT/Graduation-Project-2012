@@ -40,6 +40,7 @@ module mem_stage (
     input                        complete,      // complete op writing to L1
     input                        l2_complete,
     output                       drq,           // icache request
+    output                       dc_rw_en, 
     output     [`WORD_DATA_BUS]  l2_addr, 
     // output     [8:0]             l2_index,
     output                       l2_cache_rw,   // l2_cache read/write signal
@@ -168,7 +169,8 @@ module mem_stage (
         .l2_busy        (l2_busy),       // busy signal of l2_cache
         .l2_rdy         (l2_rdy),        // ready signal of l2_cache
         .complete       (complete),      // complete op writing to L1
-        .drq            (drq),      
+        .drq            (drq),  
+        .dc_rw_en       (dc_rw_en),     
         .l2_addr        (l2_addr), 
         // .l2_index       (l2_index),       
         .l2_cache_rw    (l2_cache_rw)        

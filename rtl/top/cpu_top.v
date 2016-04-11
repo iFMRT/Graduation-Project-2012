@@ -83,7 +83,8 @@ module cpu_top(
     wire [`WORD_DATA_BUS]      br_addr;        // Branch  address
     wire                       br_taken;       // Branch taken
     wire                       ld_hazard;      // Hazard
-
+    wire                       if_busy;
+    wire                       mem_busy;
     /********** Forward Control **********/
     wire [`FWD_CTRL_BUS]       ra_fwd_ctrl;
     wire [`FWD_CTRL_BUS]       rb_fwd_ctrl;
@@ -97,7 +98,7 @@ module cpu_top(
     wire [`REG_ADDR_BUS]       gpr_rd_addr_1;  // Read  address 1
 
     wire                       ex_en;          //  Pipeline data enable
-
+    wire                       mem_en;
     // /********** Scratch Pad Memory Signal **********/
     // // IF Stage
     // wire [`WORD_DATA_BUS]      if_spm_rd_data;  // Read data
@@ -121,6 +122,10 @@ module cpu_top(
     wire             l2_cache_rw_ic;
     wire             l2_cache_rw_dc;
     /*cache part*/
+    wire             irq;
+    wire             drq;
+    wire             ic_rw_en;      // write enable signal
+    wire             dc_rw_en;
     wire             l2_busy;       // busy mark of L2C
     wire     [127:0] data_wd_l2;    // write data to L1 from L2
     wire     [127:0] data_wd_dc;    // write data to L1 from CPU
@@ -137,8 +142,9 @@ module cpu_top(
     wire             l2_data1_rw;   // the mark of cache_data1 write signal 
     wire             l2_data2_rw;   // the mark of cache_data2 write signal 
     wire             l2_data3_rw;   // the mark of cache_data3 write signal 
-    wire     [8:0]   l2_index_ic;   // address of cache
-    wire     [8:0]   l2_index_dc;   // address of cache
+    wire     [8:0]   l2_index;
+    // wire     [8:0]   l2_index_ic;   // address of cache
+    // wire     [8:0]   l2_index_dc;   // address of cache
     /*icache part*/
     // tag_ram part
     wire     [7:0]   index_ic;         // address of L1_cache
@@ -163,6 +169,11 @@ module cpu_top(
     wire     [20:0]  tag_wd_dc; 
     wire             lru_dc;           // read data of tag
     wire             complete_dc;      // complete write from L2 to L1 
+    wire             dirty0;
+    wire             dirty1;
+    wire             dirty_wd;
+    wire             dirty0_rw;
+    wire             dirty1_rw;
     // data_ram part
     wire     [127:0] data0_rd_dc;      // read data of cache_data0
     wire     [127:0] data1_rd_dc;      // read data of cache_data1
@@ -215,7 +226,7 @@ module cpu_top(
         .l2_rdy         (l2_rdy),           // ready signal of l2_cache
         .complete       (complete_ic),      // complete op writing to L1
         .irq            (irq),
-        // .l2_index       (l2_index_ic),        
+        .ic_rw_en       (ic_rw_en),      // write enable signal of icache      
         .l2_addr        (l2_addr_ic),        
         .l2_cache_rw    (l2_cache_rw_ic),
         /* Pipeline control */
@@ -235,7 +246,7 @@ module cpu_top(
     id_stage id_stage (
         /********** Clock & Reset **********/
         .clk            (clk),              // Clock
-        .reset          (reset),            // Asynchronous Reset
+        .reset          (rst),            // Asynchronous Reset
         /********** GPR Interface **********/
         .gpr_rd_data_0  (gpr_rd_data_0),    // Read data 0
         .gpr_rd_data_1  (gpr_rd_data_1),    // Read data 1
@@ -292,7 +303,7 @@ module cpu_top(
     ex_stage ex_stage (
         /********** Clock & Reset **********/
         .clk            (clk),              // Clock
-        .reset          (reset),            // Asynchronous Reset
+        .reset          (rst),            // Asynchronous Reset
         /**********  Pipeline Control Signal **********/
         .stall          (ex_stall),         // Stall
         .flush          (ex_flush),         // Flush
@@ -342,7 +353,7 @@ module cpu_top(
         .stall          (mem_stall),     
         .flush          (mem_flush),  
         /************ Forward *************/
-        .fwd_data       (fwd_data),
+        .fwd_data       (mem_fwd_data),
         /************ CPU part ************/
         .miss_stall     (mem_busy),    // the signal of stall caused by cache miss
         /* L1_cache part */
@@ -351,11 +362,11 @@ module cpu_top(
         .tag1_rd        (tag1_rd_dc),       // read data of tag1
         .data0_rd       (data0_rd_dc),      // read data of data0
         .data1_rd       (data1_rd_dc),      // read data of data1
-        .dirty0         (dirty0),        // 
-        .dirty1         (dirty1),        //  
-        .dirty_wd       (dirty_wd),      //       
-        .dirty0_rw      (dirty0_rw),     //       
-        .dirty1_rw      (dirty1_rw),     //  
+        .dirty0         (dirty0),           // 
+        .dirty1         (dirty1),           //  
+        .dirty_wd       (dirty_wd),         //       
+        .dirty0_rw      (dirty0_rw),        //       
+        .dirty1_rw      (dirty1_rw),        //  
         .data_wd_dc     (data_wd_dc), 
         .tag0_rw        (tag0_rw_dc),       // read / write signal of L1_tag0
         .tag1_rw        (tag1_rw_dc),       // read / write signal of L1_tag1
@@ -370,7 +381,8 @@ module cpu_top(
         .l2_rdy         (l2_rdy),        // ready signal of l2_cache
         .complete       (complete_dc),      // complete op writing to L1
         .l2_complete    (l2_complete),
-        .drq            (drq),      
+        .drq            (drq),  
+        .dc_rw_en       (dc_rw_en),    
         .l2_addr        (l2_addr_dc), 
         // .l2_index       (l2_index_dc),       
         .l2_cache_rw    (l2_cache_rw_dc),        
@@ -390,7 +402,7 @@ module cpu_top(
         );
     // l2_cache
     l2_cache_ctrl l2_cache_ctrl(
-        .clk            (clk_tmp),       // clock of L2C
+        .clk            (clk),           // clock of L2C
         .rst            (rst),           // reset
         /* CPU part */
         .l2_addr_ic     (l2_addr_ic),       // address of fetching instruction
@@ -402,7 +414,10 @@ module cpu_top(
         /*cache part*/
         .irq            (irq),           // icache request
         .drq            (drq),
-        .complete       (complete),      // complete write from L2 to L1
+        .ic_rw_en       (ic_rw_en),      // write enable signal of icache
+        .dc_rw_en       (dc_rw_en),
+        .complete_ic    (complete_ic),      // complete write from L2 to L1
+        .complete_dc    (complete_dc),
         .data_rd        (data_rd),       // write data to L1C       
         .data_wd_l2     (data_wd_l2),    // write data to L1C       
         .data_wd_l2_en  (data_wd_l2_en), 
@@ -559,10 +574,6 @@ module cpu_top(
         .l2_data2_rw    (l2_data2_rw),   // the mark of cache_data2 write signal 
         .l2_data3_rw    (l2_data3_rw),   // the mark of cache_data3 write signal 
         .l2_index       (l2_index),      // address of cache
-        // .irq            (irq),
-        // .drq            (drq),
-        // .l2_index_ic    (l2_index_ic),
-        // .l2_index_dc    (l2_index_dc),      // address of cache
         .l2_data_wd     (l2_data_wd),    // write data of l2_cache
         .l2_data0_rd    (l2_data0_rd),   // read data of cache_data0
         .l2_data1_rd    (l2_data1_rd),   // read data of cache_data1
@@ -576,10 +587,6 @@ module cpu_top(
         .l2_tag2_rw     (l2_tag2_rw),    // read / write signal of tag2
         .l2_tag3_rw     (l2_tag3_rw),    // read / write signal of tag3
         .l2_index       (l2_index),      // address of cache
-        // .irq            (irq),
-        // .drq            (drq),
-        // .l2_index_ic    (l2_index_ic),
-        // .l2_index_dc    (l2_index_dc),      // address of cache
         .l2_tag_wd      (l2_tag_wd),     // write data of tag
         .l2_dirty0_rw   (l2_dirty0_rw),
         .l2_dirty1_rw   (l2_dirty1_rw),
@@ -601,7 +608,7 @@ module cpu_top(
     gpr gpr (
         /********** Clock & Reset **********/
         .clk            (clk),              // Clock
-        .reset          (reset),            // Asynchronous Reset
+        .reset          (rst),            // Asynchronous Reset
         /********** Read Port  0 **********/
         .rd_addr_0      (gpr_rd_addr_0),    // Read  address
         .rd_data_0      (gpr_rd_data_0),    // Read data
@@ -613,22 +620,4 @@ module cpu_top(
         .wr_addr        (mem_dst_addr),     // Write  address
         .wr_data        (mem_out)           //  Write data
     );
-
-    /********** Scratch Pad Memory **********/
-    // spm spm (
-    //     /********** Clock **********/
-    //     .clk             (clk_),                        // Clock
-    //     /********** Port A: IF Stage **********/
-    //     .if_spm_addr     (if_spm_addr[`SPM_ADDR_LOC]),  //  address
-    //     .if_spm_as_      (if_spm_as_),                  //  address strobe
-    //     .if_spm_rw       (if_spm_rw),                   // Read/Write
-    //     .if_spm_wr_data  (if_spm_wr_data),              //  Write data
-    //     .if_spm_rd_data  (if_spm_rd_data),              // Read data
-    //     /********** Port B: MEM Stage **********/
-    //     .mem_spm_addr    (mem_spm_addr[`SPM_ADDR_LOC]), //  address
-    //     .mem_spm_as_     (mem_spm_as_),                 //  address strobe
-    //     .mem_spm_rw      (mem_spm_rw),                  // Read/Write
-    //     .mem_spm_wr_data (mem_spm_wr_data),             //  Write data
-    //     .mem_spm_rd_data (mem_spm_rd_data)              // Read data
-    // );
 endmodule

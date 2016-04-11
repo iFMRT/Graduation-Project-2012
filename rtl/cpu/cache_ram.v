@@ -15,8 +15,8 @@ module sram_256 #(parameter WIDTH = 128)
     input  [7:0]       a,
     input              wr,
     output [WIDTH-1:0] rd,
-    input  [WIDTH-1:0] wd);
-
+    input  [WIDTH-1:0] wd
+    );
     reg    [WIDTH-1:0] ram[255:0]; 
 
     // initial begin
@@ -33,30 +33,6 @@ module sram_256 #(parameter WIDTH = 128)
         end
     end
 endmodule
-// // sram_256 * n
-// module ic_sram_256 #(parameter WIDTH = 128)
-//    (input              clk,
-//     input  [7:0]       a,
-//     input              wr,
-//     output [WIDTH-1:0] rd
-//     );
-
-//     reg    [WIDTH-1:0] ram[255:0]; 
-
-//     // initial begin
-//     //     for (int i = 0; i < 256; i++) begin
-//     //         ram[i] = 0;
-//     //     end
-//     // end
-
-//     assign rd = ram[a];
-
-//     // always @(posedge clk) begin
-//     //     if (wr == `WRITE) begin
-//     //         ram[a] <= wd;
-//     //     end
-//     // end
-// endmodule
 
 // sram_512 * n
 module sram_512 #(parameter WIDTH = 32)
