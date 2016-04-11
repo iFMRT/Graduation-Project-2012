@@ -18,9 +18,12 @@ module l2_cache_ctrl(
     input               clk,                // clock
     input               rst,                // reset
     /* CPU part */
-    input       [31:0]  l2_addr,            // address of fetching instruction
-    input               l2_cache_rw,        // read / write signal of CPU
+    input       [31:0]  l2_addr_ic,            // address of fetching instruction
+    input               l2_cache_rw_ic,        // read / write signal of CPU
+    input       [31:0]  l2_addr_dc,            // address of fetching instruction
+    input               l2_cache_rw_dc,        // read / write signal of CPU
     output reg          l2_miss_stall,      // miss caused by l2C miss
+    output      [8:0]   l2_index,
     /*cache part*/
     input               irq,                // icache request
     input               drq,
@@ -84,13 +87,24 @@ module l2_cache_ctrl(
     reg        [511:0]  l2_data_rd;
     reg        [127:0]  data_wd_l2_copy;
     reg        [511:0]  l2_data_wd_copy;
+    reg        [31:0]  l2_addr;            // address of fetching instruction
+    reg                l2_cache_rw;        // read / write signal of CPU      
 
+    assign l2_index   = l2_addr[14:6];
     assign offset     = l2_addr[5:4];
     always @(*)begin // path choose
+        if(irq == `ENABLE) begin
+            l2_addr = l2_addr_ic;
+            l2_cache_rw = l2_cache_rw_ic;
+        end else if(drq == `ENABLE)begin 
+            l2_addr = l2_addr_dc;
+            l2_cache_rw = l2_cache_rw_dc;
+        end
         hitway0 = (l2_tag0_rd[16:0] == l2_addr[31:15]) & l2_tag0_rd[17];
         hitway1 = (l2_tag1_rd[16:0] == l2_addr[31:15]) & l2_tag1_rd[17];
         hitway2 = (l2_tag2_rd[16:0] == l2_addr[31:15]) & l2_tag2_rd[17];
         hitway3 = (l2_tag3_rd[16:0] == l2_addr[31:15]) & l2_tag3_rd[17];
+        
         if(hitway0 == `ENABLE)begin
             tagcomp_hit  = `ENABLE;
             hitway       = `L2_WAY0;
@@ -280,6 +294,7 @@ module l2_cache_ctrl(
                     endcase // case(hitway) 
                 end else begin // cache miss
                     l2_miss_stall = `ENABLE;
+                    // mem to l2
                     if (valid == `DISABLE || dirty == `DISABLE) begin
                         mem_rw        = `READ;
                         mem_addr      = l2_addr[31:6];

@@ -38,9 +38,14 @@ module dcache_mem_test();
     // reg      [127:0] data_wd;    // write data to L1_IC
     // l2_icache
     /* CPU part */
-    wire     [31:0]  l2_addr;  
+    wire     [31:0]  l2_addr_ic; 
+    wire     [31:0]  l2_addr_dc;  
     wire             l2_miss_stall; // stall caused by l2_miss
-    wire             l2_cache_rw;
+    wire             l2_cache_rw_ic;
+    wire             l2_cache_rw_dc;
+    wire     [8:0]   l2_index;
+    // wire     [8:0]   l2_index_ic;      // address of cache
+    // wire     [8:0]   l2_index_dc;      // address of cache
     /*cache part*/
     wire             l2_busy;       // busy mark of L2C
     wire     [127:0] data_rd;
@@ -55,7 +60,6 @@ module dcache_mem_test();
     wire             l2_data1_rw;   // the mark of cache_data1 write signal 
     wire             l2_data2_rw;   // the mark of cache_data2 write signal 
     wire             l2_data3_rw;   // the mark of cache_data3 write signal 
-    wire     [8:0]   l2_index;      // address of cache
     /*memory part*/
     wire     [25:0]  mem_addr;      // address of memory
     wire             mem_rw;        // read / write signal of memory
@@ -239,9 +243,9 @@ module dcache_mem_test();
         .complete       (complete),      // complete op writing to L1
         .l2_complete    (l2_complete),
         .drq            (drq),      
-        .l2_addr        (l2_addr), 
-        .l2_index       (l2_index),       
-        .l2_cache_rw    (l2_cache_rw),        
+        .l2_addr        (l2_addr_dc), 
+        // .l2_index       (l2_index_dc),       
+        .l2_cache_rw    (l2_cache_rw_dc),        
         /********** EX/MEM Pipeline Register **********/
         .ex_en          (ex_en),       // busy signal of l2_cache
         .ex_mem_op      (ex_mem_op),        // ready signal of l2_cache
@@ -260,9 +264,12 @@ module dcache_mem_test();
         .clk            (clk_tmp),       // clock of L2C
         .rst            (rst),           // reset
         /* CPU part */
-        .l2_addr        (l2_addr),       // address of fetching instruction
-        .l2_cache_rw    (l2_cache_rw),   // read / write signal of CPU
+        .l2_addr_ic     (l2_addr_ic),       // address of fetching instruction
+        .l2_cache_rw_ic (l2_cache_rw_ic),   // read / write signal of CPU
+        .l2_addr_dc     (l2_addr_dc),       // address of fetching instruction
+        .l2_cache_rw_dc (l2_cache_rw_dc),   // read / write signal of CPU
         .l2_miss_stall  (l2_miss_stall), // stall caused by l2_miss
+        .l2_index       (l2_index),
         /*cache part*/
         .irq            (irq),           // icache request
         .drq            (drq),
@@ -352,7 +359,11 @@ module dcache_mem_test();
         .l2_data1_rw    (l2_data1_rw),   // the mark of cache_data1 write signal 
         .l2_data2_rw    (l2_data2_rw),   // the mark of cache_data2 write signal 
         .l2_data3_rw    (l2_data3_rw),   // the mark of cache_data3 write signal 
-        .l2_index       (l2_index),      // address of cache
+        .l2_index       (l2_index),
+        // .irq            (irq),           // address of cache
+        // .drq            (drq),           // address of cache
+        // .l2_index_ic    (l2_index_ic),   // address of cache
+        // .l2_index_dc    (l2_index_dc),   // address of cache
         .l2_data_wd     (l2_data_wd),    // write data of l2_cache
         .l2_data0_rd    (l2_data0_rd),   // read data of cache_data0
         .l2_data1_rd    (l2_data1_rd),   // read data of cache_data1
@@ -365,7 +376,11 @@ module dcache_mem_test();
         .l2_tag1_rw     (l2_tag1_rw),    // read / write signal of tag1
         .l2_tag2_rw     (l2_tag2_rw),    // read / write signal of tag2
         .l2_tag3_rw     (l2_tag3_rw),    // read / write signal of tag3
-        .l2_index       (l2_index),      // address of cache
+        .l2_index       (l2_index),
+        // .irq            (irq),           // address of cache
+        // .drq            (drq),           // address of cache
+        // .l2_index_ic    (l2_index_ic),   // address of cache
+        // .l2_index_dc    (l2_index_dc),   // address of cache
         .l2_tag_wd      (l2_tag_wd),     // write data of tag
         .l2_dirty0_rw   (l2_dirty0_rw),
         .l2_dirty1_rw   (l2_dirty1_rw),
@@ -451,29 +466,29 @@ module dcache_mem_test();
         /* l2_cache part */
         input          _drq;             // icache request
         input  [8:0]   _l2_index;
-        input  [31:0]  _l2_addr;
+        input  [31:0]  _l2_addr_dc;
         // dirty
         input          _dirty_wd;
         input          _dirty0_rw;
         input          _dirty1_rw;
 
         begin 
-            if( (mem_out   === _mem_out)    && 
-                (miss_stall === _miss_stall)        && 
-                (tag0_rw    === _tag0_rw)           && 
-                (tag1_rw    === _tag1_rw)           && 
-                (tag_wd     === _tag_wd)            && 
-                (data0_rw   === _data0_rw)          && 
-                (data1_rw   === _data1_rw)          && 
-                (index      === _index)             && 
-                (drq        === _drq)               && 
-                (l2_index   === _l2_index)          && 
-                (l2_addr    === _l2_addr)           && 
-                (data_wd_dc   === _data_wd_dc)      && 
-                (dirty0_rw  === _dirty0_rw)         && 
-                (dirty1_rw  === _dirty1_rw)         && 
-                (data_rd    === _data_rd)           && 
-                (data_wd_dc    === _data_wd_dc)     && 
+            if( (mem_out     === _mem_out)           && 
+                (miss_stall  === _miss_stall)        && 
+                (tag0_rw     === _tag0_rw)           && 
+                (tag1_rw     === _tag1_rw)           && 
+                (tag_wd      === _tag_wd)            && 
+                (data0_rw    === _data0_rw)          && 
+                (data1_rw    === _data1_rw)          && 
+                (index       === _index)             && 
+                (drq         === _drq)               && 
+                (l2_index    === _l2_index)          && 
+                (_l2_addr_dc === _l2_addr_dc)        && 
+                (data_wd_dc  === _data_wd_dc)        && 
+                (dirty0_rw   === _dirty0_rw)         && 
+                (dirty1_rw   === _dirty1_rw)         && 
+                (data_rd     === _data_rd)           && 
+                (data_wd_dc  === _data_wd_dc)        && 
                 (dirty_wd    === _dirty_wd)
                ) begin 
                  $display("mem_stage Test Succeeded !"); 
@@ -516,14 +531,14 @@ module dcache_mem_test();
             if (index      !== _index) begin
                 $display("index:%b(excepted %b)",index,_index); 
             end
-            if (drq   !== _drq) begin
+            if (drq        !== _drq) begin
                 $display("drq:%b(excepted %b)",drq,_drq); 
             end
-            if (l2_index   !== _l2_index) begin
+            if (l2_index !== _l2_index) begin
                 $display("l2_index:%b(excepted %b)",l2_index,_l2_index); 
             end
-            if (l2_addr      !== _l2_addr) begin
-                $display("l2_addr:%b(excepted %b)",l2_addr,_l2_addr); 
+            if (l2_addr_dc !== _l2_addr_dc) begin
+                $display("l2_addr_dc:%b(excepted %b)",l2_addr_dc,_l2_addr_dc); 
             end
         end
     endtask 
@@ -788,10 +803,10 @@ module dcache_mem_test();
             // l2_rdy  <= `ENABLE;                                       // ready signal of l2_cache
             // data_wd <= 128'h0876547A_00000000_ABF00000_123BC000;      // write data of L1_cache
         end
-        #STEP begin // L1_IDLE & L2_IDLE 
+        #STEP begin // L1_ACCESS & L2_IDLE 
             $display("\n========= Clock 1 ========");
         end
-        #STEP begin // L1_ACCESS & L2_IDLE 
+        #STEP begin // L2_ACCESS & L2_IDLE 
             $display("\n========= Clock 2 ========");
             mem_stage_tb(
                 32'bx,          // mem_out of CPU

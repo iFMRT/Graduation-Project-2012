@@ -41,7 +41,7 @@ module mem_stage (
     input                        l2_complete,
     output                       drq,           // icache request
     output     [`WORD_DATA_BUS]  l2_addr, 
-    output     [8:0]             l2_index,
+    // output     [8:0]             l2_index,
     output                       l2_cache_rw,   // l2_cache read/write signal
 
     // /********** SPM Interface **********/
@@ -170,7 +170,7 @@ module mem_stage (
         .complete       (complete),      // complete op writing to L1
         .drq            (drq),      
         .l2_addr        (l2_addr), 
-        .l2_index       (l2_index),       
+        // .l2_index       (l2_index),       
         .l2_cache_rw    (l2_cache_rw)        
         );
 

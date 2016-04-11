@@ -27,6 +27,7 @@ module icache_ctrl(
     input      [20:0]  tag1_rd,       // read data of tag1
     input      [127:0] data0_rd,      // read data of data0
     input      [127:0] data1_rd,      // read data of data1
+    // output to L1_cache
     output reg         tag0_rw,       // read / write signal of L1_tag0
     output reg         tag1_rw,       // read / write signal of L1_tag1
     output reg [20:0]  tag_wd,        // write data of L1_tag
@@ -38,7 +39,7 @@ module icache_ctrl(
     input              l2_rdy,        // ready signal of L2_cache
     input              complete,      // complete op writing to L1
     output reg         irq,           // icache request
-    output reg [8:0]   l2_index,
+    // output reg [8:0]   l2_index,
     output reg [31:0]  l2_addr,
     output reg         l2_cache_rw,
     /* if_reg part */
@@ -118,7 +119,7 @@ module icache_ctrl(
                     end else begin
                         irq         = `ENABLE;
                         l2_cache_rw = rw;
-                        l2_index    = if_addr[14:6];
+                        // l2_index    = if_addr[14:6];
                         l2_addr     = if_addr;
                         nextstate   = `L2_ACCESS;
                     end
@@ -154,7 +155,7 @@ module icache_ctrl(
                     nextstate   = `WAIT_L2_BUSY;
                 end else begin
                     irq         = `ENABLE;
-                    l2_index    = if_addr[14:6];
+                    // l2_index    = if_addr[14:6];
                     l2_addr     = if_addr;
                     l2_cache_rw = rw;
                     nextstate   = `L2_ACCESS;

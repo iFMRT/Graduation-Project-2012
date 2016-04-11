@@ -9,8 +9,7 @@
 
 /* General header file */
 `include "stddef.h"
-`include "icache_ctrl.v"
-`include "if_reg.v"
+
 module if_stage(
     /********** clock & reset *********/
     input                   clk,            // Clk
@@ -41,7 +40,7 @@ module if_stage(
     input              l2_rdy,        // ready signal of L2_cache
     input              complete,      // complete op writing to L1
     output             irq,           // icache request
-    output     [8:0]   l2_index,
+    // output     [8:0]   l2_index,
     output     [31:0]  l2_addr,
     output             l2_cache_rw,
     /******** Pipeline control ********/
@@ -53,13 +52,14 @@ module if_stage(
     // output                  busy,           // Busy Signal
     /******** IF/ID Pipeline Register ********/
     output [`WORD_DATA_BUS] pc,             // Current Program counter
+    output [`WORD_DATA_BUS] if_pc,          // Current Program counter
     output [`WORD_DATA_BUS] if_insn,        // Instruction
     output                  if_en           // Effective mark of pipeline
 );
 
     /********** Inner Signal **********/
     wire [`WORD_DATA_BUS]    insn;
-    wire [`WORD_DATA_BUS]    if_pc;          // Next PC
+    // wire [`WORD_DATA_BUS]    if_pc;          // Next PC
     wire                     data_rdy;
     // bus_if bus_if(
     //     /****** Pipeline control ********/
@@ -104,10 +104,11 @@ module if_stage(
         .l2_rdy         (l2_rdy),        // ready signal of l2_cache
         .complete       (complete),      // complete op writing to L1
         .irq            (irq),
-        .l2_index       (l2_index),        
+        // .l2_index       (l2_index),        
         .l2_addr        (l2_addr),        
         .l2_cache_rw    (l2_cache_rw),
-        .data_rdy    (data_rdy)        
+        /* if_reg part */
+        .data_rdy       (data_rdy)        
         );
 
     if_reg if_reg(

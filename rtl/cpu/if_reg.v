@@ -36,7 +36,7 @@ module if_reg(
         if (reset == `ENABLE) begin
             /******** Reset ********/
             pc      <=  `WORD_DATA_W'h0;
-            if_pc   <=  `WORD_DATA_W'b1110_0001_0000_0000;
+            if_pc   <=  `WORD_DATA_W'b0;
             if_insn <=  `ISA_NOP;
             if_en   <=  `DISABLE;
         end else begin

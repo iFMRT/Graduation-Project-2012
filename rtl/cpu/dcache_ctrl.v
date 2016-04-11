@@ -32,6 +32,7 @@ module dcache_ctrl(
     input      [127:0] data1_rd,      // read data of data1
     input              dirty0,
     input              dirty1,
+    // output to L1_cache  
     output reg         dirty_wd,
     output reg         dirty0_rw,
     output reg         dirty1_rw,
@@ -52,7 +53,7 @@ module dcache_ctrl(
     input              complete,      // complete op writing to L1
     output reg         drq,           // icache request
     output reg [31:0]  l2_addr, 
-    output reg [8:0]   l2_index,
+    // output reg [8:0]   l2_index,
     output reg         l2_cache_rw    // l2_cache read/write signal
     );
 
@@ -209,14 +210,14 @@ module dcache_ctrl(
                             case(choose_way)
                                 `WAY0:begin
                                     data_rd    =  data0_rd;
-                                    l2_index   =  {tag0_rd[2:0],index[7:2]}; // old index of L2
+                                    // l2_index   =  {tag0_rd[2:0],index[7:2]}; // old index of L2
                                     l2_addr    =  {tag0_rd[19:0],index,4'b0};
                                     // l2_data_wd_dc =  data_rd0;  
                                 end
                                 `WAY1:begin
                                     data_rd    =  data1_rd;
                                     l2_addr    =  {tag1_rd[19:0],index,4'b0};
-                                    l2_index   =  {tag1_rd[2:0],index[7:2]}; // old index of L2
+                                    // l2_index   =  {tag1_rd[2:0],index[7:2]}; // old index of L2
                                 end
                             endcase
                     end else if(l2_busy == `ENABLE && (valid == `DISABLE || dirty == `DISABLE)) begin
@@ -224,7 +225,7 @@ module dcache_ctrl(
                     end else if(l2_busy == `DISABLE && (valid == `DISABLE || dirty == `DISABLE)) begin
                         drq      =  `ENABLE;
                         l2_addr  =  addr;
-                        l2_index =  addr[14:6]; 
+                        // l2_index =  addr[14:6]; 
                         nextstate    =  `L2_ACCESS;
                     end 
                 end 
@@ -258,7 +259,7 @@ module dcache_ctrl(
                 end else begin
                     drq      =  `ENABLE;
                     l2_addr  =  addr;
-                    l2_index =  addr[14:6]; 
+                    // l2_index =  addr[14:6]; 
                     nextstate    =  `L2_ACCESS;
                 end
             end
@@ -307,7 +308,7 @@ module dcache_ctrl(
                 if (l2_complete == `ENABLE) begin
                     l2_cache_rw =  `READ;  
                     l2_addr     =  addr;
-                    l2_index    =  addr[14:6]; // new index of L2
+                    // l2_index    =  addr[14:6]; // new index of L2
                     nextstate   =  `L2_ACCESS;
                 end else begin
                     nextstate   =  `WRITE_L2;
