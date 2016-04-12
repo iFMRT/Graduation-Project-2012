@@ -99,19 +99,6 @@ module cpu_top(
 
     wire                       ex_en;          //  Pipeline data enable
     wire                       mem_en;
-    // /********** Scratch Pad Memory Signal **********/
-    // // IF Stage
-    // wire [`WORD_DATA_BUS]      if_spm_rd_data;  // Read data
-    // wire [`WORD_ADDR_BUS]      if_spm_addr;     //  address
-    // wire                       if_spm_as_;      //  address strobe
-    // wire                       if_spm_rw;       // Read/Write
-    // wire [`WORD_DATA_BUS]      if_spm_wr_data;  //  Write data
-    // // MEM Stage
-    // wire [`WORD_DATA_BUS]      mem_spm_rd_data; // Read data
-    // wire [`WORD_ADDR_BUS]      mem_spm_addr;    //  address
-    // wire                       mem_spm_as_;     //  address strobe
-    // wire                       mem_spm_rw;      // Read/Write
-    // wire [`WORD_DATA_BUS]      mem_spm_wr_data; //  Write data
     /********** Forward  Signal **********/
     wire [`WORD_DATA_BUS]      ex_fwd_data;     // EX Stage
     wire [`WORD_DATA_BUS]      mem_fwd_data;    // MEM Stage
