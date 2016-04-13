@@ -231,7 +231,7 @@ module dcache_ctrl(
                         drq      =  `ENABLE;
                         l2_addr  =  addr;
                         // l2_index =  addr[14:6]; 
-                        nextstate    =  `L2_ACCESS;
+                        nextstate =  `L2_ACCESS;
                     end 
                 end 
             end
@@ -261,12 +261,12 @@ module dcache_ctrl(
             end
             `WAIT_L2_BUSY_CLEAN:begin
                 if(l2_busy == `ENABLE) begin
-                    nextstate    =  `WAIT_L2_BUSY_CLEAN;
+                    nextstate =  `WAIT_L2_BUSY_CLEAN;
                 end else begin
-                    drq      =  `ENABLE;
-                    l2_addr  =  addr;
+                    drq       =  `ENABLE;
+                    l2_addr   =  addr;
                     // l2_index =  addr[14:6]; 
-                    nextstate    =  `L2_ACCESS;
+                    nextstate =  `L2_ACCESS;
                 end
             end
             `WAIT_L2_BUSY_DIRTY:begin
@@ -275,7 +275,7 @@ module dcache_ctrl(
                 end else begin
                     l2_cache_rw =  memwrite_m; 
                     drq         =  `ENABLE;
-                    nextstate       =  `WRITE_L2;
+                    nextstate   =  `WRITE_L2;
                 end
             end
             `WRITE_L1:begin // Write to L1,read from L2
@@ -287,9 +287,9 @@ module dcache_ctrl(
                     tag1_rw    =  `READ;
                     dirty0_rw  =  `READ;
                     dirty1_rw  =  `READ;
-                    nextstate      =  `L1_ACCESS;
+                    nextstate  =  `L1_ACCESS;
                 end else begin
-                    nextstate      =  `WRITE_L1;
+                    nextstate  =  `WRITE_L1;
                 end        
             end
              `WRITE_HIT:begin // Write to L1,read from CPU
@@ -320,6 +320,7 @@ module dcache_ctrl(
                     nextstate   =  `WRITE_L2;
                 end
             end
+            default:nextstate = `L1_IDLE;
         endcase       
     end
     always @(posedge clk) begin // cache control

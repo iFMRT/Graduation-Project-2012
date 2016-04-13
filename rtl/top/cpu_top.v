@@ -392,18 +392,18 @@ module cpu_top(
         .clk            (clk),           // clock of L2C
         .rst            (rst),           // reset
         /* CPU part */
-        .l2_addr_ic     (l2_addr_ic),       // address of fetching instruction
-        .l2_cache_rw_ic (l2_cache_rw_ic),   // read / write signal of CPU
-        .l2_addr_dc     (l2_addr_dc),       // address of fetching instruction
-        .l2_cache_rw_dc (l2_cache_rw_dc),   // read / write signal of CPU
-        .l2_miss_stall  (l2_miss_stall),    // stall caused by l2_miss
+        .l2_addr_ic     (l2_addr_ic),    // address of fetching instruction
+        .l2_cache_rw_ic (l2_cache_rw_ic),// read / write signal of CPU
+        .l2_addr_dc     (l2_addr_dc),    // address of fetching instruction
+        .l2_cache_rw_dc (l2_cache_rw_dc),// read / write signal of CPU
+        .l2_miss_stall  (l2_miss_stall), // stall caused by l2_miss
         .l2_index       (l2_index),
         /*cache part*/
         .irq            (irq),           // icache request
         .drq            (drq),
         .ic_rw_en       (ic_rw_en),      // write enable signal of icache
         .dc_rw_en       (dc_rw_en),
-        .complete_ic    (complete_ic),      // complete write from L2 to L1
+        .complete_ic    (complete_ic),   // complete write from L2 to L1
         .complete_dc    (complete_dc),
         .data_rd        (data_rd),       // write data to L1C       
         .data_wd_l2     (data_wd_l2),    // write data to L1C       

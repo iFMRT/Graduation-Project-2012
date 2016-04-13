@@ -181,6 +181,7 @@ module icache_ctrl(
                 end
                         
             end
+            default:nextstate = `L1_IDLE;
         endcase      
     end
 

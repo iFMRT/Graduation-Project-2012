@@ -103,13 +103,11 @@ module l2_cache_ctrl(
         end
 
         if(irq == `ENABLE) begin
-            l2_addr = l2_addr_ic;
+            l2_addr     = l2_addr_ic;
             l2_cache_rw = l2_cache_rw_ic;
-            complete    = complete_ic;
         end else if(drq == `ENABLE)begin 
-            l2_addr = l2_addr_dc;
+            l2_addr     = l2_addr_dc;
             l2_cache_rw = l2_cache_rw_dc;
-            complete    = complete_dc;
         end
 
         hitway0 = (l2_tag0_rd[16:0] == l2_addr[31:15]) & l2_tag0_rd[17];
@@ -459,11 +457,12 @@ module l2_cache_ctrl(
                     nextstate = `WRITE_MEM;
                 end
             end
+            default:nextstate = `L2_IDLE;
         endcase        
     end
     always @(posedge clk) begin // cache control
         if (rst == `ENABLE) begin
-            state         <= `L2_IDLE;
+            state <= `L2_IDLE;
         end else begin   
             state <= nextstate;
         end
