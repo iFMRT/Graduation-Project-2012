@@ -1,7 +1,7 @@
 /* 
  -- ============================================================================
  -- FILE NAME : if_reg.v
- -- DESCRIPTION : IF/ID 流水线寄存器的实现
+ -- DESCRIPTION : IF/ID pipeline reg
  -- ----------------------------------------------------------------------------
  -- Date : 2015/12/8                       Coding_by : kippy
  -- ============================================================================
@@ -35,30 +35,30 @@ module if_reg(
     always @(posedge clk) begin    
         if (reset == `ENABLE) begin
             /******** Reset ********/
-            pc      <= #1 `WORD_DATA_W'h0;
-            if_pc   <= #1 `WORD_DATA_W'b0;
-            if_insn <= #1 `ISA_NOP;
-            if_en   <= #1 `DISABLE;
+            pc      <=  `WORD_DATA_W'h0;
+            if_pc   <=  `WORD_DATA_W'b0;
+            if_insn <=  `ISA_NOP;
+            if_en   <=  `DISABLE;
         end else begin
             /******** Update pipeline ********/
             if(data_rdy == `ENABLE) begin
                 if (stall == `DISABLE) begin
                     if (flush == `ENABLE) begin
                         /* Flush */
-                        if_pc   <= #1 new_pc;
-                        if_insn <= #1 `ISA_NOP;
-                        if_en   <= #1 `DISABLE;
+                        if_pc   <=  new_pc;
+                        if_insn <=  `ISA_NOP;
+                        if_en   <=  `DISABLE;
                     end else if (br_taken == `ENABLE) begin
                         /* Branch taken */
-                        if_pc   <= #1 br_addr;
-                        if_insn <= #1 `ISA_NOP;
-                        if_en   <= #1 `DISABLE;
+                        if_pc   <=  br_addr;
+                        if_insn <=  `ISA_NOP;
+                        if_en   <=  `DISABLE;
                     end else begin
                         /* Next PC */
-                        pc      <= #1 if_pc;
-                        if_pc   <= #2 if_pc + `WORD_DATA_W'd4;
-                        if_insn <= #1 insn; 
-                        if_en   <= #1 `ENABLE;
+                        pc      <=  if_pc;
+                        if_pc   <= #1 if_pc + `WORD_DATA_W'd4;
+                        if_insn <=  insn; 
+                        if_en   <=  `ENABLE;
                     end // else: !if(br_taken == `ENABLE)
                 end 
             end else begin 

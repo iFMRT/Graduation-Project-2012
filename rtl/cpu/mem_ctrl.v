@@ -2,6 +2,7 @@
 `include "stddef.h"
 `include "cpu.h"
 `include "mem.h"
+`include "dcache.h"
 
 /********** Memory Access Control Module **********/
 module mem_ctrl (

@@ -9,23 +9,21 @@
 `timescale 1ns/1ps
 /********** General header file **********/
 `include "stddef.h"
-
 // sram_256 * n
 module sram_256 #(parameter WIDTH = 128)
    (input              clk,
     input  [7:0]       a,
     input              wr,
     output [WIDTH-1:0] rd,
-    input  [WIDTH-1:0] wd);
-
+    input  [WIDTH-1:0] wd
+    );
     reg    [WIDTH-1:0] ram[255:0]; 
-    integer            i = 0;
-    initial begin
-        while (i <= 255) begin
-            ram[i] = 0;
-            i      = i + 1;
-        end
-    end
+
+    // initial begin
+    //     for (int i = 0; i < 256; i++) begin
+    //         ram[i] = 0;
+    //     end
+    // end
 
     assign rd = ram[a];
 
@@ -44,13 +42,13 @@ module sram_512 #(parameter WIDTH = 32)
     output [WIDTH-1:0] rd,
     input  [WIDTH-1:0] wd);
     reg    [WIDTH-1:0] ram[511:0]; 
-    integer            i = 0;
-    initial begin
-        while (i <= 511) begin
-            ram[i] = 0;
-            i      = i + 1;
-        end
-    end
+    // integer            i = 0;
+    // initial begin
+    //     for (int i = 0; i < 512; i++) begin
+    //         ram[i] = 0;
+    //         i      = i + 1;
+    //     end
+    // end
 
     assign  rd = ram[a];
 
@@ -252,6 +250,44 @@ module data_ram(
 
 endmodule
 
+module idata_ram(
+    input           clk,             // clock
+    input           data0_rw,        // the mark of cache_data0 write signal 
+    input           data1_rw,        // the mark of cache_data1 write signal 
+    input   [7:0]   index,           // address of cache
+    input   [127:0] data_wd_l2,         // write data of l2_cache
+    input           data_wd_l2_en,
+    output  [127:0] data0_rd,        // read data of cache_data0
+    output  [127:0] data1_rd         // read data of cache_data1
+    );
+    
+    reg [127:0] data_wd;
+
+    always @(*) begin
+        if(data_wd_l2_en == `ENABLE) begin 
+            data_wd = data_wd_l2;
+        end
+    end
+
+    // sram_256x128 
+    sram_256 #(128) data_way0(
+        .clk    (clk),
+        .a      (index),
+        .wr     (data0_rw),
+        .rd     (data0_rd),
+        .wd     (data_wd)
+        );
+    // sram_256x128 
+    sram_256 #(128) data_way1(
+        .clk    (clk),
+        .a      (index),
+        .wr     (data1_rw),
+        .rd     (data1_rd),
+        .wd     (data_wd)
+        );
+
+endmodule
+
 /********** General header file **********/
 `include "stddef.h"
 
@@ -261,7 +297,11 @@ module l2_tag_ram(
     input               l2_tag1_rw,        // read / write signal of tag1
     input               l2_tag2_rw,        // read / write signal of tag2
     input               l2_tag3_rw,        // read / write signal of tag3
-    input       [8:0]   l2_index,          // address of cache
+    input       [8:0]   l2_index,
+    // input               irq,
+    // input               drq,
+    // input       [8:0]   l2_index_ic,       // address of cache
+    // input       [8:0]   l2_index_dc,       // address of cache
     input       [17:0]  l2_tag_wd,         // write data of tag
     input               l2_dirty0_rw,
     input               l2_dirty1_rw,
@@ -281,8 +321,13 @@ module l2_tag_ram(
     );
     reg                 plru_we;           // read / write signal of plru_field
     reg         [2:0]   plru_wd;           // write data of plru_field
-
+    // reg         [8:0]   l2_index;
     always @(*) begin
+        // if(irq == `ENABLE) begin
+        //     l2_index = l2_index_ic;
+        // end else if(drq == `ENABLE)begin 
+        //     l2_index = l2_index_dc;
+        // end
         if (l2_tag0_rw == `WRITE) begin
             plru_wd   <= {plru[2],2'b11};
             plru_we   <= `WRITE;    
@@ -396,13 +441,25 @@ module l2_data_ram(
     input           l2_data1_rw,            // the mark of cache_data1 write signal 
     input           l2_data2_rw,            // the mark of cache_data2 write signal 
     input           l2_data3_rw,            // the mark of cache_data3 write signal 
-    input   [8:0]   l2_index,               // address of cache
+    input   [8:0]   l2_index,               // address of cache  
+    // input           irq,
+    // input           drq,
+    // input   [8:0]   l2_index_ic,       // address of cache
+    // input   [8:0]   l2_index_dc,       // address of cache    
     input   [511:0] l2_data_wd,             // write data of l2_cache
     output  [511:0] l2_data0_rd,            // read data of cache_data0
     output  [511:0] l2_data1_rd,            // read data of cache_data1
     output  [511:0] l2_data2_rd,            // read data of cache_data2
     output  [511:0] l2_data3_rd             // read data of cache_data3
     );
+    // reg     [8:0]   l2_index;               // address of cache
+    // always @(*) begin
+    //     if(irq == `ENABLE) begin
+    //         l2_index = l2_index_ic;
+    //     end else if(drq == `ENABLE)begin 
+    //         l2_index = l2_index_dc;
+    //     end
+    // end
     // sram_512x512 
     sram_512 #(512) data_way0(
         .clk    (clk),

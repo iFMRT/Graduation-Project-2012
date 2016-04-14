@@ -16,6 +16,7 @@ module cmp #(parameter WIDTH = 32) (
 
 	wire [WIDTH-1:0] arg0_u;
 	wire [WIDTH-1:0] arg1_u;
+	wire eq,ne,lt,ltu,ge,geu;
 	assign arg0_u = arg0;
 	assign arg1_u = arg1;
 
