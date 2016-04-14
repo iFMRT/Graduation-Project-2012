@@ -8,10 +8,9 @@ Generate testbench for a given verilog module file.
 ** Usage
 
 *** Quick Usage
+
 #+BEGIN_SRC 
-
 python3 tbgen.py input_verilog_file_name -o output_testbench_file_name
-
 #+END_SRC
 
 *** Generate Custom Testcase
