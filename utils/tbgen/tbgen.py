@@ -228,6 +228,7 @@ if __name__ == "__main__":
         task_ctx      = tbg.gen_dut_task()
 
     result = ''
+
     if args.yaml_obj:
         with open(args.yaml_obj[0], 'w') as f:
             f.write(tbg.gen_test_case_yaml())
