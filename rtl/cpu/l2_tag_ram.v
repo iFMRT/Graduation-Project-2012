@@ -8,9 +8,6 @@
 */
 /********** General header file **********/
 `include "stddef.h"
-`include "ram_512x1.v"
-`include "ram_512x3.v"
-`include "ram_512x18.v"
 
 module l2_tag_ram(    
     input               clk,               // clock
