@@ -46,7 +46,7 @@ module cache_top(
     wire                drq; 
     wire                dc_rw_en;       // write enable signal
     wire                complete_dc;    // complete write from L2 to dcache
-    wire        [127:0] data_rd;        // read data of L1_cache's data
+    wire        [127:0] rd_to_l2;       // read data of L1_cache's data
     /*icache part*/
     wire                irq;
     wire                ic_rw_en;       // write enable signal 
@@ -75,7 +75,7 @@ module cache_top(
         .mem_busy       (mem_busy),      // the signal of stall caused by cache miss
         /* L1_cache part */
         .hitway         (hitway),  
-        .data_rd        (data_rd),    
+        .rd_to_l2       (rd_to_l2),    
         /* l2_cache part */
         .data_wd_l2     (data_wd_l2),    // write data of l2_cache
         .data_wd_l2_en  (data_wd_l2_en), // write data of l2_cache
@@ -132,7 +132,7 @@ module cache_top(
         .ic_rw_en       (ic_rw_en),      // write enable signal of icache
         .complete_ic    (complete_ic),   // complete write from L2 to L1
         /*l1_cache part*/
-        .data_rd        (data_rd),       // write data to L1C       
+        .rd_to_l2       (rd_to_l2),       // write data to L1C       
         .data_wd_l2     (data_wd_l2),    // write data to L1C       
         .data_wd_l2_en  (data_wd_l2_en), 
         /*memory part*/

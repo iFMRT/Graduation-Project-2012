@@ -47,14 +47,14 @@ module l1_ic_top(
 
     itag_ram itag_ram(
         .clk            (clk),           // clock
-        .tag0_rw        (tag0_rw_ic),    // read / write signal of tag0
-        .tag1_rw        (tag1_rw_ic),    // read / write signal of tag1
-        .index          (index_ic),      // address of cache
-        .tag_wd         (tag_wd_ic),     // write data of tag
-        .tag0_rd        (tag0_rd_ic),    // read data of tag0
-        .tag1_rd        (tag1_rd_ic),    // read data of tag1
-        .lru            (lru_ic),        // read data of tag
-        .complete       (complete_ic)    // complete write from L2 to L1
+        .tag0_rw        (tag0_rw_ic),       // read / write signal of tag0
+        .tag1_rw        (tag1_rw_ic),       // read / write signal of tag1
+        .index          (index_ic),         // address of cache
+        .tag_wd         (tag_wd_ic),        // write data of tag
+        .tag0_rd        (tag0_rd_ic),       // read data of tag0
+        .tag1_rd        (tag1_rd_ic),       // read data of tag1
+        .lru            (lru_ic),           // read data of tag
+        .complete       (complete_ic)       // complete write from L2 to L1
         );
     idata_ram idata_ram(
         .clk            (clk),           // clock
@@ -65,7 +65,7 @@ module l1_ic_top(
         .data_wd_l2_en  (data_wd_l2_en), // write data of l2_cache
         .data0_rd       (data0_rd_ic),   // read data of cache_data0
         .data1_rd       (data1_rd_ic)    // read data of cache_data1
-        );
+    );
     icache_ctrl icache_ctrl(
         .clk            (clk),           // clock
         .rst            (rst),           // reset

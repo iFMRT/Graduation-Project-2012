@@ -24,6 +24,7 @@ module l2_cache_ctrl(
     input               l2_cache_rw_dc,     // read / write signal of CPU
     output reg          l2_miss_stall,      // miss caused by l2C miss
     output      [8:0]   l2_index,
+    output      [1:0]   offset,             // offset of block
     /*cache part*/
     input               irq,                // icache request
     input               drq,
@@ -31,9 +32,11 @@ module l2_cache_ctrl(
     input               dc_rw_en,
     input               complete_ic,        // complete mark of writing into L1C
     input               complete_dc,     
-    input       [127:0] data_rd,            // read data from L1
+    // input       [127:0] data_rd,            // read data from L1
     output reg  [127:0] data_wd_l2,         // write data to L1    
     output reg          data_wd_l2_en,
+    output reg          wd_from_l1_en,    // ++++++++
+    output reg          wd_from_mem_en,    // ++++++++
     /*l2_cache part*/
     input               l2_complete,        // complete mark of writing into L2C 
     output reg          l2_rdy,
@@ -54,11 +57,27 @@ module l2_cache_ctrl(
     input       [511:0] l2_data1_rd,        // read data of cache_data1
     input       [511:0] l2_data2_rd,        // read data of cache_data2
     input       [511:0] l2_data3_rd,        // read data of cache_data3
-    output reg  [511:0] l2_data_wd,   
-    output reg          l2_data0_rw,        // the mark of cache_data0 write signal 
-    output reg          l2_data1_rw,        // the mark of cache_data1 write signal 
-    output reg          l2_data2_rw,        // the mark of cache_data2 write signal 
-    output reg          l2_data3_rw,        // the mark of cache_data3 write signal    
+    // output reg  [511:0] l2_data_wd,   
+    // output reg          l2_data0_rw,        // the mark of cache_data0 write signal 
+    // output reg          l2_data1_rw,        // the mark of cache_data1 write signal 
+    // output reg          l2_data2_rw,        // the mark of cache_data2 write signal 
+    // output reg          l2_data3_rw,        // the mark of cache_data3 write signal    
+    output reg          wr0_en0,
+    output reg          wr0_en1,
+    output reg          wr0_en2,
+    output reg          wr0_en3,
+    output reg          wr1_en0,
+    output reg          wr1_en1,
+    output reg          wr1_en2,
+    output reg          wr1_en3,
+    output reg          wr2_en0,
+    output reg          wr2_en1,
+    output reg          wr2_en2,
+    output reg          wr2_en3,
+    output reg          wr3_en0,
+    output reg          wr3_en1,
+    output reg          wr3_en2,
+    output reg          wr3_en3,
     // l2_dirty part
     output reg          l2_dirty_wd,
     output reg          l2_dirty0_rw,
@@ -71,12 +90,12 @@ module l2_cache_ctrl(
     input               l2_dirty3,
     /*memory part*/
     input               mem_complete,  
-    input       [511:0] mem_rd,
+    // input       [511:0] mem_rd,
     output reg  [511:0] mem_wd,
     output reg  [25:0]  mem_addr,           // address of memory
     output reg          mem_rw              // read / write signal of memory
     );
-    wire        [1:0]   offset;             // offset of block
+    // wire        [1:0]   offset;             // offset of block
     reg         [1:0]   hitway;
     reg                 hitway0;            // the mark of choosing path0 
     reg                 hitway1;            // the mark of choosing path1
@@ -88,8 +107,8 @@ module l2_cache_ctrl(
     reg                 valid;
     reg                 dirty;
     reg        [511:0]  l2_data_rd;
-    reg        [127:0]  data_wd_l2_copy;
-    reg        [511:0]  l2_data_wd_copy;
+    // reg        [127:0]  data_wd_l2_copy;
+    // reg        [511:0]  l2_data_wd_copy;
     reg        [31:0]   l2_addr;            // address of fetching instruction
     reg                 l2_cache_rw;        // read / write signal of CPU      
     reg                 complete;
@@ -135,25 +154,6 @@ module l2_cache_ctrl(
             tagcomp_hit  = `DISABLE;
         end
 
-        case(offset)
-            `WORD0:begin
-                data_wd_l2_copy = l2_data_rd[127:0];
-                l2_data_wd_copy = {l2_data_rd[511:128],data_rd};
-            end
-            `WORD1:begin
-                data_wd_l2_copy = l2_data_rd[255:128];
-                l2_data_wd_copy = {l2_data_rd[511:256],data_rd,l2_data_rd[127:0]};
-            end
-            `WORD2:begin
-                data_wd_l2_copy = l2_data_rd[383:256];
-                l2_data_wd_copy = {l2_data_rd[511:384],data_rd,l2_data_rd[255:0]};
-            end
-            `WORD3:begin
-                data_wd_l2_copy = l2_data_rd[511:384];
-                l2_data_wd_copy = {data_rd,l2_data_rd[383:0]}; 
-            end
-        endcase // case(offset)  
-
        // cache miss, replacement policy
         if (l2_tag0_rd[17] === `ENABLE) begin
             if (l2_tag1_rd[17] === `ENABLE) begin
@@ -194,7 +194,7 @@ module l2_cache_ctrl(
                     valid = `DISABLE;
                 end else begin
                     dirty = l2_dirty0;
-                end   
+                end
             end
             `L2_WAY1:begin
                 if(l2_tag1_rd[17] === 1'bx) begin
@@ -243,10 +243,26 @@ module l2_cache_ctrl(
             l2_tag1_rw    = `READ;
             l2_tag2_rw    = `READ;
             l2_tag3_rw    = `READ;
-            l2_data0_rw   = `READ;
-            l2_data1_rw   = `READ;
-            l2_data2_rw   = `READ;
-            l2_data3_rw   = `READ;
+            wr0_en0       = `READ;
+            wr0_en1       = `READ;
+            wr0_en2       = `READ;
+            wr0_en3       = `READ;
+            wr1_en0       = `READ;
+            wr1_en1       = `READ;
+            wr1_en2       = `READ;
+            wr1_en3       = `READ;
+            wr2_en0       = `READ;
+            wr2_en1       = `READ;
+            wr2_en2       = `READ;
+            wr2_en3       = `READ;
+            wr3_en0       = `READ;
+            wr3_en1       = `READ;
+            wr3_en2       = `READ;
+            wr3_en3       = `READ;
+            // l2_data0_rw   = `READ;
+            // l2_data1_rw   = `READ;
+            // l2_data2_rw   = `READ;
+            // l2_data3_rw   = `READ;
             l2_dirty0_rw  = `READ;
             l2_dirty1_rw  = `READ;
             l2_dirty2_rw  = `READ;
@@ -266,10 +282,23 @@ module l2_cache_ctrl(
                 // read hit
                 if ( l2_cache_rw == `READ && tagcomp_hit == `ENABLE) begin 
                     l2_miss_stall = `DISABLE;
-                    // nextstate     = `WRITE_L1;
                     l2_rdy        = `ENABLE;
                     data_wd_l2_en = `ENABLE;
-                    data_wd_l2    = data_wd_l2_copy;
+                    // data_wd_l2    = data_wd_l2_copy;
+                    case(offset)
+                        `WORD0:begin
+                            data_wd_l2 = l2_data_rd[127:0];
+                        end
+                        `WORD1:begin
+                            data_wd_l2 = l2_data_rd[255:128];
+                        end
+                        `WORD2:begin
+                            data_wd_l2 = l2_data_rd[383:256];
+                        end
+                        `WORD3:begin
+                            data_wd_l2 = l2_data_rd[511:384];
+                        end
+                    endcase // case(offset)  
                     if(complete == `ENABLE)begin
                         l2_rdy  = `DISABLE;
                         l2_busy = `DISABLE;
@@ -283,27 +312,84 @@ module l2_cache_ctrl(
                     nextstate     = `L2_WRITE_HIT;
                     l2_dirty_wd   = 1'b1;
                     l2_tag_wd     = {1'b1,l2_addr[31:15]};
-                    l2_data_wd    = l2_data_wd_copy;
+                    wd_from_l1_en = `ENABLE;
+                    // l2_data_wd    = l2_data_wd_copy;
                     case(hitway)
                         `L2_WAY0:begin
-                            l2_data0_rw  = `WRITE;
+                            // l2_data0_rw  = `WRITE;
                             l2_dirty0_rw = `WRITE;
                             l2_tag0_rw   = `WRITE;
+                            case(offset)
+                                `WORD0:begin
+                                    wr0_en0 = `WRITE;
+                                end
+                                `WORD1:begin
+                                    wr0_en1 = `WRITE;
+                                end
+                                `WORD2:begin
+                                    wr0_en2 = `WRITE;
+                                end
+                                `WORD3:begin
+                                    wr0_en3 = `WRITE;
+                                end
+                            endcase
                         end // hitway == 00
                         `L2_WAY1:begin
-                            l2_data1_rw  = `WRITE;
+                            // l2_data1_rw  = `WRITE;
                             l2_dirty1_rw = `WRITE;
                             l2_tag1_rw   = `WRITE;
+                            case(offset)
+                                `WORD0:begin
+                                    wr1_en0 = `WRITE;
+                                end
+                                `WORD1:begin
+                                    wr1_en1 = `WRITE;
+                                end
+                                `WORD2:begin
+                                    wr1_en2 = `WRITE;
+                                end
+                                `WORD3:begin
+                                    wr1_en3 = `WRITE;
+                                end
+                            endcase
                         end // hitway == 01
                         `L2_WAY2:begin
-                            l2_data2_rw  = `WRITE;
+                            // l2_data2_rw  = `WRITE;
                             l2_dirty2_rw = `WRITE;
                             l2_tag2_rw   = `WRITE;
+                            case(offset)
+                                `WORD0:begin
+                                    wr2_en0 = `ENABLE;
+                                end
+                                `WORD1:begin
+                                    wr2_en1 = `ENABLE;
+                                end
+                                `WORD2:begin
+                                    wr2_en2 = `ENABLE;
+                                end
+                                `WORD3:begin
+                                    wr2_en3 = `ENABLE;
+                                end
+                            endcase
                         end // hitway == 10
                         `L2_WAY3:begin
-                            l2_data3_rw  = `WRITE;
+                            // l2_data3_rw  = `WRITE;
                             l2_dirty3_rw = `WRITE;
                             l2_tag3_rw   = `WRITE;
+                            case(offset)
+                                `WORD0:begin
+                                    wr3_en0 = `ENABLE;
+                                end
+                                `WORD1:begin
+                                    wr3_en1 = `ENABLE;
+                                end
+                                `WORD2:begin
+                                    wr3_en2 = `ENABLE;
+                                end
+                                `WORD3:begin
+                                    wr3_en3 = `ENABLE;
+                                end
+                            endcase
                         end // hitway == 11
                     endcase // case(hitway) 
                 end else begin // cache miss
@@ -315,27 +401,44 @@ module l2_cache_ctrl(
                         nextstate     = `WRITE_TO_L2;
                         l2_dirty_wd   = 1'b0;
                         l2_tag_wd     = {1'b1,l2_addr[31:15]};
-                        l2_data_wd    = mem_rd;
+                        wd_from_mem_en = `ENABLE;
+                        // l2_data_wd    = mem_rd;
                         case(choose_way)
                             `L2_WAY0:begin
-                                l2_data0_rw  = `WRITE;
+                                // l2_data0_rw  = `WRITE;
                                 l2_tag0_rw   = `WRITE;
                                 l2_dirty0_rw = `WRITE;
+                                wr0_en0 = `WRITE;
+                                wr0_en1 = `WRITE;
+                                wr0_en2 = `WRITE;
+                                wr0_en3 = `WRITE;
                             end
                             `L2_WAY1:begin
-                                l2_data1_rw  = `WRITE;
+                                // l2_data1_rw  = `WRITE;
                                 l2_tag1_rw   = `WRITE;
                                 l2_dirty1_rw = `WRITE;
+                                wr1_en0 = `WRITE;
+                                wr1_en1 = `WRITE;
+                                wr1_en2 = `WRITE;
+                                wr1_en3 = `WRITE;
                             end
                             `L2_WAY2:begin
-                                l2_data2_rw  = `WRITE;
+                                // l2_data2_rw  = `WRITE;
                                 l2_tag2_rw   = `WRITE;
                                 l2_dirty2_rw = `WRITE;
+                                wr2_en0 = `ENABLE;
+                                wr2_en1 = `ENABLE;
+                                wr2_en2 = `ENABLE;
+                                wr2_en3 = `ENABLE;
                             end
                             `L2_WAY3:begin
-                                l2_data3_rw  = `WRITE;
+                                // l2_data3_rw  = `WRITE;
                                 l2_tag3_rw   = `WRITE;
                                 l2_dirty3_rw = `WRITE;
+                                wr3_en0 = `ENABLE;
+                                wr3_en1 = `ENABLE;
+                                wr3_en2 = `ENABLE;
+                                wr3_en3 = `ENABLE;
                             end
                         endcase
                     end else if(valid == `ENABLE && dirty == `ENABLE) begin 
@@ -343,26 +446,18 @@ module l2_cache_ctrl(
                         mem_rw = l2_cache_rw; 
                         case(choose_way)
                             `L2_WAY0:begin
-                                // l2_data0_rw = `READ;
-                                // l2_tag0_rw  = `READ;
                                 mem_wd      = l2_data0_rd;
-                                mem_addr    = {l2_tag0_rd[16:0],l2_addr[14:6]};
+                                mem_addr    = {l2_tag0_rd[16:0],l2_addr[14:6]};  
                             end
                             `L2_WAY1:begin
-                                // l2_data1_rw = `READ;
-                                // l2_tag1_rw  = `READ;
                                 mem_wd      = l2_data1_rd;
                                 mem_addr    = {l2_tag1_rd[16:0],l2_addr[14:6]};
                             end
                             `L2_WAY2:begin
-                                // l2_data2_rw = `READ;
-                                // l2_tag2_rw  = `READ;
                                 mem_wd      = l2_data2_rd;
                                 mem_addr    = {l2_tag2_rd[16:0],l2_addr[14:6]}; 
                             end
                             `L2_WAY3:begin
-                                // l2_data3_rw = `READ;
-                                // l2_tag3_rw  = `READ;
                                 mem_wd      = l2_data3_rd;
                                 mem_addr    = {l2_tag3_rd[16:0],l2_addr[14:6]};
                             end
@@ -382,18 +477,35 @@ module l2_cache_ctrl(
             // end
             `WRITE_TO_L2:begin // write into l2_cache from memory 
                 if(l2_complete == `ENABLE)begin
+                    wd_from_mem_en = `DISABLE;
                     l2_tag0_rw   =  `READ;
                     l2_tag1_rw   =  `READ;
                     l2_tag2_rw   =  `READ;
                     l2_tag3_rw   =  `READ;
-                    l2_data0_rw  =  `READ;
-                    l2_data1_rw  =  `READ;
-                    l2_data2_rw  =  `READ;
-                    l2_data3_rw  =  `READ;  
+                    // l2_data0_rw  =  `READ;
+                    // l2_data1_rw  =  `READ;
+                    // l2_data2_rw  =  `READ;
+                    // l2_data3_rw  =  `READ;  
                     l2_dirty0_rw =  `READ;
                     l2_dirty1_rw =  `READ; 
                     l2_dirty2_rw =  `READ;
                     l2_dirty3_rw =  `READ;
+                    wr0_en0 = `READ;
+                    wr0_en1 = `READ;
+                    wr0_en2 = `READ;
+                    wr0_en3 = `READ;
+                    wr1_en0 = `READ;
+                    wr1_en1 = `READ;
+                    wr1_en2 = `READ;
+                    wr1_en3 = `READ;
+                    wr2_en0 = `READ;
+                    wr2_en1 = `READ;
+                    wr2_en2 = `READ;
+                    wr2_en3 = `READ;
+                    wr3_en0 = `READ;
+                    wr3_en1 = `READ;
+                    wr3_en2 = `READ;
+                    wr3_en3 = `READ;
                     nextstate  =  `ACCESS_L2;                                         
                 end else begin
                     nextstate  =  `WRITE_TO_L2;
@@ -401,18 +513,35 @@ module l2_cache_ctrl(
             end
             `L2_WRITE_HIT:begin // write into l2_cache from L1 
                 if(l2_complete == `ENABLE)begin
+                    wd_from_l1_en = `DISABLE;  // ++++++++++
                     l2_tag0_rw   =  `READ;
                     l2_tag1_rw   =  `READ;
                     l2_tag2_rw   =  `READ;
                     l2_tag3_rw   =  `READ;
-                    l2_data0_rw  =  `READ;
-                    l2_data1_rw  =  `READ;
-                    l2_data2_rw  =  `READ;
-                    l2_data3_rw  =  `READ;  
+                    // l2_data0_rw  =  `READ;
+                    // l2_data1_rw  =  `READ;
+                    // l2_data2_rw  =  `READ;
+                    // l2_data3_rw  =  `READ;  
                     l2_dirty0_rw =  `READ;
                     l2_dirty1_rw =  `READ; 
                     l2_dirty2_rw =  `READ;
                     l2_dirty3_rw =  `READ;
+                    wr0_en0 = `READ;
+                    wr0_en1 = `READ;
+                    wr0_en2 = `READ;
+                    wr0_en3 = `READ;
+                    wr1_en0 = `READ;
+                    wr1_en1 = `READ;
+                    wr1_en2 = `READ;
+                    wr1_en3 = `READ;
+                    wr2_en0 = `READ;
+                    wr2_en1 = `READ;
+                    wr2_en2 = `READ;
+                    wr2_en3 = `READ;
+                    wr3_en0 = `READ;
+                    wr3_en1 = `READ;
+                    wr3_en2 = `READ;
+                    wr3_en3 = `READ;
                     if (irq || drq == `ENABLE) begin
                         nextstate   = `ACCESS_L2;
                      end else begin
@@ -427,30 +556,47 @@ module l2_cache_ctrl(
                 if (mem_complete == `ENABLE) begin
                     mem_addr     = l2_addr[31:6];
                     mem_rw       = `READ; 
-                    nextstate        = `WRITE_TO_L2;
+                    nextstate    = `WRITE_TO_L2;
                     l2_dirty_wd  = 1'b0;
                     l2_tag_wd    = {1'b1,l2_addr[31:15]};
-                    l2_data_wd   = mem_rd;
+                    wd_from_mem_en = `ENABLE;
+                    // l2_data_wd   = mem_rd;
                     case(choose_way)
                         `L2_WAY0:begin
-                            l2_data0_rw  = `WRITE;
+                            // l2_data0_rw  = `WRITE;
                             l2_tag0_rw   = `WRITE;
                             l2_dirty0_rw = `WRITE;
+                            wr0_en0 = `WRITE;
+                            wr0_en1 = `WRITE;
+                            wr0_en2 = `WRITE;
+                            wr0_en3 = `WRITE;
                         end
                         `L2_WAY1:begin
-                            l2_data1_rw  = `WRITE;
+                            // l2_data1_rw  = `WRITE;
                             l2_tag1_rw   = `WRITE;
                             l2_dirty1_rw = `WRITE;
+                            wr1_en0 = `WRITE;
+                            wr1_en1 = `WRITE;
+                            wr1_en2 = `WRITE;
+                            wr1_en3 = `WRITE;
                         end
                         `L2_WAY2:begin
-                            l2_data2_rw  = `WRITE;
+                            // l2_data2_rw  = `WRITE;
                             l2_tag2_rw   = `WRITE;
                             l2_dirty2_rw = `WRITE;
+                            wr2_en0 = `ENABLE;
+                            wr2_en1 = `ENABLE;
+                            wr2_en2 = `ENABLE;
+                            wr2_en3 = `ENABLE;
                         end
                         `L2_WAY3:begin
-                            l2_data3_rw  = `WRITE;
+                            // l2_data3_rw  = `WRITE;
                             l2_tag3_rw   = `WRITE;
                             l2_dirty3_rw = `WRITE;
+                            wr3_en0 = `ENABLE;
+                            wr3_en1 = `ENABLE;
+                            wr3_en2 = `ENABLE;
+                            wr3_en3 = `ENABLE;
                         end
                     endcase
                 end else begin

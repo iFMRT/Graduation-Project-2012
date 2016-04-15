@@ -56,13 +56,13 @@ module if_stage(
     wire [`WORD_DATA_BUS]    insn;
     wire                     data_rdy;
 
-    icache_ctrl icache_ctrl(
+icache_ctrl icache_ctrl(
         .clk            (clk),           // clock
         .rst            (reset),           // reset
         /* CPU part */
-        .if_addr        (if_pc),          // address of fetching instruction
-        .rw             (`READ),         // read / write signal of CPU
-        .cpu_data       (insn),       // read data from cache to CPU
+        .if_addr        (if_pc),         // address of fetching instruction
+        .rw             (`READ),            // read / write signal of CPU
+        .cpu_data       (insn),      // read data of CPU
         .miss_stall     (miss_stall),    // the signal of stall caused by cache miss
         /* L1_cache part */
         .lru            (lru),           // mark of replacing
@@ -81,11 +81,9 @@ module if_stage(
         .l2_rdy         (l2_rdy),        // ready signal of l2_cache
         .complete       (complete),      // complete op writing to L1
         .irq            (irq),
-        .ic_rw_en       (ic_rw_en), 
-        // .l2_index       (l2_index),        
+        .ic_rw_en       (ic_rw_en),      
         .l2_addr        (l2_addr),        
-        .l2_cache_rw    (l2_cache_rw),
-        /* if_reg part */
+        .l2_cache_rw    (l2_cache_rw), 
         .data_rdy       (data_rdy)        
         );
 

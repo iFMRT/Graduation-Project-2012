@@ -29,14 +29,16 @@ module dcache_write_test();
     wire             tag1_rw;       // read / write signal of L1_tag1
     wire     [20:0]  tag_wd;        // write data of L1_tag
     // wire     [19:0]  tag_wd;        // write data of L1_tag
-    wire             data0_rw;      // read / write signal of cache_data0
-    wire             data1_rw;      // read / write signal of cache_data1
+    // wire             data0_rw;      // read / write signal of cache_data0
+    // wire             data1_rw;      // read / write signal of cache_data1
     wire     [7:0]   index;         // address of L1_cache
     /* l2_cache part */
     wire             irq;           // icache request
     wire             drq;           // dcache request
     wire             ic_rw_en;      // write enable signal
     wire             dc_rw_en;
+    wire     [1:0]   offset;
+    wire     [1:0]   l2_offset;
     // reg              l2_busy;    // L2C busy mark
     // reg              l2_rdy;     // L2C ready mark
     // reg      [127:0] data_wd;    // write data to L1_IC
@@ -52,7 +54,7 @@ module dcache_write_test();
     // wire     [8:0]   l2_index_dc;      // address of cache
     /*cache part*/
     wire             l2_busy;       // busy mark of L2C
-    wire     [127:0] data_rd;
+    wire     [127:0] rd_to_l2;
     wire             l2_tag0_rw;    // read / write signal of tag0
     wire             l2_tag1_rw;    // read / write signal of tag1
     wire             l2_tag2_rw;    // read / write signal of tag0
@@ -60,10 +62,10 @@ module dcache_write_test();
     wire     [17:0]  l2_tag_wd;     // write data of tag
     // wire     [16:0]  l2_tag_wd;     // write data of tag
     wire             l2_rdy;        // ready mark of L2C
-    wire             l2_data0_rw;   // the mark of cache_data0 write signal 
-    wire             l2_data1_rw;   // the mark of cache_data1 write signal 
-    wire             l2_data2_rw;   // the mark of cache_data2 write signal 
-    wire             l2_data3_rw;   // the mark of cache_data3 write signal 
+    // wire             l2_data0_rw;   // the mark of cache_data0 write signal 
+    // wire             l2_data1_rw;   // the mark of cache_data1 write signal 
+    // wire             l2_data2_rw;   // the mark of cache_data2 write signal 
+    // wire             l2_data3_rw;   // the mark of cache_data3 write signal 
     /*memory part*/
     wire     [25:0]  mem_addr;      // address of memory
     wire             mem_rw;        // read / write signal of memory
@@ -114,7 +116,7 @@ module dcache_write_test();
         .rst            (rst),           // reset
         /* CPU part */
         .addr           (aluout_m),       // address of fetching instruction
-        .wr_data_m      (wr_data_m),
+        // .wr_data_m      (wr_data_m),
         .memwrite_m     (memwrite_m),            // read / write signal of CPU
         .access_mem     (access_mem), 
         .access_mem_ex  (access_mem_ex), 
@@ -130,17 +132,25 @@ module dcache_write_test();
         .dirty1         (dirty1),        //  
         .dirty_wd       (dirty_wd),      //       
         .dirty0_rw      (dirty0_rw),     //       
-        .dirty1_rw      (dirty1_rw),     //  
-        .data_wd_dc     (data_wd_dc), 
+        .dirty1_rw      (dirty1_rw),     // 
+        .wr0_en0        (l1_wr0_en0),   // the mark of cache_data0 write signal 
+        .wr0_en1        (l1_wr0_en1),   // the mark of cache_data1 write signal 
+        .wr0_en2        (l1_wr0_en2),   // the mark of cache_data2 write signal 
+        .wr0_en3        (l1_wr0_en3),   // the mark of cache_data3 write signal         
+        .wr1_en0        (l1_wr1_en0),
+        .wr1_en1        (l1_wr1_en1),
+        .wr1_en2        (l1_wr1_en2),
+        .wr1_en3        (l1_wr1_en3), 
+        .offset         (offset), 
         .tag0_rw        (tag0_rw),       // read / write signal of L1_tag0
         .tag1_rw        (tag1_rw),       // read / write signal of L1_tag1
         .tag_wd         (tag_wd),        // write data of L1_tag
         .data_wd_dc_en  (data_wd_dc_en),
         .hitway         (hitway),
-        .data0_rw       (data0_rw),      // read / write signal of data0
-        .data1_rw       (data1_rw),      // read / write signal of data1
+        // .data0_rw       (data0_rw),      // read / write signal of data0
+        // .data1_rw       (data1_rw),      // read / write signal of data1
         .index          (index),         // address of L1_cache
-        .data_rd        (data_rd),
+        .rd_to_l2        (rd_to_l2),
         /* l2_cache part */
         .l2_complete    (l2_complete),   // busy signal of l2_cache
         .l2_busy        (l2_busy),       // busy signal of l2_cache
@@ -153,15 +163,16 @@ module dcache_write_test();
         .l2_cache_rw    (l2_cache_rw_dc)        
         );
     l2_cache_ctrl l2_cache_ctrl(
-        .clk            (clk),              // clock of L2C
-        .rst            (rst),              // reset
+        .clk            (clk),       // clock of L2C
+        .rst            (rst),           // reset
         /* CPU part */
         .l2_addr_ic     (l2_addr_ic),       // address of fetching instruction
         .l2_cache_rw_ic (l2_cache_rw_ic),   // read / write signal of CPU
         .l2_addr_dc     (l2_addr_dc),       // address of fetching instruction
         .l2_cache_rw_dc (l2_cache_rw_dc),   // read / write signal of CPU
-        .l2_miss_stall  (l2_miss_stall),    // stall caused by l2_miss
+        .l2_miss_stall  (l2_miss_stall), // stall caused by l2_miss
         .l2_index       (l2_index),
+        .offset         (l2_offset),
         /*cache part*/
         .irq            (irq),           // icache request
         .drq            (drq),
@@ -169,9 +180,11 @@ module dcache_write_test();
         .dc_rw_en       (dc_rw_en),
         .complete_ic    (complete_ic),   // complete write from L2 to L1
         .complete_dc    (complete_dc),   // complete write from L2 to L1
-        .data_rd        (data_rd),       // write data to L1C       
-        .data_wd_l2     (data_wd_l2),       // write data to L1C       
+        // .data_rd        (data_rd),       // write data to L1C       
+        .data_wd_l2     (data_wd_l2),    // write data to L1C       
         .data_wd_l2_en  (data_wd_l2_en), 
+        .wd_from_l1_en  (wd_from_l1_en), 
+        .wd_from_mem_en (wd_from_mem_en), 
         /*l2_cache part*/
         .l2_complete    (l2_complete),   // complete write from MEM to L2
         .l2_rdy         (l2_rdy),
@@ -192,13 +205,30 @@ module dcache_write_test();
         .l2_data1_rd    (l2_data1_rd),   // read data of cache_data1
         .l2_data2_rd    (l2_data2_rd),   // read data of cache_data2
         .l2_data3_rd    (l2_data3_rd),   // read data of cache_data3
-        .l2_data_wd     (l2_data_wd),           
-        .l2_data0_rw    (l2_data0_rw),   // the mark of cache_data0 write signal 
-        .l2_data1_rw    (l2_data1_rw),   // the mark of cache_data1 write signal 
-        .l2_data2_rw    (l2_data2_rw),   // the mark of cache_data2 write signal 
-        .l2_data3_rw    (l2_data3_rw),   // the mark of cache_data3 write signal         
+        // .l2_data_wd     (l2_data_wd),           
+        // l2_data part
+        // .l2_data0_rw    (l2_data0_rw),   // read data of cache_data0
+        // .l2_data1_rw    (l2_data1_rw),   // read data of cache_data1
+        // .l2_data2_rw    (l2_data2_rw),   // read data of cache_data2
+        // .l2_data3_rw    (l2_data3_rw),   // read data of cache_data3
+        .wr0_en0        (wr0_en0),   // the mark of cache_data0 write signal 
+        .wr0_en1        (wr0_en1),   // the mark of cache_data1 write signal 
+        .wr0_en2        (wr0_en2),   // the mark of cache_data2 write signal 
+        .wr0_en3        (wr0_en3),   // the mark of cache_data3 write signal         
+        .wr1_en0        (wr1_en0),
+        .wr1_en1        (wr1_en1),
+        .wr1_en2        (wr1_en2),
+        .wr1_en3        (wr1_en3),
+        .wr2_en0        (wr2_en0),
+        .wr2_en1        (wr2_en1),
+        .wr2_en2        (wr2_en2),
+        .wr2_en3        (wr2_en3), 
+        .wr3_en0        (wr3_en0),
+        .wr3_en1        (wr3_en1),
+        .wr3_en2        (wr3_en2), 
+        .wr3_en3        (wr3_en3),
         // l2_dirty part
-        .l2_dirty_wd   (l2_dirty_wd),
+        .l2_dirty_wd    (l2_dirty_wd),
         .l2_dirty0_rw   (l2_dirty0_rw),
         .l2_dirty1_rw   (l2_dirty1_rw),
         .l2_dirty2_rw   (l2_dirty2_rw),
@@ -209,7 +239,7 @@ module dcache_write_test();
         .l2_dirty3      (l2_dirty3),         
         /*memory part*/
         .mem_complete   (mem_complete),
-        .mem_rd         (mem_rd),
+        // .mem_rd         (mem_rd),
         .mem_wd         (mem_wd), 
         .mem_addr       (mem_addr),     // address of memory
         .mem_rw         (mem_rw)        // read / write signal of memory
@@ -219,9 +249,9 @@ module dcache_write_test();
         .tag0_rw        (tag0_rw),       // read / write signal of tag0
         .tag1_rw        (tag1_rw),       // read / write signal of tag1
         .index          (index),         // address of cache
-        .dirty0_rw      (dirty0_rw),       
-        .dirty1_rw      (dirty1_rw),   
-        .dirty_wd       (dirty_wd), 
+        .dirty0_rw      (dirty0_rw),     
+        .dirty1_rw      (dirty1_rw), 
+        .dirty_wd       (dirty_wd),   
         .tag_wd         (tag_wd),        // write data of tag
         .tag0_rd        (tag0_rd),       // read data of tag0
         .tag1_rd        (tag1_rd),       // read data of tag1
@@ -232,28 +262,55 @@ module dcache_write_test();
         );
     data_ram ddata_ram(
         .clk            (clk),           // clock
-        .data0_rw       (data0_rw),      // the mark of cache_data0 write signal 
-        .data1_rw       (data1_rw),      // the mark of cache_data1 write signal 
+        // .data0_rw       (data0_rw),      // the mark of cache_data0 write signal 
+        // .data1_rw       (data1_rw),      // the mark of cache_data1 write signal 
+        .wr0_en0        (l1_wr0_en0),   // the mark of cache_data0 write signal 
+        .wr0_en1        (l1_wr0_en1),   // the mark of cache_data1 write signal 
+        .wr0_en2        (l1_wr0_en2),   // the mark of cache_data2 write signal 
+        .wr0_en3        (l1_wr0_en3),   // the mark of cache_data3 write signal         
+        .wr1_en0        (l1_wr1_en0),
+        .wr1_en1        (l1_wr1_en1),
+        .wr1_en2        (l1_wr1_en2),
+        .wr1_en3        (l1_wr1_en3),
         .index          (index),         // address of cache__
         .data_wd_l2     (data_wd_l2),    // write data of l2_cache
-        .data_wd_dc     (data_wd_dc),    // write data of l2_cache
+        // .data_wd_dc     (data_wd_dc),    // write data of l2_cache
         .data_wd_l2_en  (data_wd_l2_en), // write data of l2_cache
         .data_wd_dc_en  (data_wd_dc_en), // write data of l2_cache
+        .wr_data_m      (wr_data_m),
+        .offset         (offset), 
         .data0_rd       (data0_rd),      // read data of cache_data0
         .data1_rd       (data1_rd)       // read data of cache_data1
     );
     l2_data_ram l2_data_ram(
         .clk            (clk_tmp),       // clock of L2C
-        .l2_data0_rw    (l2_data0_rw),   // the mark of cache_data0 write signal 
-        .l2_data1_rw    (l2_data1_rw),   // the mark of cache_data1 write signal 
-        .l2_data2_rw    (l2_data2_rw),   // the mark of cache_data2 write signal 
-        .l2_data3_rw    (l2_data3_rw),   // the mark of cache_data3 write signal 
+        // .l2_data0_rw    (l2_data0_rw),   // the mark of cache_data0 write signal 
+        // .l2_data1_rw    (l2_data1_rw),   // the mark of cache_data1 write signal 
+        // .l2_data2_rw    (l2_data2_rw),   // the mark of cache_data2 write signal 
+        // .l2_data3_rw    (l2_data3_rw),   // the mark of cache_data3 write signal 
         .l2_index       (l2_index),
-        // .irq            (irq),           // address of cache
-        // .drq            (drq),           // address of cache
-        // .l2_index_ic    (l2_index_ic),   // address of cache
-        // .l2_index_dc    (l2_index_dc),   // address of cache
-        .l2_data_wd     (l2_data_wd),    // write data of l2_cache
+        .mem_rd         (mem_rd),
+        .offset         (l2_offset),
+        .rd_to_l2       (rd_to_l2),
+        .wd_from_mem_en (wd_from_mem_en),
+        .wd_from_l1_en  (wd_from_l1_en),
+        .wr0_en0        (wr0_en0),   // the mark of cache_data0 write signal 
+        .wr0_en1        (wr0_en1),   // the mark of cache_data1 write signal 
+        .wr0_en2        (wr0_en2),   // the mark of cache_data2 write signal 
+        .wr0_en3        (wr0_en3),   // the mark of cache_data3 write signal         
+        .wr1_en0        (wr1_en0),
+        .wr1_en1        (wr1_en1),
+        .wr1_en2        (wr1_en2),
+        .wr1_en3        (wr1_en3),
+        .wr2_en0        (wr2_en0),
+        .wr2_en1        (wr2_en1),
+        .wr2_en2        (wr2_en2),
+        .wr2_en3        (wr2_en3), 
+        .wr3_en0        (wr3_en0),
+        .wr3_en1        (wr3_en1),
+        .wr3_en2        (wr3_en2), 
+        .wr3_en3        (wr3_en3),
+        // .l2_data_wd     (l2_data_wd),    // write data of l2_cache
         .l2_data0_rd    (l2_data0_rd),   // read data of cache_data0
         .l2_data1_rd    (l2_data1_rd),   // read data of cache_data1
         .l2_data2_rd    (l2_data2_rd),   // read data of cache_data2
@@ -266,10 +323,6 @@ module dcache_write_test();
         .l2_tag2_rw     (l2_tag2_rw),    // read / write signal of tag2
         .l2_tag3_rw     (l2_tag3_rw),    // read / write signal of tag3
         .l2_index       (l2_index),
-        // .irq            (irq),           // address of cache
-        // .drq            (drq),           // address of cache
-        // .l2_index_ic    (l2_index_ic),   // address of cache
-        // .l2_index_dc    (l2_index_dc),   // address of cache
         .l2_tag_wd      (l2_tag_wd),     // write data of tag
         .l2_dirty0_rw   (l2_dirty0_rw),
         .l2_dirty1_rw   (l2_dirty1_rw),
@@ -288,6 +341,7 @@ module dcache_write_test();
         .l2_dirty3      (l2_dirty3)
     );
 
+
     task dcache_ctrl_tb;
         input  [31:0]  _read_data_m;        // read data of CPU
         input          _miss_stall;      // the signal of stall caused by cache miss
@@ -296,14 +350,13 @@ module dcache_write_test();
         input          _tag0_rw;         // read / write signal of L1_tag0
         input          _tag1_rw;         // read / write signal of L1_tag1
         input  [20:0]  _tag_wd;          // write data of L1_tag
-        input          _data0_rw;        // read / write signal of data0
-        input          _data1_rw;        // read / write signal of data1
+        // input          _data0_rw;        // read / write signal of data0
+        // input          _data1_rw;        // read / write signal of data1
         input  [7:0]   _index;           // address of L1_cache
-        input  [127:0] _data_wd_dc;
-        input  [127:0] _data_rd;        
+        // input  [127:0] _data_wd_dc;
+        input  [127:0] _rd_to_l2;        
         /* l2_cache part */
         input          _drq;             // icache request
-        // input  [8:0]   _l2_index;
         input  [31:0]  _l2_addr_dc;
         // dirty
         input          _dirty_wd;
@@ -311,33 +364,31 @@ module dcache_write_test();
         input          _dirty1_rw;
 
         begin 
-            if( (read_data_m   === _read_data_m)    && 
+            if( (read_data_m === _read_data_m)      && 
                 (miss_stall === _miss_stall)        && 
                 (tag0_rw    === _tag0_rw)           && 
                 (tag1_rw    === _tag1_rw)           && 
                 (tag_wd     === _tag_wd)            && 
-                (data0_rw   === _data0_rw)          && 
-                (data1_rw   === _data1_rw)          && 
+                // (data0_rw   === _data0_rw)          && 
+                // (data1_rw   === _data1_rw)          && 
                 (index      === _index)             && 
                 (drq        === _drq)               && 
-                // (l2_index === _l2_index)         && 
-                (_l2_addr_dc === _l2_addr_dc)       && 
-                (data_wd_dc   === _data_wd_dc)      && 
+                (l2_addr_dc === _l2_addr_dc)        && 
+                // (data_wd_dc === _data_wd_dc)        && 
                 (dirty0_rw  === _dirty0_rw)         && 
                 (dirty1_rw  === _dirty1_rw)         && 
-                (data_rd    === _data_rd)           && 
-                // (hitway     === _hitway)         &&
-                (data_wd_dc    === _data_wd_dc)
+                (rd_to_l2    === _rd_to_l2)         //  && 
+                // (hitway     === _hitway)  
                ) begin 
                  $display("dcache Test Succeeded !"); 
             end else begin 
                  $display("dcache Test Failed !"); 
             end 
-            if (data_wd_dc   !== _data_wd_dc) begin
-                $display("data_wd_dc:%b(excepted %b)",data_wd_dc,_data_wd_dc); 
-            end
-            if (data_rd   !== _data_rd) begin
-                $display("data_rd:%b(excepted %b)",data_rd,_data_rd); 
+            // if (data_wd_dc   !== _data_wd_dc) begin
+            //     $display("data_wd_dc:%b(excepted %b)",data_wd_dc,_data_wd_dc); 
+            // end
+            if (rd_to_l2   !== _rd_to_l2) begin
+                $display("rd_to_l2:%b(excepted %b)",rd_to_l2,_rd_to_l2); 
             end
             if (dirty0_rw   !== _dirty0_rw) begin
                 $display("dirty0_rw:%b(excepted %b)",dirty0_rw,_dirty0_rw); 
@@ -360,12 +411,12 @@ module dcache_write_test();
             if (tag_wd     !== _tag_wd) begin
                 $display("tag_wd:%b(excepted %b)",tag_wd,_tag_wd); 
             end
-            if (data0_rw   !== _data0_rw) begin
-                $display("data0_rw:%b(excepted %b)",data0_rw,_data0_rw); 
-            end
-            if (data1_rw   !== _data1_rw) begin
-                $display("data1_rw:%b(excepted %b)",data1_rw,_data1_rw); 
-            end
+            // if (data0_rw   !== _data0_rw) begin
+            //     $display("data0_rw:%b(excepted %b)",data0_rw,_data0_rw); 
+            // end
+            // if (data1_rw   !== _data1_rw) begin
+            //     $display("data1_rw:%b(excepted %b)",data1_rw,_data1_rw); 
+            // end
             if (index      !== _index) begin
                 $display("index:%b(excepted %b)",index,_index); 
             end
@@ -387,11 +438,11 @@ module dcache_write_test();
         input           _l2_tag3_rw;         // read / write signal of tag1
         input   [17:0]  _l2_tag_wd;          // write data of tag0
         input           _l2_rdy;             // ready signal of l2_cache
-        input           _l2_data0_rw;        // the mark of cache_data0 write signal 
-        input           _l2_data1_rw;        // the mark of cache_data1 write signal 
-        input           _l2_data2_rw;        // the mark of cache_data2 write signal 
-        input           _l2_data3_rw;        // the mark of cache_data3 write signal 
-        input   [511:0] _l2_data_wd;
+        // input           _l2_data0_rw;        // the mark of cache_data0 write signal 
+        // input           _l2_data1_rw;        // the mark of cache_data1 write signal 
+        // input           _l2_data2_rw;        // the mark of cache_data2 write signal 
+        // input           _l2_data3_rw;        // the mark of cache_data3 write signal 
+        // input   [511:0] _l2_data_wd;
         // l2_dirty part
         input           _l2_dirty_wd;
         input           _l2_dirty0_rw;
@@ -410,11 +461,11 @@ module dcache_write_test();
                 (l2_tag3_rw    === _l2_tag3_rw)     && 
                 (l2_tag_wd     === _l2_tag_wd)      && 
                 (l2_rdy        === _l2_rdy)         && 
-                (l2_data0_rw   === _l2_data0_rw)    && 
-                (l2_data1_rw   === _l2_data1_rw)    && 
-                (l2_data2_rw   === _l2_data2_rw)    && 
-                (l2_data3_rw   === _l2_data3_rw)    && 
-                (l2_data_wd    === _l2_data_wd)     &&
+                // (l2_data0_rw   === _l2_data0_rw)    && 
+                // (l2_data1_rw   === _l2_data1_rw)    && 
+                // (l2_data2_rw   === _l2_data2_rw)    && 
+                // (l2_data3_rw   === _l2_data3_rw)    && 
+                // (l2_data_wd    === _l2_data_wd)     &&
                 (l2_dirty_wd  === _l2_dirty_wd)     &&
                 (l2_dirty0_rw  === _l2_dirty0_rw)   &&
                 (l2_dirty1_rw  === _l2_dirty1_rw)   &&
@@ -423,11 +474,10 @@ module dcache_write_test();
                 (mem_addr      === _mem_addr)       && 
                 (mem_rw        === _mem_rw)  
                ) begin 
-                 $display("l2_dcache Test Succeeded !"); 
+                 $display("l2_icache Test Succeeded !"); 
             end else begin 
-                 $display("l2_dcache Test Failed !"); 
+                 $display("l2_icache Test Failed !"); 
             end 
-            
             // check
             if(l2_miss_stall !== _l2_miss_stall)begin 
                 $display("l2_miss_stall Test Failed !"); 
@@ -435,7 +485,7 @@ module dcache_write_test();
             if(l2_busy       !== _l2_busy)     begin
                 $display("l2_busy Test Failed !"); 
             end
-            if(data_wd_l2    !== _data_wd_l2)     begin
+            if(data_wd_l2       !== _data_wd_l2)     begin
                 $display("data_wd_l2:%b(excepted %b)",data_wd_l2,_data_wd_l2); 
             end
             if(l2_tag0_rw    !== _l2_tag0_rw)  begin
@@ -456,20 +506,20 @@ module dcache_write_test();
             if(l2_rdy        !== _l2_rdy)      begin
                 $display("l2_rdy Test Failed !"); 
             end
-            if(l2_data0_rw   !== _l2_data0_rw) begin
-                $display("l2_data0_rw Test Failed !"); 
-            end
-            if(l2_data1_rw   !== _l2_data1_rw) begin
-                $display("l2_data1_rw Test Failed !"); 
-            end
-            if(l2_data2_rw   !== _l2_data2_rw) begin
-                $display("l2_data2_rw Test Failed !"); 
-            end
-            if(l2_data3_rw   !== _l2_data3_rw) begin
-                $display("l2_data3_rw Test Failed !"); 
-            end
+            // if(l2_data0_rw   !== _l2_data0_rw) begin
+            //     $display("l2_data0_rw Test Failed !"); 
+            // end
+            // if(l2_data1_rw   !== _l2_data1_rw) begin
+            //     $display("l2_data1_rw Test Failed !"); 
+            // end
+            // if(l2_data2_rw   !== _l2_data2_rw) begin
+            //     $display("l2_data2_rw Test Failed !"); 
+            // end
+            // if(l2_data3_rw   !== _l2_data3_rw) begin
+            //     $display("l2_data3_rw Test Failed !"); 
+            // end
             if (l2_dirty_wd !== _l2_dirty_wd) begin
-                $display("l2_dirty_wd Test Failed !"); 
+                $display("l2_dirty0_wd Test Failed !"); 
             end
             if (l2_dirty0_rw !== _l2_dirty0_rw) begin
                 $display("l2_dirty0_rw Test Failed !"); 
@@ -491,9 +541,9 @@ module dcache_write_test();
         input              _lru;            // read block of tag
         input              _complete_dc;       // complete_dc write from L2 to L1
         begin 
-            if( (tag0_rd     === _tag0_rd)     && 
-                (tag1_rd     === _tag1_rd)     && 
-                (lru         === _lru)         && 
+            if( (tag0_rd  === _tag0_rd)     && 
+                (tag1_rd  === _tag1_rd)     && 
+                (lru      === _lru)         && 
                 (complete_dc === _complete_dc)              
                ) begin 
                  $display("Tag_ram Test Succeeded !"); 
@@ -552,24 +602,24 @@ module dcache_write_test();
             end else begin 
                  $display("l2_tag_ram Test Failed !"); 
             end 
-            if (l2_tag0_rd  !== _l2_tag0_rd) begin
-                $display("l2_tag0_rd:%b(excepted %b)",l2_tag0_rd,_l2_tag0_rd); 
-            end
-            if (l2_tag1_rd  !== _l2_tag1_rd) begin
-                $display("l2_tag1_rd:%b(excepted %b)",l2_tag1_rd,_l2_tag1_rd); 
-            end
-            if (l2_tag2_rd  !== _l2_tag2_rd) begin
-                $display("l2_tag2_rd:%b(excepted %b)",l2_tag2_rd,_l2_tag2_rd); 
-            end
-            if (l2_tag3_rd  !== _l2_tag3_rd) begin
-                $display("l2_tag3_rd:%b(excepted %b)",l2_tag3_rd,_l2_tag3_rd); 
-            end
-            if (plru        !== _plru) begin
-                $display("plru:%b(excepted %b)",plru,_plru); 
-            end
-            if (l2_complete !== _l2_complete) begin
-                $display("l2_complete:%b(excepted %b)",l2_complete,_l2_complete); 
-            end
+            // if (l2_tag0_rd  !== _l2_tag0_rd) begin
+            //     $display("l2_tag0_rd:%b(excepted %b)",l2_tag0_rd,_l2_tag0_rd); 
+            // end
+            // if (l2_tag1_rd  !== _l2_tag1_rd) begin
+            //     $display("l2_tag1_rd:%b(excepted %b)",l2_tag1_rd,_l2_tag1_rd); 
+            // end
+            // if (l2_tag2_rd  !== _l2_tag2_rd) begin
+            //     $display("l2_tag2_rd:%b(excepted %b)",l2_tag2_rd,_l2_tag2_rd); 
+            // end
+            // if (l2_tag3_rd  !== _l2_tag3_rd) begin
+            //     $display("l2_tag3_rd:%b(excepted %b)",l2_tag3_rd,_l2_tag3_rd); 
+            // end
+            // if (plru        !== _plru) begin
+            //     $display("plru:%b(excepted %b)",plru,_plru); 
+            // end
+            // if (l2_complete !== _l2_complete) begin
+            //     $display("l2_complete:%b(excepted %b)",l2_complete,_l2_complete); 
+            // end
         end
     endtask
     task l2_data_ram_tb;
@@ -587,20 +637,19 @@ module dcache_write_test();
             end else begin 
                  $display("l2_data_ram Test Failed !"); 
             end 
-	        if (l2_data0_rd  !== _l2_data0_rd) begin
-	            $display("l2_data0_rd:%b(excepted %b)",l2_data0_rd,_l2_data0_rd); 
-	        end
-	        if (l2_data1_rd  !== _l2_data1_rd) begin
-	            $display("l2_data1_rd:%b(excepted %b)",l2_data1_rd,_l2_data1_rd); 
-	        end
-	        if (l2_data2_rd  !== _l2_data2_rd) begin
-	            $display("l2_data2_rd:%b(excepted %b)",l2_data2_rd,_l2_data2_rd); 
-	        end
-	        if (l2_data3_rd  !== _l2_data3_rd) begin
-	            $display("l2_data3_rd:%b(excepted %b)",l2_data3_rd,_l2_data3_rd); 
-	        end
         end
-        
+        // if (l2_data0_rd  !== _l2_data0_rd) begin
+        //     $display("l2_data0_rd:%b(excepted %b)",l2_data0_rd,_l2_data0_rd); 
+        // end
+        // if (l2_data1_rd  !== _l2_data1_rd) begin
+        //     $display("l2_data1_rd:%b(excepted %b)",l2_data1_rd,_l2_data1_rd); 
+        // end
+        // if (l2_data2_rd  !== _l2_data2_rd) begin
+        //     $display("l2_data2_rd:%b(excepted %b)",l2_data2_rd,_l2_data2_rd); 
+        // end
+        // if (l2_data3_rd  !== _l2_data3_rd) begin
+        //     $display("l2_data3_rd:%b(excepted %b)",l2_data3_rd,_l2_data3_rd); 
+        // end
     endtask
 
     /******** Define Simulation Loop********/ 
@@ -647,11 +696,11 @@ module dcache_write_test();
                 `READ,              // read / write signal of tag3
                 18'bx,              // write data of tag
                 `DISABLE,           // ready signal of l2_cache
-                `READ,              // the mark of cache_data0 write signal 
-                `READ,              // the mark of cache_data1 write signal 
-                `READ,              // the mark of cache_data2 write signal 
-                `READ,              // the mark of cache_data3 write signal 
-                512'bx,
+                // `READ,              // the mark of cache_data0 write signal 
+                // `READ,              // the mark of cache_data1 write signal 
+                // `READ,              // the mark of cache_data2 write signal 
+                // `READ,              // the mark of cache_data3 write signal 
+                // 512'bx,
                 1'bx,
                 `READ,
                 `READ,
@@ -666,10 +715,10 @@ module dcache_write_test();
                 `READ,          // read / write signal of L1_tag0
                 `READ,          // read / write signal of L1_tag1
                 21'b1_0000_0000_0000_0000_1110,       // write data of L1_tag
-                `READ,          // read / write signal of data0
-                `READ,          // read / write signal of data1
+                // `READ,          // read / write signal of data0
+                // `READ,          // read / write signal of data1
                 8'b0001_0000,   // address of L1_cache
-                128'bx,         // data_wd
+                // 128'bx,         // data_wd
                 128'bx,         // data_rd choosing from data_rd1~data_rd3
                 `ENABLE,       // icache request
                 // 9'b110_0001_00,
@@ -687,10 +736,10 @@ module dcache_write_test();
                 `READ,          // read / write signal of L1_tag0
                 `READ,          // read / write signal of L1_tag1
                 21'b1_0000_0000_0000_0000_1110,       // write data of L1_tag
-                `READ,          // read / write signal of data0
-                `READ,          // read / write signal of data1
+                // `READ,          // read / write signal of data0
+                // `READ,          // read / write signal of data1
                 8'b0001_0000,   // address of L1_cache
-                128'bx,         // data_wd
+                // 128'bx,         // data_wd
                 128'bx,         // data_rd choosing from data_rd1~data_rd3
                 `ENABLE,        // icache request
                 // 9'b110_0001_00,
@@ -709,11 +758,11 @@ module dcache_write_test();
                 `READ,              // read / write signal of tag3
                 18'b1_0000_0000_0000_0000_1,              // write data of tag
                 `DISABLE,           // ready signal of l2_cache
-                `WRITE,              // the mark of cache_data0 write signal 
-                `READ,              // the mark of cache_data1 write signal 
-                `READ,              // the mark of cache_data2 write signal 
-                `READ,              // the mark of cache_data3 write signal 
-                512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,
+                // `WRITE,              // the mark of cache_data0 write signal 
+                // `READ,              // the mark of cache_data1 write signal 
+                // `READ,              // the mark of cache_data2 write signal 
+                // `READ,              // the mark of cache_data3 write signal 
+                // 512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,
                 1'b0,
                 `WRITE,
                 `READ,
@@ -757,11 +806,11 @@ module dcache_write_test();
                 `READ,              // read / write signal of tag3
                 18'b1_0000_0000_0000_0000_1,              // write data of tag
                 `DISABLE,           // ready signal of l2_cache
-                `READ,              // the mark of cache_data0 write signal 
-                `READ,              // the mark of cache_data1 write signal 
-                `READ,              // the mark of cache_data2 write signal 
-                `READ,              // the mark of cache_data3 write signal 
-                512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,
+                // `READ,              // the mark of cache_data0 write signal 
+                // `READ,              // the mark of cache_data1 write signal 
+                // `READ,              // the mark of cache_data2 write signal 
+                // `READ,              // the mark of cache_data3 write signal 
+                // 512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,
                 1'b0,
                 `READ,
                 `READ,
@@ -783,11 +832,11 @@ module dcache_write_test();
                 `READ,              // read / write signal of tag3
                 18'b1_0000_0000_0000_0000_1,              // write data of tag
                 `ENABLE,           // ready signal of l2_cache
-                `READ,              // the mark of cache_data0 write signal 
-                `READ,              // the mark of cache_data1 write signal 
-                `READ,              // the mark of cache_data2 write signal 
-                `READ,              // the mark of cache_data3 write signal 
-                512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,
+                // `READ,              // the mark of cache_data0 write signal 
+                // `READ,              // the mark of cache_data1 write signal 
+                // `READ,              // the mark of cache_data2 write signal 
+                // `READ,              // the mark of cache_data3 write signal 
+                // 512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,
                 1'b0,
                 `READ,
                 `READ,
@@ -803,10 +852,10 @@ module dcache_write_test();
                 `WRITE,         // read / write signal of L1_tag0
                 `READ,          // read / write signal of L1_tag1
                 21'b1_0000_0000_0000_0000_1110,       // write data of L1_tag
-                `WRITE,         // read / write signal of data0
-                `READ,          // read / write signal of data1
+                // `WRITE,         // read / write signal of data0
+                // `READ,          // read / write signal of data1
                 8'b0001_0000,   // address of L1_cache
-                128'bx,         // data_wd
+                // 128'bx,         // data_wd
                 128'bx,         // data_rd choosing from data_rd1~data_rd3
                 `ENABLE,         // icache request
                 // 9'b110_0001_00,
@@ -828,11 +877,11 @@ module dcache_write_test();
                 `READ,              // read / write signal of tag3
                 18'b1_0000_0000_0000_0000_1,              // write data of tag
                 `DISABLE,           // ready signal of l2_cache
-                `READ,              // the mark of cache_data0 write signal 
-                `READ,              // the mark of cache_data1 write signal 
-                `READ,              // the mark of cache_data2 write signal 
-                `READ,              // the mark of cache_data3 write signal 
-                512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,
+                // `READ,              // the mark of cache_data0 write signal 
+                // `READ,              // the mark of cache_data1 write signal 
+                // `READ,              // the mark of cache_data2 write signal 
+                // `READ,              // the mark of cache_data3 write signal 
+                // 512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,
                 1'b0,
                 `READ,
                 `READ,
@@ -847,10 +896,10 @@ module dcache_write_test();
                 `READ,          // read / write signal of L1_tag0
                 `READ,          // read / write signal of L1_tag1
                 21'b1_0000_0000_0000_0000_1110,       // write data of L1_tag
-                `READ,          // read / write signal of data0
-                `READ,          // read / write signal of data1
+                // `READ,          // read / write signal of data0
+                // `READ,          // read / write signal of data1
                 8'b0001_0000,   // address of L1_cache
-                128'bx,         // data_wd
+                // 128'bx,         // data_wd
                 128'bx,         // data_rd choosing from data_rd1~data_rd3
                 `DISABLE,         // icache request
                 // 9'b110_0001_00,
@@ -882,11 +931,11 @@ module dcache_write_test();
                 `READ,              // read / write signal of tag3
                 18'b1_0000_0000_0000_0000_1,              // write data of tag
                 `DISABLE,           // ready signal of l2_cache
-                `READ,              // the mark of cache_data0 write signal 
-                `READ,              // the mark of cache_data1 write signal 
-                `READ,              // the mark of cache_data2 write signal 
-                `READ,              // the mark of cache_data3 write signal 
-                512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,
+                // `READ,              // the mark of cache_data0 write signal 
+                // `READ,              // the mark of cache_data1 write signal 
+                // `READ,              // the mark of cache_data2 write signal 
+                // `READ,              // the mark of cache_data3 write signal 
+                // 512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,
                 1'b0,
                 `READ,
                 `READ,
@@ -901,10 +950,10 @@ module dcache_write_test();
                 `WRITE,          // read / write signal of L1_tag0
                 `READ,          // read / write signal of L1_tag1
                 21'b1_0000_0000_0000_0000_1110,       // write data of L1_tag
-                `WRITE,         // read / write signal of data0
-                `READ,          // read / write signal of data1
+                // `WRITE,         // read / write signal of data0
+                // `READ,          // read / write signal of data1
                 8'b0001_0000,   // address of L1_cache
-                128'h0876547A_00000000_ABF00000_0000123B,         // data_wd
+                // 128'h0876547A_00000000_ABF00000_0000123B,         // data_wd
                 128'hx,         // data_rd choosing from data_rd0~data_rd1
                 `DISABLE,         // icache request
                 // 9'b110_0001_00,
@@ -932,10 +981,10 @@ module dcache_write_test();
                 `READ, // tag0_rw
                 `READ, // tag1_rw
                 21'b1_0000_0000_0000_0000_1110, // tag_wd
-                `READ, // data0_rw
-                `READ, // data1_rw
+                // `READ, // data0_rw
+                // `READ, // data1_rw
                 8'b0001_0000, // index
-                128'h0876547A_00000000_ABF00000_0000123B, // data_wd_dc
+                // 128'h0876547A_00000000_ABF00000_0000123B, // data_wd_dc
                 128'hx, // data_rd choosing from data_rd0~data_rd1
                 `DISABLE, // drq
                 // 9'b110_0001_00, // l2_index
@@ -963,10 +1012,10 @@ module dcache_write_test();
                 `READ, // tag0_rw
                 `READ, // tag1_rw
                 21'b1_0000_0000_0000_0000_1110, // tag_wd
-                `READ, // data0_rw
-                `READ, // data1_rw
+                // `READ, // data0_rw
+                // `READ, // data1_rw
                 8'b0001_0000, // index
-                128'h0876547A_00000000_ABF00000_0000123B, // data_wd_dc
+                // 128'h0876547A_00000000_ABF00000_0000123B, // data_wd_dc
                 128'hx, // data_rd choosing from data_rd0~data_rd1
                 `DISABLE, // drq
                 // 9'b110_0001_00, // l2_index
@@ -998,10 +1047,10 @@ module dcache_write_test();
                 `READ, // tag0_rw
                 `READ, // tag1_rw
                 21'b1_0000_0000_0000_1110_0_110, // tag_wd
-                `READ, // data0_rw
-                `READ, // data1_rw
+                // `READ, // data0_rw
+                // `READ, // data1_rw
                 8'b0001_0000, // index
-                128'h0876547A_00000000_ABF00000_0000123B, // data_wd_dc
+                // 128'h0876547A_00000000_ABF00000_0000123B, // data_wd_dc
                 128'hx, // data_rd choosing from data_rd0~data_rd1
                 `ENABLE, // drq
                 // 9'b110_0001_00, // l2_index
@@ -1020,12 +1069,12 @@ module dcache_write_test();
                 `READ,              // l2_tag3_rw
                 18'b1_0000_0000_0000_0000_1, // l2_tag_wd
                 `DISABLE,           // l2_rdy signal of l2_cache
-                `READ,              // _l2_data0_rw
-                `READ,              // _l2_data1_rw
-                `READ,              // _l2_data2_rw
-                `READ,              // _l2_data3_rw
+                // `READ,              // _l2_data0_rw
+                // `READ,              // _l2_data1_rw
+                // `READ,              // _l2_data2_rw
+                // `READ,              // _l2_data3_rw
                 // l2_data_wd
-                512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,
+                // 512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000,
                 1'b0,               // l2_dirty0wd
                 `READ,              // l2_dirty0_rw
                 `READ,              // l2_dirty1_rw
@@ -1047,12 +1096,12 @@ module dcache_write_test();
                 `READ,              // l2_tag3_rw
                 18'b1_0000_0000_0000_1110_0, // l2_tag_wd
                 `DISABLE,           // l2_rdy 
-                `READ,              // _l2_data0_rw
-                `WRITE,             // _l2_data1_rw
-                `READ,              // _l2_data2_rw
-                `READ,              // _l2_data3_rw
+                // `READ,              // _l2_data0_rw
+                // `WRITE,             // _l2_data1_rw
+                // `READ,              // _l2_data2_rw
+                // `READ,              // _l2_data3_rw
                 // l2_data_wd
-                512'h00000000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_00000000,
+                // 512'h00000000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_00000000,
                 1'b0,               // l2_dirty_wd
                 `READ,              // l2_dirty0_rw
                 `WRITE,             // l2_dirty1_rw
@@ -1074,12 +1123,12 @@ module dcache_write_test();
                 `READ,              // l2_tag3_rw
                 18'b1_0000_0000_0000_1110_0, // l2_tag_wd
                 `DISABLE,           // l2_rdy 
-                `READ,              // _l2_data0_rw
-                `READ,             // _l2_data1_rw
-                `READ,              // _l2_data2_rw
-                `READ,              // _l2_data3_rw
+                // `READ,              // _l2_data0_rw
+                // `READ,             // _l2_data1_rw
+                // `READ,              // _l2_data2_rw
+                // `READ,              // _l2_data3_rw
                 // l2_data_wd
-                512'h00000000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_00000000,
+                // 512'h00000000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_00000000,
                 1'b0,               // l2_dirty_wd
                 `READ,              // l2_dirty0_rw
                 `READ,             // l2_dirty1_rw
@@ -1115,12 +1164,12 @@ module dcache_write_test();
                 `READ,              // l2_tag3_rw
                 18'b1_0000_0000_0000_1110_0, // l2_tag_wd
                 `ENABLE,            // l2_rdy 
-                `READ,              // _l2_data0_rw
-                `READ,              // _l2_data1_rw
-                `READ,              // _l2_data2_rw
-                `READ,              // _l2_data3_rw
+                // `READ,              // _l2_data0_rw
+                // `READ,              // _l2_data1_rw
+                // `READ,              // _l2_data2_rw
+                // `READ,              // _l2_data3_rw
                 // l2_data_wd
-                512'h00000000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_00000000,
+                // 512'h00000000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_00000000,
                 1'b0,               // l2_dirty_wd
                 `READ,              // l2_dirty0_rw
                 `READ,              // l2_dirty1_rw 
@@ -1152,12 +1201,12 @@ module dcache_write_test();
                 `READ,              // l2_tag3_rw
                 18'b1_0000_0000_0000_1110_0, // l2_tag_wd
                 `DISABLE,            // l2_rdy 
-                `READ,              // _l2_data0_rw
-                `READ,              // _l2_data1_rw
-                `READ,              // _l2_data2_rw
-                `READ,              // _l2_data3_rw
+                // `READ,              // _l2_data0_rw
+                // `READ,              // _l2_data1_rw
+                // `READ,              // _l2_data2_rw
+                // `READ,              // _l2_data3_rw
                 // l2_data_wd
-                512'h00000000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_00000000,
+                // 512'h00000000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_00000000,
                 1'b0,               // l2_dirty_wd
                 `READ,              // l2_dirty0_rw
                 `READ,              // l2_dirty1_rw 
@@ -1172,10 +1221,10 @@ module dcache_write_test();
                 `READ,         // read / write signal of L1_tag0
                 `READ,          // read / write signal of L1_tag1
                 21'b1_0000_0000_0000_1110_0_110, // tag_wd
-                `READ,         // read / write signal of data0
-                `READ,          // read / write signal of data1
+                // `READ,         // read / write signal of data0
+                // `READ,          // read / write signal of data1
                 8'b0001_0000,   // address of L1_cache
-                128'h0876547A_00000000_ABF00000_0000123B,         // data_wd
+                // 128'h0876547A_00000000_ABF00000_0000123B,         // data_wd
                 128'hx,         // data_rd choosing from data_rd0~data_rd1
                 `DISABLE,       // icache request
                 // 9'b110_0001_00,
@@ -1203,10 +1252,10 @@ module dcache_write_test();
                 `READ,         // read / write signal of L1_tag0
                 `WRITE,          // read / write signal of L1_tag1
                 21'b1_0000_0000_0000_1110_0_110, // tag_wd
-                `READ,         // read / write signal of data0
-                `WRITE,          // read / write signal of data1
+                // `READ,         // read / write signal of data0
+                // `WRITE,          // read / write signal of data1
                 8'b0001_0000,   // address of L1_cache
-                128'h0876547A_00000000_ABF00000_0004A985,         // data_wd
+                // 128'h0876547A_00000000_ABF00000_0004A985,         // data_wd
                 128'hx,         // data_rd choosing from data_rd0~data_rd1
                 `DISABLE,       // icache request
                 // 9'b110_0001_00,
@@ -1224,10 +1273,10 @@ module dcache_write_test();
                 `READ,         // read / write signal of L1_tag0
                 `READ,          // read / write signal of L1_tag1
                 21'b1_0000_0000_0000_1110_0_110,       // write data of L1_tag
-                `READ,         // read / write signal of data0
-                `READ,          // read / write signal of data1
+                // `READ,         // read / write signal of data0
+                // `READ,          // read / write signal of data1
                 8'b0001_0000,   // address of L1_cache
-                128'h0876547A_00000000_ABF00000_0004A985,   // data_wd
+                // 128'h0876547A_00000000_ABF00000_0004A985,   // data_wd
                 128'hx,         // data_rd choosing from data_rd0~data_rd1
                 `DISABLE,       // icache request
                 // 9'b110_0001_00,
@@ -1255,10 +1304,10 @@ module dcache_write_test();
                 `READ,         // read / write signal of L1_tag0
                 `READ,          // read / write signal of L1_tag1
                 21'b1_0000_0000_0000_1110_0_110,       // write data of L1_tag
-                `READ,         // read / write signal of data0
-                `READ,          // read / write signal of data1
+                // `READ,         // read / write signal of data0
+                // `READ,          // read / write signal of data1
                 8'b0001_0000,   // address of L1_cache
-                128'h0876547A_00000000_ABF00000_0004A985,   // data_wd
+                // 128'h0876547A_00000000_ABF00000_0004A985,   // data_wd
                 128'hx,         // data_rd choosing from data_rd0~data_rd1
                 `DISABLE,       // icache request
                 // 9'b110_0001_00,
@@ -1294,12 +1343,12 @@ module dcache_write_test();
                 `READ,              // l2_tag3_rw
                 18'b1_0000_0000_0000_1110_0, // l2_tag_wd
                 `DISABLE,            // l2_rdy 
-                `READ,              // _l2_data0_rw
-                `READ,              // _l2_data1_rw
-                `READ,              // _l2_data2_rw
-                `READ,              // _l2_data3_rw
+                // `READ,              // _l2_data0_rw
+                // `READ,              // _l2_data1_rw
+                // `READ,              // _l2_data2_rw
+                // `READ,              // _l2_data3_rw
                 // l2_data_wd
-                512'h00000000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_00000000,
+                // 512'h00000000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_00000000,
                 1'b0,               // l2_dirty_wd
                 `READ,              // l2_dirty0_rw
                 `READ,              // l2_dirty1_rw 
@@ -1314,10 +1363,10 @@ module dcache_write_test();
                 `READ,          // tag0_rw
                 `READ,          // tag1_rw
                 21'b1_0000_0000_0101_1111_0_110, // tag_wd of L1_tag
-                `READ,          // data0_rw
-                `READ,          // data1_rw
+                // `READ,          // data0_rw
+                // `READ,          // data1_rw
                 8'b0001_0000,   // index
-                128'h0876547A_00000000_ABF00000_0004A985,   // data_wd
+                // 128'h0876547A_00000000_ABF00000_0004A985,   // data_wd
                 128'h0876547A_00000000_ABF00000_0000123B,   // data_rd choosing from data_rd0~data_rd1
                 `ENABLE,       // drq
                 // 9'b110_0001_00, // l2_index
@@ -1339,12 +1388,12 @@ module dcache_write_test();
                 `READ,              // l2_tag3_rw
                 18'b1_0000_0000_0000_0000_1, // l2_tag_wd
                 `DISABLE,            // l2_rdy 
-                `WRITE,              // _l2_data0_rw
-                `READ,              // _l2_data1_rw
-                `READ,              // _l2_data2_rw
-                `READ,              // _l2_data3_rw
+                // `WRITE,              // _l2_data0_rw
+                // `READ,              // _l2_data1_rw
+                // `READ,              // _l2_data2_rw
+                // `READ,              // _l2_data3_rw
                 // l2_data_wd
-                512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_0000123B,
+                // 512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_0000123B,
                 1'b1,               // l2_dirty_wd
                 `WRITE,              // l2_dirty0_rw
                 `READ,              // l2_dirty1_rw 
@@ -1359,10 +1408,10 @@ module dcache_write_test();
                 `READ,          // tag0_rw
                 `READ,          // tag1_rw
                 21'b1_0000_0000_0101_1111_0_110, // tag_wd of L1_tag
-                `READ,          // data0_rw
-                `READ,          // data1_rw
+                // `READ,          // data0_rw
+                // `READ,          // data1_rw
                 8'b0001_0000,   // index
-                128'h0876547A_00000000_ABF00000_0004A985,   // data_wd
+                // 128'h0876547A_00000000_ABF00000_0004A985,   // data_wd
                 128'h0876547A_00000000_ABF00000_0000123B,   // data_rd choosing from data_rd0~data_rd1
                 `ENABLE,       // drq
                 // 9'b110_0001_00, // l2_index
@@ -1384,12 +1433,12 @@ module dcache_write_test();
                 `READ,              // l2_tag3_rw
                 18'b1_0000_0000_0000_0000_1, // l2_tag_wd
                 `DISABLE,            // l2_rdy 
-                `READ,              // _l2_data0_rw
-                `READ,              // _l2_data1_rw
-                `READ,              // _l2_data2_rw
-                `READ,              // _l2_data3_rw
+                // `READ,              // _l2_data0_rw
+                // `READ,              // _l2_data1_rw
+                // `READ,              // _l2_data2_rw
+                // `READ,              // _l2_data3_rw
                 // l2_data_wd
-                512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_0000123B,
+                // 512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_0000123B,
                 1'b1,               // l2_dirty_wd
                 `READ,              // l2_dirty0_rw
                 `READ,              // l2_dirty1_rw 
@@ -1404,10 +1453,10 @@ module dcache_write_test();
                 `READ,          // tag0_rw
                 `READ,          // tag1_rw
                 21'b1_0000_0000_0101_1111_0_110, // tag_wd of L1_tag
-                `READ,          // data0_rw
-                `READ,          // data1_rw
+                // `READ,          // data0_rw
+                // `READ,          // data1_rw
                 8'b0001_0000,   // index
-                128'h0876547A_00000000_ABF00000_0004A985,   // data_wd
+                // 128'h0876547A_00000000_ABF00000_0004A985,   // data_wd
                 128'h0876547A_00000000_ABF00000_0000123B,   // data_rd choosing from data_rd0~data_rd1
                 `ENABLE,        // drq
                 // 9'b110_0001_00, // l2_index
@@ -1439,10 +1488,10 @@ module dcache_write_test();
                 `READ,          // tag0_rw
                 `READ,          // tag1_rw
                 21'b1_0000_0000_0101_1111_0_110, // tag_wd of L1_tag
-                `READ,          // data0_rw
-                `READ,          // data1_rw
+                // `READ,          // data0_rw
+                // `READ,          // data1_rw
                 8'b0001_0000,   // index
-                128'h0876547A_00000000_ABF00000_0004A985,   // data_wd
+                // 128'h0876547A_00000000_ABF00000_0004A985,   // data_wd
                 128'h0876547A_00000000_ABF00000_0000123B,   // data_rd choosing from data_rd0~data_rd1
                 `ENABLE,        // drq
                 // 9'b110_0001_00, // l2_index
@@ -1461,12 +1510,12 @@ module dcache_write_test();
                 `READ,              // l2_tag3_rw
                 18'b1_0000_0000_0101_1111_0, // l2_tag_wd
                 `DISABLE,            // l2_rdy 
-                `READ,              // _l2_data0_rw
-                `READ,              // _l2_data1_rw
-                `WRITE,              // _l2_data2_rw
-                `READ,              // _l2_data3_rw
+                // `READ,              // _l2_data0_rw
+                // `READ,              // _l2_data1_rw
+                // `WRITE,              // _l2_data2_rw
+                // `READ,              // _l2_data3_rw
                 // l2_data_wd
-                512'h00000000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_00123400,
+                // 512'h00000000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_00123400,
                 1'b0,               // l2_dirty_wd
                 `READ,              // l2_dirty0_rw
                 `READ,              // l2_dirty1_rw 
@@ -1488,12 +1537,12 @@ module dcache_write_test();
                 `READ,              // l2_tag3_rw
                 18'b1_0000_0000_0101_1111_0, // l2_tag_wd
                 `DISABLE,            // l2_rdy 
-                `READ,              // _l2_data0_rw
-                `READ,              // _l2_data1_rw
-                `READ,              // _l2_data2_rw
-                `READ,              // _l2_data3_rw
+                // `READ,              // _l2_data0_rw
+                // `READ,              // _l2_data1_rw
+                // `READ,              // _l2_data2_rw
+                // `READ,              // _l2_data3_rw
                 // l2_data_wd
-                512'h00000000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_00123400,
+                // 512'h00000000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_00123400,
                 1'b0,               // l2_dirty_wd
                 `READ,              // l2_dirty0_rw
                 `READ,              // l2_dirty1_rw 
@@ -1529,12 +1578,12 @@ module dcache_write_test();
                 `READ,              // l2_tag3_rw
                 18'b1_0000_0000_0101_1111_0, // l2_tag_wd
                 `ENABLE,            // l2_rdy 
-                `READ,              // _l2_data0_rw
-                `READ,              // _l2_data1_rw
-                `READ,              // _l2_data2_rw
-                `READ,              // _l2_data3_rw
+                // `READ,              // _l2_data0_rw
+                // `READ,              // _l2_data1_rw
+                // `READ,              // _l2_data2_rw
+                // `READ,              // _l2_data3_rw
                 // l2_data_wd
-                512'h00000000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_00123400,
+                // 512'h00000000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_00123400,
                 1'b0,               // l2_dirty_wd
                 `READ,              // l2_dirty0_rw
                 `READ,              // l2_dirty1_rw 
@@ -1549,10 +1598,10 @@ module dcache_write_test();
                 `WRITE,          // tag0_rw
                 `READ,          // tag1_rw
                 21'b1_0000_0000_0101_1111_0_110, // tag_wd of L1_tag
-                `WRITE,          // data0_rw
-                `READ,          // data1_rw
+                // `WRITE,          // data0_rw
+                // `READ,          // data1_rw
                 8'b0001_0000,   // index
-                128'h0876547A_00000000_ABF00000_0004A985,   // data_wd
+                // 128'h0876547A_00000000_ABF00000_0004A985,   // data_wd
                 128'h0876547A_00000000_ABF00000_0000123B,   // data_rd choosing from data_rd0~data_rd1
                 `ENABLE,        // drq
                 // 9'b110_0001_00, // l2_index
@@ -1570,10 +1619,10 @@ module dcache_write_test();
                 `READ ,          // tag0_rw
                 `READ,          // tag1_rw
                 21'b1_0000_0000_0101_1111_0_110, // tag_wd of L1_tag
-                `READ ,          // data0_rw
-                `READ,          // data1_rw
+                // `READ ,          // data0_rw
+                // `READ,          // data1_rw
                 8'b0001_0000,   // index
-                128'h0876547A_00000000_ABF00000_0004A985,   // data_wd
+                // 128'h0876547A_00000000_ABF00000_0004A985,   // data_wd
                 128'h0876547A_00000000_ABF00000_0000123B,   // data_rd choosing from data_rd0~data_rd1
                 `DISABLE,        // drq
                 // 9'b110_0001_00, // l2_index
@@ -1592,12 +1641,12 @@ module dcache_write_test();
                 `READ,              // l2_tag3_rw
                 18'b1_0000_0000_0101_1111_0, // l2_tag_wd
                 `DISABLE,            // l2_rdy 
-                `READ,              // _l2_data0_rw
-                `READ,              // _l2_data1_rw
-                `READ,              // _l2_data2_rw
-                `READ,              // _l2_data3_rw
+                // `READ,              // _l2_data0_rw
+                // `READ,              // _l2_data1_rw
+                // `READ,              // _l2_data2_rw
+                // `READ,              // _l2_data3_rw
                 // l2_data_wd
-                512'h00000000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_00123400,
+                // 512'h00000000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_00123400,
                 1'b0,               // l2_dirty_wd
                 `READ,              // l2_dirty0_rw
                 `READ,              // l2_dirty1_rw 

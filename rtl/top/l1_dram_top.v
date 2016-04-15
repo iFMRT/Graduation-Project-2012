@@ -28,10 +28,20 @@ module l1_dram_top(
     output          lru_dc,            // read data of lru_field
     output          complete_dc,       // complete write from L2 to L1
     /*ddata*/
-    input           data0_rw_dc,       // the mark of cache_data0 write signal 
-    input           data1_rw_dc,       // the mark of cache_data1 write signal 
+    input              wr0_en0,
+    input              wr0_en1,
+    input              wr0_en2,
+    input              wr0_en3,
+    input              wr1_en0,
+    input              wr1_en1,
+    input              wr1_en2,
+    input              wr1_en3,
+    input      [31:0]  wr_data_m,       // ++++++++++
+    input      [1:0]   offset, 
+    // input           data0_rw_dc,       // the mark of cache_data0 write signal 
+    // input           data1_rw_dc,       // the mark of cache_data1 write signal 
     input   [127:0] data_wd_l2,        // write data of l2_cache
-    input   [127:0] data_wd_dc,
+    // input   [127:0] data_wd_dc,
     input           data_wd_l2_en,
     input           data_wd_dc_en,
     output  [127:0] data0_rd_dc,       // read data of cache_data0
@@ -55,14 +65,24 @@ module l1_dram_top(
         );
     data_ram ddata_ram(
         .clk            (clk),           // clock
-        .data0_rw       (data0_rw_dc),      // the mark of cache_data0 write signal 
-        .data1_rw       (data1_rw_dc),      // the mark of cache_data1 write signal 
+        // .data0_rw       (data0_rw_dc),      // the mark of cache_data0 write signal 
+        // .data1_rw       (data1_rw_dc),      // the mark of cache_data1 write signal 
+        .wr0_en0        (wr0_en0),   // the mark of cache_data0 write signal 
+        .wr0_en1        (wr0_en1),   // the mark of cache_data1 write signal 
+        .wr0_en2        (wr0_en2),   // the mark of cache_data2 write signal 
+        .wr0_en3        (wr0_en3),   // the mark of cache_data3 write signal         
+        .wr1_en0        (wr1_en0),
+        .wr1_en1        (wr1_en1),
+        .wr1_en2        (wr1_en2),
+        .wr1_en3        (wr1_en3),
         .index          (index_dc),         // address of cache__
         .data_wd_l2     (data_wd_l2),    // write data of l2_cache
-        .data_wd_dc     (data_wd_dc),    // write data of l2_cache
+        // .data_wd_dc     (data_wd_dc),    // write data of l2_cache
         .data_wd_l2_en  (data_wd_l2_en), // write data of l2_cache
         .data_wd_dc_en  (data_wd_dc_en), // write data of l2_cache
+        .wr_data_m      (wr_data_m),
+        .offset         (offset), 
         .data0_rd       (data0_rd_dc),      // read data of cache_data0
         .data1_rd       (data1_rd_dc)       // read data of cache_data1
-        );
+    );
 endmodule
