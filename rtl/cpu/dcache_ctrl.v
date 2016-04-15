@@ -59,6 +59,7 @@ module dcache_ctrl(
     input              l2_complete,
     input              l2_busy,       // busy signal of L2_cache
     input              l2_rdy,        // ready signal of L2_cache
+    input              mem_wr_dc_en,
     input              complete,      // complete op writing to L1
     output reg         drq,           // dcache request
     output reg         dc_rw_en,      // enable signal of writing dcache 
@@ -75,9 +76,7 @@ module dcache_ctrl(
     reg        [2:0]   state,nextstate;               // state of control
     wire               valid0,valid1;
     reg                valid,dirty;               // valid signal of tag
-    // reg        [127:0] data_wd_dc_copy;
-    // reg        [127:0] data_rd_copy;
-    // reg        [31:0]  read_data_m_copy;
+
     assign valid0        = tag0_rd[20];
     assign valid1        = tag1_rd[20];
     assign index         = addr[11:4];
@@ -90,32 +89,12 @@ module dcache_ctrl(
         if(hitway0 == `ENABLE)begin
             tagcomp_hit  = `ENABLE;
             hitway       = `WAY0;
-            // data_rd_copy = data0_rd;
         end else if(hitway1 == `ENABLE)begin
             tagcomp_hit  = `ENABLE;
             hitway       = `WAY1;
-            // data_rd_copy = data1_rd;
         end else begin
             tagcomp_hit  = `DISABLE;
         end
-        // case(offset)
-        //     `WORD0:begin
-        //         data_wd_dc_copy  = {data_rd_copy[127:32],wr_data_m};
-        //         read_data_m_copy = data_rd_copy[31:0];
-        //     end
-        //     `WORD1:begin
-        //         data_wd_dc_copy  = {data_rd_copy[127:64],wr_data_m,data_rd_copy[31:0]};
-        //         read_data_m_copy = data_rd_copy[63:32];
-        //     end
-        //     `WORD2:begin
-        //         data_wd_dc_copy  = {data_rd_copy[127:96],wr_data_m,data_rd_copy[63:0]};
-        //         read_data_m_copy = data_rd_copy[95:64];
-        //     end
-        //     `WORD3:begin
-        //         data_wd_dc_copy  = {wr_data_m,data_rd_copy[95:0]};
-        //         read_data_m_copy = data_rd_copy[127:96];
-        //     end
-        // endcase // case(offset) 
 
         // if cache miss ,the way of L1 we choose to replace.
         if (valid0 === 1'b1) begin
@@ -183,6 +162,7 @@ module dcache_ctrl(
                 dc_rw_en  = `DISABLE;
                 if (tagcomp_hit == `ENABLE) begin // cache hit
                     if(memwrite_m == `READ) begin // read hit
+                        // read l1_block ,write to cpu
                         miss_stall  =  `DISABLE;
                         if(access_mem_ex == `ENABLE) begin
                             nextstate   =  `L1_ACCESS;
@@ -225,6 +205,7 @@ module dcache_ctrl(
                         endcase
                         // read_data_m =  read_data_m_copy;
                     end else if (memwrite_m == `WRITE) begin  // begin: write hit
+                        // cpu data write to l1
                         miss_stall     =  `DISABLE;
                         nextstate      =  `WRITE_HIT;
                         dirty_wd       =  1'b1;
@@ -274,6 +255,7 @@ module dcache_ctrl(
                 end else begin // cache miss
                     miss_stall =  `ENABLE; 
                     if(valid == `ENABLE && dirty == `ENABLE) begin 
+                            // dirty block of l1, write to l2
                             if(l2_busy == `ENABLE) begin
                                 nextstate       =  `WAIT_L2_BUSY_DIRTY;
                             end else begin 
@@ -301,9 +283,10 @@ module dcache_ctrl(
                 end 
             end
             `L2_ACCESS:begin // access L2, wait L2 hit,choose replacement block's signal of L1
-                //  L2 hit. Write to L1,read from L2
-                dc_rw_en  = `ENABLE;
-                if(l2_rdy == `ENABLE)begin
+                // l2 hit, read l2_block ,write to l1
+                // l2 miss, read mem_block ,write to l1 and l2     
+                if(l2_rdy == `ENABLE || mem_wr_dc_en == `ENABLE)begin
+                    dc_rw_en  = `ENABLE;
                     nextstate =  `WRITE_L1;
                     dirty_wd  =  1'b0;
                     case(choose_way)
@@ -328,7 +311,8 @@ module dcache_ctrl(
                     endcase  
                 end else begin
                     nextstate  =  `L2_ACCESS;
-                end         
+                end
+                        
             end
             `WAIT_L2_BUSY_CLEAN:begin
                 if(l2_busy == `ENABLE) begin

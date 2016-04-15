@@ -23,6 +23,7 @@ module l1_ic_top(
     input            l2_rdy,        // ready signal of L2_cache
     input   [127:0]  data_wd_l2,    // write data of l2_cache
     input            data_wd_l2_en, // write enable signal of l2_cache's data
+    input            mem_wr_ic_en, 
     output           complete_ic,   // complete write from L2 to L1
     output           irq,           // icache request
     output           ic_rw_en,      // enable signal of writing icache 
@@ -89,6 +90,7 @@ module l1_ic_top(
         /* l2_cache part */
         .l2_busy        (l2_busy),       // busy signal of l2_cache
         .l2_rdy         (l2_rdy),        // ready signal of l2_cache
+        .mem_wr_ic_en   (mem_wr_ic_en), 
         .complete       (complete_ic),      // complete op writing to L1
         .irq            (irq),
         .ic_rw_en       (ic_rw_en), 

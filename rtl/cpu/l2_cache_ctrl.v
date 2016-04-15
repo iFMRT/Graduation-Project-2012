@@ -32,11 +32,13 @@ module l2_cache_ctrl(
     input               dc_rw_en,
     input               complete_ic,        // complete mark of writing into L1C
     input               complete_dc,     
-    // input       [127:0] data_rd,            // read data from L1
+    // input       [127:0] data_rd,         // read data from L1
     output reg  [127:0] data_wd_l2,         // write data to L1    
     output reg          data_wd_l2_en,
-    output reg          wd_from_l1_en,    // ++++++++
-    output reg          wd_from_mem_en,    // ++++++++
+    output reg          wd_from_l1_en,      // ++++++++++
+    output reg          wd_from_mem_en,     // ++++++++++
+    output reg          mem_wr_dc_en,       // ++++++++++
+    output reg          mem_wr_ic_en,       // ++++++++++
     /*l2_cache part*/
     input               l2_complete,        // complete mark of writing into L2C 
     output reg          l2_rdy,
@@ -90,7 +92,7 @@ module l2_cache_ctrl(
     input               l2_dirty3,
     /*memory part*/
     input               mem_complete,  
-    // input       [511:0] mem_rd,
+    input       [511:0] mem_rd,
     output reg  [511:0] mem_wd,
     output reg  [25:0]  mem_addr,           // address of memory
     output reg          mem_rw              // read / write signal of memory
@@ -281,6 +283,7 @@ module l2_cache_ctrl(
                 l2_busy     = `ENABLE;
                 // read hit
                 if ( l2_cache_rw == `READ && tagcomp_hit == `ENABLE) begin 
+                    // read l2_block ,write to l1
                     l2_miss_stall = `DISABLE;
                     l2_rdy        = `ENABLE;
                     data_wd_l2_en = `ENABLE;
@@ -308,6 +311,7 @@ module l2_cache_ctrl(
                         nextstate   = `ACCESS_L2;
                     end
                 end else if( l2_cache_rw == `WRITE && tagcomp_hit == `ENABLE) begin // write hit
+                    // dirty block of l1, write to l2
                     l2_miss_stall = `DISABLE;
                     nextstate     = `L2_WRITE_HIT;
                     l2_dirty_wd   = 1'b1;
@@ -394,8 +398,9 @@ module l2_cache_ctrl(
                     endcase // case(hitway) 
                 end else begin // cache miss
                     l2_miss_stall = `ENABLE;
-                    // mem to l2
+                    // read mem_block ,write to l1 and l2
                     if (valid == `DISABLE || dirty == `DISABLE) begin
+                        /* write l2 part */ 
                         mem_rw        = `READ;
                         mem_addr      = l2_addr[31:6];
                         nextstate     = `WRITE_TO_L2;
@@ -441,7 +446,31 @@ module l2_cache_ctrl(
                                 wr3_en3 = `ENABLE;
                             end
                         endcase
+                        /* write l1 part */ 
+                        data_wd_l2_en = `ENABLE;
+                        // data_wd_l2    = data_wd_l2_copy;
+                        case(offset)
+                            `WORD0:begin
+                                data_wd_l2 = mem_rd[127:0];
+                            end
+                            `WORD1:begin
+                                data_wd_l2 = mem_rd[255:128];
+                            end
+                            `WORD2:begin
+                                data_wd_l2 = mem_rd[383:256];
+                            end
+                            `WORD3:begin
+                                data_wd_l2 = mem_rd[511:384];
+                            end
+                        endcase // case(offset)
+                        if (drq == `ENABLE) begin
+                            mem_wr_dc_en = `ENABLE;
+                        end
+                        if (irq == `ENABLE) begin
+                            mem_wr_ic_en = `ENABLE; 
+                        end
                     end else if(valid == `ENABLE && dirty == `ENABLE) begin 
+                        // dirty block of l2, write to mem
                         nextstate  = `WRITE_MEM;
                         mem_rw = l2_cache_rw; 
                         case(choose_way)
@@ -478,6 +507,8 @@ module l2_cache_ctrl(
             `WRITE_TO_L2:begin // write into l2_cache from memory 
                 if(l2_complete == `ENABLE)begin
                     wd_from_mem_en = `DISABLE;
+                    mem_wr_dc_en   = `DISABLE;
+                    mem_wr_ic_en   = `DISABLE;  
                     l2_tag0_rw   =  `READ;
                     l2_tag1_rw   =  `READ;
                     l2_tag2_rw   =  `READ;
@@ -506,7 +537,11 @@ module l2_cache_ctrl(
                     wr3_en1 = `READ;
                     wr3_en2 = `READ;
                     wr3_en3 = `READ;
-                    nextstate  =  `ACCESS_L2;                                         
+                    // nextstate  =  `ACCESS_L2;
+                    l2_miss_stall = `DISABLE;
+                    l2_busy = `DISABLE;
+                    data_wd_l2_en = `DISABLE;
+                    nextstate   = `L2_IDLE;                                         
                 end else begin
                     nextstate  =  `WRITE_TO_L2;
                 end

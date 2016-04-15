@@ -31,6 +31,7 @@ module l1_dc_top(
     input              l2_complete,
     input              l2_busy,       // busy signal of L2_cache
     input              l2_rdy,        // ready signal of L2_cache
+    input              mem_wr_dc_en,   
     output             complete_dc,   // complete write from L2 to L1
     output             drq,           // dcache request
     output             dc_rw_en,      // enable signal of writing dcache 
@@ -147,6 +148,7 @@ module l1_dc_top(
         .l2_complete    (l2_complete),
         .l2_busy        (l2_busy),       // busy signal of l2_cache
         .l2_rdy         (l2_rdy),        // ready signal of l2_cache
+        .mem_wr_dc_en   (mem_wr_dc_en), 
         .complete       (complete_dc),      // complete op writing to L1
         .drq            (drq),  
         .dc_rw_en       (dc_rw_en),     

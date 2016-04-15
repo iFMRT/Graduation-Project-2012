@@ -23,6 +23,7 @@ module if_stage(
     input      [20:0]  tag1_rd,       // read data of tag1
     input      [127:0] data0_rd,      // read data of data0
     input      [127:0] data1_rd,      // read data of data1
+    input              complete,      // complete op writing to L1
     output             tag0_rw,       // read / write signal of L1_tag0
     output             tag1_rw,       // read / write signal of L1_tag1
     output     [20:0]  tag_wd,        // write data of L1_tag
@@ -32,7 +33,7 @@ module if_stage(
     /* L2_cache part */
     input              l2_busy,       // busy signal of L2_cache
     input              l2_rdy,        // ready signal of L2_cache
-    input              complete,      // complete op writing to L1
+    input              mem_wr_ic_en,
     output             irq,           // icache request
     output             ic_rw_en,
     // output     [8:0]   l2_index,
@@ -70,6 +71,7 @@ icache_ctrl icache_ctrl(
         .tag1_rd        (tag1_rd),       // read data of tag1
         .data0_rd       (data0_rd),      // read data of data0
         .data1_rd       (data1_rd),      // read data of data1
+        .complete       (complete),      // complete op writing to L1
         .tag0_rw        (tag0_rw),       // read / write signal of L1_tag0
         .tag1_rw        (tag1_rw),       // read / write signal of L1_tag1
         .tag_wd         (tag_wd),        // write data of L1_tag
@@ -79,7 +81,7 @@ icache_ctrl icache_ctrl(
         /* l2_cache part */
         .l2_busy        (l2_busy),       // busy signal of l2_cache
         .l2_rdy         (l2_rdy),        // ready signal of l2_cache
-        .complete       (complete),      // complete op writing to L1
+        .mem_wr_ic_en   (mem_wr_ic_en), 
         .irq            (irq),
         .ic_rw_en       (ic_rw_en),      
         .l2_addr        (l2_addr),        

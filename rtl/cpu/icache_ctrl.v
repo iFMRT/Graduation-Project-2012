@@ -38,6 +38,7 @@ module icache_ctrl(
     input              l2_busy,       // busy signal of L2_cache
     input              l2_rdy,        // ready signal of L2_cache
     input              complete,      // complete op writing to L1
+    input              mem_wr_ic_en,
     output reg         irq,           // icache request
     output reg         ic_rw_en,      // enable signal of writing icache 
     output reg [31:0]  l2_addr,
@@ -51,6 +52,7 @@ module icache_ctrl(
     reg                hitway1;          // the mark of choosing path1    
     reg        [2:0]   nextstate,state;  // state of control
     wire               valid0,valid1;    // valid signal of tag
+    reg                choose_way;
     // reg        [127:0] data_rd;          // read data of data
     // reg        [31:0]  cpu_data_copy;
     
@@ -87,6 +89,19 @@ module icache_ctrl(
         //         cpu_data_copy = data_rd[127:96];
         //     end
         // endcase // case(offset)  
+        if (valid0 == 1'b1) begin
+            if (valid1 == 1'b1) begin
+                if(lru == 1'b0) begin
+                    choose_way = `WAY0;
+                end else begin
+                    choose_way = `WAY1;
+                end                    
+            end else begin
+                choose_way = `WAY1;
+            end
+        end else begin
+            choose_way = `WAY0;
+        end          
     end
 
     always @(*) begin
@@ -108,6 +123,7 @@ module icache_ctrl(
                 ic_rw_en  = `DISABLE;
                 data_rdy  = `DISABLE;
                 if ( rw == `READ && tagcomp_hit == `ENABLE) begin // cache hit
+                    // read l1_block ,write to cpu
                     miss_stall  = `DISABLE;
                     nextstate   = `L1_ACCESS;
                     data_rdy    = `ENABLE;
@@ -155,27 +171,37 @@ module icache_ctrl(
                 end 
             end
             `L2_ACCESS:begin // access L2, wait L2 reading right 
-                if(l2_rdy == `ENABLE)begin
-                    ic_rw_en   = `ENABLE;
+                ic_rw_en   = `ENABLE;
+                if(l2_rdy == `ENABLE || mem_wr_ic_en == `ENABLE)begin
                     nextstate  = `WRITE_IC;
                     tag_wd = {1'b1,if_addr[31:12]};
-                    if (valid0 == 1'b1) begin
-                        if (valid1 == 1'b1) begin
-                            if(lru == 1'b0) begin
-                                data0_rw  = `WRITE;
-                                tag0_rw   = `WRITE;
-                            end else begin
-                                data1_rw  = `WRITE;
-                                tag1_rw   = `WRITE;
-                            end                    
-                        end else begin
+                    case(choose_way)
+                        `WAY0:begin
+                            data0_rw  = `WRITE;
+                            tag0_rw   = `WRITE;
+                        end
+                        `WAY1:begin
                             data1_rw  = `WRITE;
                             tag1_rw   = `WRITE;
                         end
-                    end else begin
-                        data0_rw  = `WRITE;
-                        tag0_rw   = `WRITE;
-                    end            
+                    endcase
+                    // if (valid0 == 1'b1) begin
+                    //     if (valid1 == 1'b1) begin
+                    //         if(lru == 1'b0) begin
+                    //             data0_rw  = `WRITE;
+                    //             tag0_rw   = `WRITE;
+                    //         end else begin
+                    //             data1_rw  = `WRITE;
+                    //             tag1_rw   = `WRITE;
+                    //         end                    
+                    //     end else begin
+                    //         data1_rw  = `WRITE;
+                    //         tag1_rw   = `WRITE;
+                    //     end
+                    // end else begin
+                    //     data0_rw  = `WRITE;
+                    //     tag0_rw   = `WRITE;
+                    // end            
                 end else begin
                     nextstate  = `L2_ACCESS;
                 end

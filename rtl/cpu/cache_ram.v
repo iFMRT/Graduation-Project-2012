@@ -571,11 +571,9 @@ module l2_data_ram(
     reg   [511:0] l2_data_wd;
 
     always @(*) begin
-
         if (wd_from_mem_en == `ENABLE) begin
             l2_data_wd   = mem_rd;
         end
-
         if (wd_from_l1_en == `ENABLE) begin
             case(offset)
                 `WORD0:begin

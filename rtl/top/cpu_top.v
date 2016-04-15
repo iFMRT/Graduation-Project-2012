@@ -219,6 +219,8 @@ module cpu_top(
     wire             l2_dirty2;
     wire             l2_dirty3;
     wire             data_rdy;
+    wire             mem_wr_dc_en;
+    wire             mem_wr_ic_en;
     /********** IF Stage **********/
     if_stage if_stage(
         .clk            (clk),           // clock
@@ -240,6 +242,7 @@ module cpu_top(
         /* l2_cache part */
         .l2_busy        (l2_busy),          // busy signal of l2_cache
         .l2_rdy         (l2_rdy),           // ready signal of l2_cache
+        .mem_wr_ic_en   (mem_wr_ic_en),
         .complete       (complete_ic),      // complete op writing to L1
         .irq            (irq),
         .ic_rw_en       (ic_rw_en),      // write enable signal of icache      
@@ -404,6 +407,7 @@ module cpu_top(
         /* l2_cache part */
         .l2_busy        (l2_busy),       // busy signal of l2_cache
         .l2_rdy         (l2_rdy),        // ready signal of l2_cache
+        .mem_wr_dc_en   (mem_wr_dc_en), 
         .complete       (complete_dc),      // complete op writing to L1
         .l2_complete    (l2_complete),
         .drq            (drq),  
@@ -449,6 +453,8 @@ module cpu_top(
         .data_wd_l2_en  (data_wd_l2_en), 
         .wd_from_mem_en (wd_from_mem_en),
         .wd_from_l1_en  (wd_from_l1_en),
+        .mem_wr_dc_en   (mem_wr_dc_en), 
+        .mem_wr_ic_en   (mem_wr_ic_en),
         /*l2_cache part*/
         .l2_complete    (l2_complete),   // complete write from MEM to L2
         .l2_rdy         (l2_rdy),

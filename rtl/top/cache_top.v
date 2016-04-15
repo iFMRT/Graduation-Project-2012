@@ -61,7 +61,8 @@ module cache_top(
     wire                l2_cache_rw_dc; 
     wire        [127:0] data_wd_l2;     // write data to L1    
     wire                data_wd_l2_en;  
-
+    wire                mem_wr_dc_en;
+    wire                mem_wr_ic_en;
     l1_dc_top l1_dc_top(
         .clk            (clk),           // clock
         .rst            (rst),           // reset
@@ -82,6 +83,7 @@ module cache_top(
         .l2_complete    (l2_complete),
         .l2_busy        (l2_busy),       // busy signal of l2_cache
         .l2_rdy         (l2_rdy),        // ready signal of l2_cache
+        .mem_wr_dc_en   (mem_wr_dc_en), 
         .complete_dc    (complete_dc),   // complete op writing to L1
         .drq            (drq),  
         .dc_rw_en       (dc_rw_en),     
@@ -101,6 +103,7 @@ module cache_top(
         .l2_rdy         (l2_rdy),           // ready signal of l2_cache
         .data_wd_l2     (data_wd_l2),       // write data of l2_cache
         .data_wd_l2_en  (data_wd_l2_en),    // write data of l2_cache
+        .mem_wr_ic_en   (mem_wr_ic_en),
         .complete_ic    (complete_ic),      // complete op writing to L1
         .irq            (irq),
         .ic_rw_en       (ic_rw_en),       
@@ -135,6 +138,8 @@ module cache_top(
         .rd_to_l2       (rd_to_l2),       // write data to L1C       
         .data_wd_l2     (data_wd_l2),    // write data to L1C       
         .data_wd_l2_en  (data_wd_l2_en), 
+        .mem_wr_dc_en   (mem_wr_dc_en), 
+        .mem_wr_ic_en   (mem_wr_ic_en),
         /*memory part*/
         .mem_complete   (mem_complete),
         .mem_rd         (mem_rd),

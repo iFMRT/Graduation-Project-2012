@@ -36,6 +36,8 @@ module l2_top(
     input       [127:0] rd_to_l2, 
     output      [127:0] data_wd_l2,              // write data to L1    
     output              data_wd_l2_en,   
+    output reg          mem_wr_dc_en,       
+    output reg          mem_wr_ic_en,
     /*memory part*/
     input               mem_complete,
     input       [511:0] mem_rd,
@@ -120,6 +122,8 @@ l2_cache_ctrl l2_cache_ctrl(
         .data_wd_l2_en  (data_wd_l2_en), 
         .wd_from_mem_en (wd_from_mem_en),
         .wd_from_l1_en  (wd_from_l1_en),
+        .mem_wr_dc_en   (mem_wr_dc_en), 
+        .mem_wr_ic_en   (mem_wr_ic_en),
         /*l2_cache part*/
         .l2_complete    (l2_complete),   // complete write from MEM to L2
         .l2_rdy         (l2_rdy),

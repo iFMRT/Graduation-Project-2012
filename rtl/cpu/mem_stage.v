@@ -39,6 +39,7 @@ module mem_stage (
     output                       tag1_rw,       // read / write signal of L1_tag1
     output     [20:0]            tag_wd,        // write data of L1_tag
     output                       data_wd_dc_en, // choose signal of data_wd           
+    input                        mem_wr_dc_en,
     // output                       data0_rw,      // read / write signal of data0
     // output                       data1_rw,      // read / write signal of data1
     output     [7:0]             index,         // address of L1_cache
@@ -158,6 +159,7 @@ module mem_stage (
         .l2_complete    (l2_complete),   // complete signal of l2_cache
         .l2_busy        (l2_busy),       // busy signal of l2_cache
         .l2_rdy         (l2_rdy),        // ready signal of l2_cache
+        .mem_wr_dc_en   (mem_wr_dc_en), 
         .complete       (complete),   // complete op writing to L1
         .drq            (drq),      
         .dc_rw_en       (dc_rw_en), 
