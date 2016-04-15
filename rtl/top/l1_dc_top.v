@@ -120,6 +120,7 @@ module l1_dc_top(
         .tag1_rd        (tag1_rd_dc),    // read data of tag1
         .data0_rd       (data0_rd_dc),   // read data of data0
         .data1_rd       (data1_rd_dc),   // read data of data1
+        .data_wd_l2     (data_wd_l2),
         .dirty0         (dirty0),         
         .dirty1         (dirty1),          
         .dirty_wd       (dirty_wd),             

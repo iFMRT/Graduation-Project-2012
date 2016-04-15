@@ -23,6 +23,7 @@ module if_stage(
     input      [20:0]  tag1_rd,       // read data of tag1
     input      [127:0] data0_rd,      // read data of data0
     input      [127:0] data1_rd,      // read data of data1
+    input      [127:0] data_wd_l2,
     input              complete,      // complete op writing to L1
     output             tag0_rw,       // read / write signal of L1_tag0
     output             tag1_rw,       // read / write signal of L1_tag1
@@ -71,6 +72,7 @@ icache_ctrl icache_ctrl(
         .tag1_rd        (tag1_rd),       // read data of tag1
         .data0_rd       (data0_rd),      // read data of data0
         .data1_rd       (data1_rd),      // read data of data1
+        .data_wd_l2     (data_wd_l2), 
         .complete       (complete),      // complete op writing to L1
         .tag0_rw        (tag0_rw),       // read / write signal of L1_tag0
         .tag1_rw        (tag1_rw),       // read / write signal of L1_tag1

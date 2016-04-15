@@ -17,7 +17,7 @@ module dcache_ctrl(
     input              clk,           // clock
     input              rst,           // reset
     /* CPU part */
-    input      [31:0]  addr,      // address of fetching instruction
+    input      [31:0]  addr,          // address of fetching instruction
     // input      [31:0]  wr_data_m,
     input              memwrite_m,    // read / write signal of CPU
     input              access_mem,
@@ -44,7 +44,7 @@ module dcache_ctrl(
     output reg         wr1_en1,
     output reg         wr1_en2,
     output reg         wr1_en3,
-    output     [1:0]   offset,         // +++++++++
+    output     [1:0]   offset,          
     // output reg [127:0] data_wd_dc,
     output reg         tag0_rw,       // read / write signal of L1_tag0
     output reg         tag1_rw,       // read / write signal of L1_tag1
@@ -54,28 +54,29 @@ module dcache_ctrl(
     // output reg         data0_rw,      // read / write signal of data0
     // output reg         data1_rw,      // read / write signal of data1
     output     [7:0]   index,         // address of L1_cache
-    output reg [127:0] rd_to_l2,       // read data of L1_cache's data
+    output reg [127:0] rd_to_l2,      // read data of L1_cache's data
     /* L2_cache part */
     input              l2_complete,
     input              l2_busy,       // busy signal of L2_cache
     input              l2_rdy,        // ready signal of L2_cache
     input              mem_wr_dc_en,
     input              complete,      // complete op writing to L1
+    input      [127:0] data_wd_l2,    // ++++++++++++++++++++
     output reg         drq,           // dcache request
     output reg         dc_rw_en,      // enable signal of writing dcache 
     output reg [31:0]  l2_addr, 
     output reg         l2_cache_rw    // l2_cache read/write signal
     );
 
-    // wire       [1:0]   offset;              // offset of block
+    // wire       [1:0]   offset;           // offset of block
     reg                hitway0;             // the mark of choosing path0
     reg                hitway1;             // the mark of choosing path1
     // reg                hitway;
     reg                tagcomp_hit;         // tag hit mark
     reg                choose_way;          // the way of L1 we choose to replace
-    reg        [2:0]   state,nextstate;               // state of control
+    reg        [3:0]   state,nextstate;     // state of control
     wire               valid0,valid1;
-    reg                valid,dirty;               // valid signal of tag
+    reg                valid,dirty;         // valid signal of tag
 
     assign valid0        = tag0_rd[20];
     assign valid1        = tag1_rd[20];
@@ -151,29 +152,29 @@ module dcache_ctrl(
             dc_rw_en    = `DISABLE;
         end
         case(state)
-            `L1_IDLE:begin
+            `DC_IDLE:begin
                 if (access_mem == `ENABLE || access_mem_ex == `ENABLE) begin 
-                    nextstate =  `L1_ACCESS;
+                    nextstate =  `DC_ACCESS;
                 end else begin 
-                    nextstate =  `L1_IDLE;
+                    nextstate =  `DC_IDLE;
                 end
             end
-            `L1_ACCESS:begin
+            `DC_ACCESS:begin
                 dc_rw_en  = `DISABLE;
                 if (tagcomp_hit == `ENABLE) begin // cache hit
                     if(memwrite_m == `READ) begin // read hit
                         // read l1_block ,write to cpu
                         miss_stall  =  `DISABLE;
                         if(access_mem_ex == `ENABLE) begin
-                            nextstate   =  `L1_ACCESS;
+                            nextstate   =  `DC_ACCESS;
                         end else begin
-                            nextstate   =  `L1_IDLE;
+                            nextstate   =  `DC_IDLE;
                         end
                         case(hitway)
                             `WAY0:begin
                                 case(offset)
                                     `WORD0:begin
-                                        read_data_m  = data0_rd[31:0];
+                                        read_data_m = data0_rd[31:0];
                                     end
                                     `WORD1:begin
                                         read_data_m = data0_rd[63:32];
@@ -189,7 +190,7 @@ module dcache_ctrl(
                             `WAY1:begin
                                 case(offset)
                                     `WORD0:begin
-                                        read_data_m  = data1_rd[31:0];
+                                        read_data_m = data1_rd[31:0];
                                     end
                                     `WORD1:begin
                                         read_data_m = data1_rd[63:32];
@@ -257,11 +258,11 @@ module dcache_ctrl(
                     if(valid == `ENABLE && dirty == `ENABLE) begin 
                             // dirty block of l1, write to l2
                             if(l2_busy == `ENABLE) begin
-                                nextstate       =  `WAIT_L2_BUSY_DIRTY;
+                                nextstate   =  `WAIT_L2_BUSY_DIRTY;
                             end else begin 
                                 l2_cache_rw =  memwrite_m; 
                                 drq         =  `ENABLE;
-                                nextstate   =  `WRITE_L2;
+                                nextstate   =  `DC_WRITE_L2;
                             end
                             case(choose_way)
                                 `WAY0:begin
@@ -276,41 +277,64 @@ module dcache_ctrl(
                     end else if(l2_busy == `ENABLE && (valid == `DISABLE || dirty == `DISABLE)) begin
                         nextstate    =  `WAIT_L2_BUSY_CLEAN;
                     end else if(l2_busy == `DISABLE && (valid == `DISABLE || dirty == `DISABLE)) begin
-                        drq      =  `ENABLE;
-                        l2_addr  =  addr; 
-                        nextstate =  `L2_ACCESS;
+                        drq       =  `ENABLE;
+                        l2_addr   =  addr; 
+                        nextstate =  `DC_ACCESS_L2;
                     end 
                 end 
             end
-            `L2_ACCESS:begin // access L2, wait L2 hit,choose replacement block's signal of L1
-                // l2 hit, read l2_block ,write to l1
-                // l2 miss, read mem_block ,write to l1 and l2     
+            `DC_ACCESS_L2:begin // access L2, wait L2 hit,choose replacement block's signal of L1
+                // l2 hit(l2_rdy), read l2_block ,write to l1
+                // l2 miss(mem_wr_dc_en), read mem_block ,write to l1 and l2     
                 if(l2_rdy == `ENABLE || mem_wr_dc_en == `ENABLE)begin
+                    // wr signal is `READ in MEM stage,read l2_block ,write to l1 and cpu
+                    // wr signal is `WRITE in MEM stage,read l2_block ,write to l1
+                    /* write l1 part */ 
                     dc_rw_en  = `ENABLE;
-                    nextstate =  `WRITE_L1;
+                    // nextstate =  `WRITE_L1;
                     dirty_wd  =  1'b0;
                     case(choose_way)
                         `WAY0:begin
                             // data0_rw  =  `WRITE;
-                            tag0_rw   =  `WRITE;
-                            dirty0_rw =  `WRITE;
-                            wr0_en0        = `WRITE;
-                            wr0_en1        = `WRITE;
-                            wr0_en2        = `WRITE;
-                            wr0_en3        = `WRITE;
+                            tag0_rw   = `WRITE;
+                            dirty0_rw = `WRITE;
+                            wr0_en0   = `WRITE;
+                            wr0_en1   = `WRITE;
+                            wr0_en2   = `WRITE;
+                            wr0_en3   = `WRITE;
                         end
                         `WAY1:begin
                             // data1_rw  =  `WRITE;
-                            tag1_rw   =  `WRITE;
-                            dirty1_rw =  `WRITE;
-                            wr1_en0        = `WRITE;
-                            wr1_en1        = `WRITE;
-                            wr1_en2        = `WRITE;
-                            wr1_en3        = `WRITE;
+                            tag1_rw   = `WRITE;
+                            dirty1_rw = `WRITE;
+                            wr1_en0   = `WRITE;
+                            wr1_en1   = `WRITE;
+                            wr1_en2   = `WRITE;
+                            wr1_en3   = `WRITE;
                         end
-                    endcase  
+                    endcase 
+                    /* write cpu part */ 
+                    if (memwrite_m == `READ) begin
+                        nextstate =  `WRITE_DC_R;
+                        case(offset)
+                            `WORD0:begin
+                                read_data_m = data_wd_l2[31:0];
+                            end
+                            `WORD1:begin
+                                read_data_m = data_wd_l2[63:32];
+                            end
+                            `WORD2:begin 
+                                read_data_m = data_wd_l2[95:64];
+                            end
+                            `WORD3:begin
+                                read_data_m = data_wd_l2[127:96];
+                            end
+                        endcase // case(offset) 
+                    end else begin
+                        nextstate =  `WRITE_DC_W;
+                    end
                 end else begin
-                    nextstate  =  `L2_ACCESS;
+                    nextstate  =  `DC_ACCESS_L2;
                 end
                         
             end
@@ -320,8 +344,7 @@ module dcache_ctrl(
                 end else begin
                     drq       =  `ENABLE;
                     l2_addr   =  addr;
-                    // l2_index =  addr[14:6]; 
-                    nextstate =  `L2_ACCESS;
+                    nextstate =  `DC_ACCESS_L2;
                 end
             end
             `WAIT_L2_BUSY_DIRTY:begin
@@ -330,10 +353,10 @@ module dcache_ctrl(
                 end else begin
                     l2_cache_rw =  memwrite_m; 
                     drq         =  `ENABLE;
-                    nextstate   =  `WRITE_L2;
+                    nextstate   =  `DC_WRITE_L2;
                 end
             end
-            `WRITE_L1:begin // Write to L1,read from L2
+            `WRITE_DC_R:begin // Write to L1,read from L2
                 if(complete == `ENABLE)begin
                     drq        =  `DISABLE;
                     // data0_rw   =  `READ;
@@ -350,9 +373,36 @@ module dcache_ctrl(
                     wr1_en1    = `READ;
                     wr1_en2    = `READ;
                     wr1_en3    = `READ;
-                    nextstate  =  `L1_ACCESS;
+                    miss_stall  =  `DISABLE;
+                    if(access_mem_ex == `ENABLE) begin
+                        nextstate   =  `DC_ACCESS;
+                    end else begin
+                        nextstate   =  `DC_IDLE;
+                    end
                 end else begin
-                    nextstate  =  `WRITE_L1;
+                    nextstate  =  `WRITE_DC_R;
+                end        
+            end
+            `WRITE_DC_W:begin // Write to L1,read from L2
+                if(complete == `ENABLE)begin
+                    drq        =  `DISABLE;
+                    // data0_rw   =  `READ;
+                    // data1_rw   =  `READ;
+                    tag0_rw    =  `READ;
+                    tag1_rw    =  `READ;
+                    dirty0_rw  =  `READ;
+                    dirty1_rw  =  `READ;
+                    wr0_en0    = `READ;
+                    wr0_en1    = `READ;
+                    wr0_en2    = `READ;
+                    wr0_en3    = `READ;
+                    wr1_en0    = `READ;
+                    wr1_en1    = `READ;
+                    wr1_en2    = `READ;
+                    wr1_en3    = `READ;
+                    nextstate  =  `DC_ACCESS;
+                end else begin
+                    nextstate  =  `WRITE_DC_W;
                 end        
             end
              `WRITE_HIT:begin // Write to L1,read from CPU
@@ -373,30 +423,30 @@ module dcache_ctrl(
                     wr1_en2    =  `READ;
                     wr1_en3    =  `READ;
                     if(access_mem_ex == `ENABLE) begin
-                        nextstate  =  `L1_ACCESS;
+                        nextstate  =  `DC_ACCESS;
                     end else begin
-                        nextstate  =  `L1_IDLE;
+                        nextstate  =  `DC_IDLE;
                     end
                 end else begin
                     nextstate  =  `WRITE_HIT;
                 end        
             end
-            `WRITE_L2:begin // load dirty block to L2
+            `DC_WRITE_L2:begin // load dirty block to L2
                 if (l2_complete == `ENABLE) begin
                     l2_cache_rw =  `READ;  
                     l2_addr     =  addr;
                     // l2_index    =  addr[14:6]; // new index of L2
-                    nextstate   =  `L2_ACCESS;
+                    nextstate   =  `DC_ACCESS_L2;
                 end else begin
-                    nextstate   =  `WRITE_L2;
+                    nextstate   =  `DC_WRITE_L2;
                 end
             end
-            default:nextstate = `L1_IDLE;
+            default:nextstate = `DC_IDLE;
         endcase       
     end
     always @(posedge clk) begin // cache control
         if (rst == `ENABLE) begin // reset
-            state  <=  `L1_IDLE;
+            state  <=  `DC_IDLE;
         end else begin
             state  <= nextstate;
         end

@@ -301,7 +301,7 @@ module l2_cache_ctrl(
                         `WORD3:begin
                             data_wd_l2 = l2_data_rd[511:384];
                         end
-                    endcase // case(offset)  
+                    endcase // case(offset) 
                     if(complete == `ENABLE)begin
                         l2_rdy  = `DISABLE;
                         l2_busy = `DISABLE;
@@ -403,7 +403,7 @@ module l2_cache_ctrl(
                         /* write l2 part */ 
                         mem_rw        = `READ;
                         mem_addr      = l2_addr[31:6];
-                        nextstate     = `WRITE_TO_L2;
+                        nextstate     = `WRITE_TO_L2_CLEAN;
                         l2_dirty_wd   = 1'b0;
                         l2_tag_wd     = {1'b1,l2_addr[31:15]};
                         wd_from_mem_en = `ENABLE;
@@ -504,94 +504,11 @@ module l2_cache_ctrl(
             //         nextstate   = `WRITE_L1;
             //     end
             // end
-            `WRITE_TO_L2:begin // write into l2_cache from memory 
-                if(l2_complete == `ENABLE)begin
-                    wd_from_mem_en = `DISABLE;
-                    mem_wr_dc_en   = `DISABLE;
-                    mem_wr_ic_en   = `DISABLE;  
-                    l2_tag0_rw   =  `READ;
-                    l2_tag1_rw   =  `READ;
-                    l2_tag2_rw   =  `READ;
-                    l2_tag3_rw   =  `READ;
-                    // l2_data0_rw  =  `READ;
-                    // l2_data1_rw  =  `READ;
-                    // l2_data2_rw  =  `READ;
-                    // l2_data3_rw  =  `READ;  
-                    l2_dirty0_rw =  `READ;
-                    l2_dirty1_rw =  `READ; 
-                    l2_dirty2_rw =  `READ;
-                    l2_dirty3_rw =  `READ;
-                    wr0_en0 = `READ;
-                    wr0_en1 = `READ;
-                    wr0_en2 = `READ;
-                    wr0_en3 = `READ;
-                    wr1_en0 = `READ;
-                    wr1_en1 = `READ;
-                    wr1_en2 = `READ;
-                    wr1_en3 = `READ;
-                    wr2_en0 = `READ;
-                    wr2_en1 = `READ;
-                    wr2_en2 = `READ;
-                    wr2_en3 = `READ;
-                    wr3_en0 = `READ;
-                    wr3_en1 = `READ;
-                    wr3_en2 = `READ;
-                    wr3_en3 = `READ;
-                    // nextstate  =  `ACCESS_L2;
-                    l2_miss_stall = `DISABLE;
-                    l2_busy = `DISABLE;
-                    data_wd_l2_en = `DISABLE;
-                    nextstate   = `L2_IDLE;                                         
-                end else begin
-                    nextstate  =  `WRITE_TO_L2;
-                end
-            end
-            `L2_WRITE_HIT:begin // write into l2_cache from L1 
-                if(l2_complete == `ENABLE)begin
-                    wd_from_l1_en = `DISABLE;  // ++++++++++
-                    l2_tag0_rw   =  `READ;
-                    l2_tag1_rw   =  `READ;
-                    l2_tag2_rw   =  `READ;
-                    l2_tag3_rw   =  `READ;
-                    // l2_data0_rw  =  `READ;
-                    // l2_data1_rw  =  `READ;
-                    // l2_data2_rw  =  `READ;
-                    // l2_data3_rw  =  `READ;  
-                    l2_dirty0_rw =  `READ;
-                    l2_dirty1_rw =  `READ; 
-                    l2_dirty2_rw =  `READ;
-                    l2_dirty3_rw =  `READ;
-                    wr0_en0 = `READ;
-                    wr0_en1 = `READ;
-                    wr0_en2 = `READ;
-                    wr0_en3 = `READ;
-                    wr1_en0 = `READ;
-                    wr1_en1 = `READ;
-                    wr1_en2 = `READ;
-                    wr1_en3 = `READ;
-                    wr2_en0 = `READ;
-                    wr2_en1 = `READ;
-                    wr2_en2 = `READ;
-                    wr2_en3 = `READ;
-                    wr3_en0 = `READ;
-                    wr3_en1 = `READ;
-                    wr3_en2 = `READ;
-                    wr3_en3 = `READ;
-                    if (irq || drq == `ENABLE) begin
-                        nextstate   = `ACCESS_L2;
-                     end else begin
-                        l2_busy = `DISABLE;
-                        nextstate   =  `L2_IDLE;
-                     end                                      
-                end else begin
-                    nextstate =  `L2_WRITE_HIT;
-                end
-            end
             `WRITE_MEM:begin // load block of L2 with dirty to mem.                     
                 if (mem_complete == `ENABLE) begin
                     mem_addr     = l2_addr[31:6];
                     mem_rw       = `READ; 
-                    nextstate    = `WRITE_TO_L2;
+                    nextstate    = `WRITE_TO_L2_DIRTY;
                     l2_dirty_wd  = 1'b0;
                     l2_tag_wd    = {1'b1,l2_addr[31:15]};
                     wd_from_mem_en = `ENABLE;
@@ -636,6 +553,127 @@ module l2_cache_ctrl(
                     endcase
                 end else begin
                     nextstate = `WRITE_MEM;
+                end
+            end
+            `WRITE_TO_L2_CLEAN:begin // write into l2_cache from memory 
+                if(l2_complete == `ENABLE)begin
+                    wd_from_mem_en = `DISABLE;
+                    mem_wr_dc_en   = `DISABLE;
+                    mem_wr_ic_en   = `DISABLE;  
+                    l2_tag0_rw   =  `READ;
+                    l2_tag1_rw   =  `READ;
+                    l2_tag2_rw   =  `READ;
+                    l2_tag3_rw   =  `READ;
+                    // l2_data0_rw  =  `READ;
+                    // l2_data1_rw  =  `READ;
+                    // l2_data2_rw  =  `READ;
+                    // l2_data3_rw  =  `READ;  
+                    l2_dirty0_rw =  `READ;
+                    l2_dirty1_rw =  `READ; 
+                    l2_dirty2_rw =  `READ;
+                    l2_dirty3_rw =  `READ;
+                    wr0_en0 = `READ;
+                    wr0_en1 = `READ;
+                    wr0_en2 = `READ;
+                    wr0_en3 = `READ;
+                    wr1_en0 = `READ;
+                    wr1_en1 = `READ;
+                    wr1_en2 = `READ;
+                    wr1_en3 = `READ;
+                    wr2_en0 = `READ;
+                    wr2_en1 = `READ;
+                    wr2_en2 = `READ;
+                    wr2_en3 = `READ;
+                    wr3_en0 = `READ;
+                    wr3_en1 = `READ;
+                    wr3_en2 = `READ;
+                    wr3_en3 = `READ;
+                    // nextstate  =  `ACCESS_L2;
+                    l2_miss_stall = `DISABLE;
+                    l2_busy = `DISABLE;
+                    data_wd_l2_en = `DISABLE;
+                    nextstate   = `L2_IDLE;                                         
+                end else begin
+                    nextstate  =  `WRITE_TO_L2_CLEAN;
+                end
+            end
+            `WRITE_TO_L2_DIRTY:begin // write into l2_cache from memory 
+                if(l2_complete == `ENABLE)begin
+                    wd_from_mem_en = `DISABLE;
+                    mem_wr_dc_en   = `DISABLE;
+                    mem_wr_ic_en   = `DISABLE;  
+                    l2_tag0_rw   =  `READ;
+                    l2_tag1_rw   =  `READ;
+                    l2_tag2_rw   =  `READ;
+                    l2_tag3_rw   =  `READ;
+                    // l2_data0_rw  =  `READ;
+                    // l2_data1_rw  =  `READ;
+                    // l2_data2_rw  =  `READ;
+                    // l2_data3_rw  =  `READ;  
+                    l2_dirty0_rw =  `READ;
+                    l2_dirty1_rw =  `READ; 
+                    l2_dirty2_rw =  `READ;
+                    l2_dirty3_rw =  `READ;
+                    wr0_en0 = `READ;
+                    wr0_en1 = `READ;
+                    wr0_en2 = `READ;
+                    wr0_en3 = `READ;
+                    wr1_en0 = `READ;
+                    wr1_en1 = `READ;
+                    wr1_en2 = `READ;
+                    wr1_en3 = `READ;
+                    wr2_en0 = `READ;
+                    wr2_en1 = `READ;
+                    wr2_en2 = `READ;
+                    wr2_en3 = `READ;
+                    wr3_en0 = `READ;
+                    wr3_en1 = `READ;
+                    wr3_en2 = `READ;
+                    wr3_en3 = `READ;
+                    nextstate  =  `ACCESS_L2;                                         
+                end else begin
+                    nextstate  =  `WRITE_TO_L2_DIRTY;
+                end
+            end
+            `L2_WRITE_HIT:begin // write into l2_cache from L1 
+                if(l2_complete == `ENABLE)begin
+                    wd_from_l1_en = `DISABLE;  // ++++++++++
+                    l2_tag0_rw   =  `READ;
+                    l2_tag1_rw   =  `READ;
+                    l2_tag2_rw   =  `READ;
+                    l2_tag3_rw   =  `READ;
+                    // l2_data0_rw  =  `READ;
+                    // l2_data1_rw  =  `READ;
+                    // l2_data2_rw  =  `READ;
+                    // l2_data3_rw  =  `READ;  
+                    l2_dirty0_rw =  `READ;
+                    l2_dirty1_rw =  `READ; 
+                    l2_dirty2_rw =  `READ;
+                    l2_dirty3_rw =  `READ;
+                    wr0_en0 = `READ;
+                    wr0_en1 = `READ;
+                    wr0_en2 = `READ;
+                    wr0_en3 = `READ;
+                    wr1_en0 = `READ;
+                    wr1_en1 = `READ;
+                    wr1_en2 = `READ;
+                    wr1_en3 = `READ;
+                    wr2_en0 = `READ;
+                    wr2_en1 = `READ;
+                    wr2_en2 = `READ;
+                    wr2_en3 = `READ;
+                    wr3_en0 = `READ;
+                    wr3_en1 = `READ;
+                    wr3_en2 = `READ;
+                    wr3_en3 = `READ;
+                    if (irq || drq == `ENABLE) begin
+                        nextstate   = `ACCESS_L2;
+                     end else begin
+                        l2_busy = `DISABLE;
+                        nextstate   =  `L2_IDLE;
+                     end                                      
+                end else begin
+                    nextstate =  `L2_WRITE_HIT;
                 end
             end
             default:nextstate = `L2_IDLE;

@@ -173,6 +173,7 @@ module dcache_write_test();
         .l2_rdy         (l2_rdy),        // ready signal of l2_cache
         .mem_wr_dc_en   (mem_wr_dc_en), 
         .complete       (complete_dc),   // complete op writing to L1
+        .data_wd_l2     (data_wd_l2),
         .drq            (drq),      
         .dc_rw_en       (dc_rw_en), 
         .l2_addr        (l2_addr_dc),      

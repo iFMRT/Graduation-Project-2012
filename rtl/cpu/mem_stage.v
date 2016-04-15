@@ -20,6 +20,7 @@ module mem_stage (
     input      [20:0]            tag1_rd,       // read data of tag1
     input      [127:0]           data0_rd,      // read data of data0
     input      [127:0]           data1_rd,      // read data of data1
+    input      [127:0]           data_wd_l2,
     input                        dirty0,
     input                        dirty1,
     output                       dirty_wd,
@@ -161,6 +162,7 @@ module mem_stage (
         .l2_rdy         (l2_rdy),        // ready signal of l2_cache
         .mem_wr_dc_en   (mem_wr_dc_en), 
         .complete       (complete),   // complete op writing to L1
+        .data_wd_l2     (data_wd_l2), 
         .drq            (drq),      
         .dc_rw_en       (dc_rw_en), 
         .l2_addr        (l2_addr),      

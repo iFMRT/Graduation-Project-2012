@@ -233,6 +233,7 @@ module cpu_top(
         .tag1_rd        (tag1_rd_ic),       // read data of tag1
         .data0_rd       (data0_rd_ic),      // read data of data0
         .data1_rd       (data1_rd_ic),      // read data of data1
+        .data_wd_l2     (data_wd_l2),
         .tag0_rw        (tag0_rw_ic),       // read / write signal of L1_tag0
         .tag1_rw        (tag1_rw_ic),       // read / write signal of L1_tag1
         .tag_wd         (tag_wd_ic),        // write data of L1_tag
@@ -381,6 +382,7 @@ module cpu_top(
         .tag1_rd        (tag1_rd_dc),       // read data of tag1
         .data0_rd       (data0_rd_dc),      // read data of data0
         .data1_rd       (data1_rd_dc),      // read data of data1
+        .data_wd_l2     (data_wd_l2),
         .dirty0         (dirty0),           // 
         .dirty1         (dirty1),           //  
         .dirty_wd       (dirty_wd),         //       
