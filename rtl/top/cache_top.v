@@ -35,7 +35,7 @@ module cache_top(
     /*if_reg part*/
     output              data_rdy,       // tag hit mark
     /*l2_cache part*/       
-    output              l2_miss_stall,
+    // output              l2_miss_stall,
     /*memory part*/
     input               mem_complete,
     input       [511:0] mem_rd,
@@ -127,7 +127,7 @@ module cache_top(
         .l2_cache_rw_ic (l2_cache_rw_ic),   // read / write signal of CPU
         .l2_cache_rw_dc (l2_cache_rw_dc),   // read / write signal of CPU
         .l2_busy        (l2_busy),
-        .l2_miss_stall  (l2_miss_stall),    // stall caused by l2_miss
+        // .l2_miss_stall  (l2_miss_stall),    // stall caused by l2_miss
         .l2_rdy         (l2_rdy),
         .l2_complete    (l2_complete),
         /*icache part*/

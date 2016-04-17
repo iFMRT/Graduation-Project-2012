@@ -244,43 +244,191 @@ module l2_cache_ctrl(
     end
 
     always @(*) begin
+        l2_tag0_rw    = `READ;
+        l2_tag1_rw    = `READ;
+        l2_tag2_rw    = `READ;
+        l2_tag3_rw    = `READ;
+        wr0_en0       = `READ;
+        wr0_en1       = `READ;
+        wr0_en2       = `READ;
+        wr0_en3       = `READ;
+        wr1_en0       = `READ;
+        wr1_en1       = `READ;
+        wr1_en2       = `READ;
+        wr1_en3       = `READ;
+        wr2_en0       = `READ;
+        wr2_en1       = `READ;
+        wr2_en2       = `READ;
+        wr2_en3       = `READ;
+        wr3_en0       = `READ;
+        wr3_en1       = `READ;
+        wr3_en2       = `READ;
+        wr3_en3       = `READ;
+        l2_dirty0_rw  = `READ;
+        l2_dirty1_rw  = `READ;
+        l2_dirty2_rw  = `READ;
+        l2_dirty3_rw  = `READ;
+        if((state == `ACCESS_L2 && l2_cache_rw == `WRITE && tagcomp_hit == `ENABLE)
+        || (state == `L2_WRITE_HIT && l2_complete == `DISABLE)) begin // write hit
+            case(hitway)
+                `L2_WAY0:begin
+                    // l2_data0_rw  = `WRITE;
+                    l2_dirty0_rw = `WRITE;
+                    l2_tag0_rw   = `WRITE;
+                    case(offset)
+                        `WORD0:begin
+                            wr0_en0 = `WRITE;
+                        end
+                        `WORD1:begin
+                            wr0_en1 = `WRITE;
+                        end
+                        `WORD2:begin
+                            wr0_en2 = `WRITE;
+                        end
+                        `WORD3:begin
+                            wr0_en3 = `WRITE;
+                        end
+                    endcase
+                end // hitway == 00
+                `L2_WAY1:begin
+                    // l2_data1_rw  = `WRITE;
+                    l2_dirty1_rw = `WRITE;
+                    l2_tag1_rw   = `WRITE;
+                    case(offset)
+                        `WORD0:begin
+                            wr1_en0 = `WRITE;
+                        end
+                        `WORD1:begin
+                            wr1_en1 = `WRITE;
+                        end
+                        `WORD2:begin
+                            wr1_en2 = `WRITE;
+                        end
+                        `WORD3:begin
+                            wr1_en3 = `WRITE;
+                        end
+                    endcase
+                end // hitway == 01
+                `L2_WAY2:begin
+                    // l2_data2_rw  = `WRITE;
+                    l2_dirty2_rw = `WRITE;
+                    l2_tag2_rw   = `WRITE;
+                    case(offset)
+                        `WORD0:begin
+                            wr2_en0 = `ENABLE;
+                        end
+                        `WORD1:begin
+                            wr2_en1 = `ENABLE;
+                        end
+                        `WORD2:begin
+                            wr2_en2 = `ENABLE;
+                        end
+                        `WORD3:begin
+                            wr2_en3 = `ENABLE;
+                        end
+                    endcase
+                end // hitway == 10
+                `L2_WAY3:begin
+                    // l2_data3_rw  = `WRITE;
+                    l2_dirty3_rw = `WRITE;
+                    l2_tag3_rw   = `WRITE;
+                    case(offset)
+                        `WORD0:begin
+                            wr3_en0 = `ENABLE;
+                        end
+                        `WORD1:begin
+                            wr3_en1 = `ENABLE;
+                        end
+                        `WORD2:begin
+                            wr3_en2 = `ENABLE;
+                        end
+                        `WORD3:begin
+                            wr3_en3 = `ENABLE;
+                        end
+                    endcase
+                end // hitway == 11
+            endcase // case(hitway) 
+        end
+        if ((state == `ACCESS_L2 && (valid == `DISABLE || dirty == `DISABLE))
+            ||(state == `WRITE_TO_L2_CLEAN && l2_complete == `DISABLE)
+            ||(state == `WRITE_MEM && mem_complete == `ENABLE)
+            ||(state == `WRITE_TO_L2_DIRTY && l2_complete == `DISABLE))begin
+            case(choose_way)
+                `L2_WAY0:begin
+                    // l2_data0_rw  = `WRITE;
+                    l2_tag0_rw   = `WRITE;
+                    l2_dirty0_rw = `WRITE;
+                    wr0_en0 = `WRITE;
+                    wr0_en1 = `WRITE;
+                    wr0_en2 = `WRITE;
+                    wr0_en3 = `WRITE;
+                end
+                `L2_WAY1:begin
+                    // l2_data1_rw  = `WRITE;
+                    l2_tag1_rw   = `WRITE;
+                    l2_dirty1_rw = `WRITE;
+                    wr1_en0 = `WRITE;
+                    wr1_en1 = `WRITE;
+                    wr1_en2 = `WRITE;
+                    wr1_en3 = `WRITE;
+                end
+                `L2_WAY2:begin
+                    // l2_data2_rw  = `WRITE;
+                    l2_tag2_rw   = `WRITE;
+                    l2_dirty2_rw = `WRITE;
+                    wr2_en0 = `ENABLE;
+                    wr2_en1 = `ENABLE;
+                    wr2_en2 = `ENABLE;
+                    wr2_en3 = `ENABLE;
+                end
+                `L2_WAY3:begin
+                    // l2_data3_rw  = `WRITE;
+                    l2_tag3_rw   = `WRITE;
+                    l2_dirty3_rw = `WRITE;
+                    wr3_en0 = `ENABLE;
+                    wr3_en1 = `ENABLE;
+                    wr3_en2 = `ENABLE;
+                    wr3_en3 = `ENABLE;
+                end
+            endcase
+        end
         if(rst == `ENABLE) begin
             l2_busy       = `DISABLE;
             l2_rdy        = `DISABLE;
-            l2_tag0_rw    = `READ;
-            l2_tag1_rw    = `READ;
-            l2_tag2_rw    = `READ;
-            l2_tag3_rw    = `READ;
-            wr0_en0       = `READ;
-            wr0_en1       = `READ;
-            wr0_en2       = `READ;
-            wr0_en3       = `READ;
-            wr1_en0       = `READ;
-            wr1_en1       = `READ;
-            wr1_en2       = `READ;
-            wr1_en3       = `READ;
-            wr2_en0       = `READ;
-            wr2_en1       = `READ;
-            wr2_en2       = `READ;
-            wr2_en3       = `READ;
-            wr3_en0       = `READ;
-            wr3_en1       = `READ;
-            wr3_en2       = `READ;
-            wr3_en3       = `READ;
-            // l2_data0_rw   = `READ;
-            // l2_data1_rw   = `READ;
-            // l2_data2_rw   = `READ;
-            // l2_data3_rw   = `READ;
-            l2_dirty0_rw  = `READ;
-            l2_dirty1_rw  = `READ;
-            l2_dirty2_rw  = `READ;
-            l2_dirty3_rw  = `READ;
-            // l2_miss_stall = `DISABLE;
+            // l2_tag0_rw    = `READ;
+            // l2_tag1_rw    = `READ;
+            // l2_tag2_rw    = `READ;
+            // l2_tag3_rw    = `READ;
+            // wr0_en0       = `READ;
+            // wr0_en1       = `READ;
+            // wr0_en2       = `READ;
+            // wr0_en3       = `READ;
+            // wr1_en0       = `READ;
+            // wr1_en1       = `READ;
+            // wr1_en2       = `READ;
+            // wr1_en3       = `READ;
+            // wr2_en0       = `READ;
+            // wr2_en1       = `READ;
+            // wr2_en2       = `READ;
+            // wr2_en3       = `READ;
+            // wr3_en0       = `READ;
+            // wr3_en1       = `READ;
+            // wr3_en2       = `READ;
+            // wr3_en3       = `READ;
+            // // l2_data0_rw   = `READ;
+            // // l2_data1_rw   = `READ;
+            // // l2_data2_rw   = `READ;
+            // // l2_data3_rw   = `READ;
+            // l2_dirty0_rw  = `READ;
+            // l2_dirty1_rw  = `READ;
+            // l2_dirty2_rw  = `READ;
+            // l2_dirty3_rw  = `READ;
         end
         case(state)
             `L2_IDLE:begin
                 // l2_index  = l2_addr[14:6];
                 // offset    = l2_addr[5:4];
+                // l2_tag_wd     = {1'b1,l2_addr[31:15]};
                 l2_index  = l2_addr[10:2];
                 offset    = l2_addr[1:0];
                 if (irq || drq == `ENABLE) begin  
@@ -290,6 +438,7 @@ module l2_cache_ctrl(
                 end    
             end
             `ACCESS_L2:begin
+                l2_tag_wd = {1'b1,l2_addr[27:11]};
                 l2_busy     = `ENABLE;
                 // read hit
                 if ( l2_cache_rw == `READ && tagcomp_hit == `ENABLE) begin 
@@ -325,88 +474,86 @@ module l2_cache_ctrl(
                     // l2_miss_stall = `ENABLE;
                     nextstate     = `L2_WRITE_HIT;
                     l2_dirty_wd   = 1'b1;
-                    // l2_tag_wd     = {1'b1,l2_addr[31:15]};
-                    l2_tag_wd     = {1'b1,l2_addr[27:11]};
                     wd_from_l1_en = `ENABLE;
                     // l2_data_wd    = l2_data_wd_copy;
-                    case(hitway)
-                        `L2_WAY0:begin
-                            // l2_data0_rw  = `WRITE;
-                            l2_dirty0_rw = `WRITE;
-                            l2_tag0_rw   = `WRITE;
-                            case(offset)
-                                `WORD0:begin
-                                    wr0_en0 = `WRITE;
-                                end
-                                `WORD1:begin
-                                    wr0_en1 = `WRITE;
-                                end
-                                `WORD2:begin
-                                    wr0_en2 = `WRITE;
-                                end
-                                `WORD3:begin
-                                    wr0_en3 = `WRITE;
-                                end
-                            endcase
-                        end // hitway == 00
-                        `L2_WAY1:begin
-                            // l2_data1_rw  = `WRITE;
-                            l2_dirty1_rw = `WRITE;
-                            l2_tag1_rw   = `WRITE;
-                            case(offset)
-                                `WORD0:begin
-                                    wr1_en0 = `WRITE;
-                                end
-                                `WORD1:begin
-                                    wr1_en1 = `WRITE;
-                                end
-                                `WORD2:begin
-                                    wr1_en2 = `WRITE;
-                                end
-                                `WORD3:begin
-                                    wr1_en3 = `WRITE;
-                                end
-                            endcase
-                        end // hitway == 01
-                        `L2_WAY2:begin
-                            // l2_data2_rw  = `WRITE;
-                            l2_dirty2_rw = `WRITE;
-                            l2_tag2_rw   = `WRITE;
-                            case(offset)
-                                `WORD0:begin
-                                    wr2_en0 = `ENABLE;
-                                end
-                                `WORD1:begin
-                                    wr2_en1 = `ENABLE;
-                                end
-                                `WORD2:begin
-                                    wr2_en2 = `ENABLE;
-                                end
-                                `WORD3:begin
-                                    wr2_en3 = `ENABLE;
-                                end
-                            endcase
-                        end // hitway == 10
-                        `L2_WAY3:begin
-                            // l2_data3_rw  = `WRITE;
-                            l2_dirty3_rw = `WRITE;
-                            l2_tag3_rw   = `WRITE;
-                            case(offset)
-                                `WORD0:begin
-                                    wr3_en0 = `ENABLE;
-                                end
-                                `WORD1:begin
-                                    wr3_en1 = `ENABLE;
-                                end
-                                `WORD2:begin
-                                    wr3_en2 = `ENABLE;
-                                end
-                                `WORD3:begin
-                                    wr3_en3 = `ENABLE;
-                                end
-                            endcase
-                        end // hitway == 11
-                    endcase // case(hitway) 
+                    // case(hitway)
+                    //     `L2_WAY0:begin
+                    //         // l2_data0_rw  = `WRITE;
+                    //         l2_dirty0_rw = `WRITE;
+                    //         l2_tag0_rw   = `WRITE;
+                    //         case(offset)
+                    //             `WORD0:begin
+                    //                 wr0_en0 = `WRITE;
+                    //             end
+                    //             `WORD1:begin
+                    //                 wr0_en1 = `WRITE;
+                    //             end
+                    //             `WORD2:begin
+                    //                 wr0_en2 = `WRITE;
+                    //             end
+                    //             `WORD3:begin
+                    //                 wr0_en3 = `WRITE;
+                    //             end
+                    //         endcase
+                    //     end // hitway == 00
+                    //     `L2_WAY1:begin
+                    //         // l2_data1_rw  = `WRITE;
+                    //         l2_dirty1_rw = `WRITE;
+                    //         l2_tag1_rw   = `WRITE;
+                    //         case(offset)
+                    //             `WORD0:begin
+                    //                 wr1_en0 = `WRITE;
+                    //             end
+                    //             `WORD1:begin
+                    //                 wr1_en1 = `WRITE;
+                    //             end
+                    //             `WORD2:begin
+                    //                 wr1_en2 = `WRITE;
+                    //             end
+                    //             `WORD3:begin
+                    //                 wr1_en3 = `WRITE;
+                    //             end
+                    //         endcase
+                    //     end // hitway == 01
+                    //     `L2_WAY2:begin
+                    //         // l2_data2_rw  = `WRITE;
+                    //         l2_dirty2_rw = `WRITE;
+                    //         l2_tag2_rw   = `WRITE;
+                    //         case(offset)
+                    //             `WORD0:begin
+                    //                 wr2_en0 = `ENABLE;
+                    //             end
+                    //             `WORD1:begin
+                    //                 wr2_en1 = `ENABLE;
+                    //             end
+                    //             `WORD2:begin
+                    //                 wr2_en2 = `ENABLE;
+                    //             end
+                    //             `WORD3:begin
+                    //                 wr2_en3 = `ENABLE;
+                    //             end
+                    //         endcase
+                    //     end // hitway == 10
+                    //     `L2_WAY3:begin
+                    //         // l2_data3_rw  = `WRITE;
+                    //         l2_dirty3_rw = `WRITE;
+                    //         l2_tag3_rw   = `WRITE;
+                    //         case(offset)
+                    //             `WORD0:begin
+                    //                 wr3_en0 = `ENABLE;
+                    //             end
+                    //             `WORD1:begin
+                    //                 wr3_en1 = `ENABLE;
+                    //             end
+                    //             `WORD2:begin
+                    //                 wr3_en2 = `ENABLE;
+                    //             end
+                    //             `WORD3:begin
+                    //                 wr3_en3 = `ENABLE;
+                    //             end
+                    //         endcase
+                    //     end // hitway == 11
+                    // endcase // case(hitway) 
                 end else begin // cache miss
                     // l2_miss_stall = `ENABLE;
                     // read mem_block ,write to l1 and l2
@@ -417,48 +564,46 @@ module l2_cache_ctrl(
                         mem_addr      = l2_addr[27:2];
                         nextstate     = `WRITE_TO_L2_CLEAN;
                         l2_dirty_wd   = 1'b0;
-                        // l2_tag_wd     = {1'b1,l2_addr[31:15]};
-                        l2_tag_wd     = {1'b1,l2_addr[27:11]};
                         wd_from_mem_en = `ENABLE;
                         // l2_data_wd    = mem_rd;
-                        case(choose_way)
-                            `L2_WAY0:begin
-                                // l2_data0_rw  = `WRITE;
-                                l2_tag0_rw   = `WRITE;
-                                l2_dirty0_rw = `WRITE;
-                                wr0_en0 = `WRITE;
-                                wr0_en1 = `WRITE;
-                                wr0_en2 = `WRITE;
-                                wr0_en3 = `WRITE;
-                            end
-                            `L2_WAY1:begin
-                                // l2_data1_rw  = `WRITE;
-                                l2_tag1_rw   = `WRITE;
-                                l2_dirty1_rw = `WRITE;
-                                wr1_en0 = `WRITE;
-                                wr1_en1 = `WRITE;
-                                wr1_en2 = `WRITE;
-                                wr1_en3 = `WRITE;
-                            end
-                            `L2_WAY2:begin
-                                // l2_data2_rw  = `WRITE;
-                                l2_tag2_rw   = `WRITE;
-                                l2_dirty2_rw = `WRITE;
-                                wr2_en0 = `ENABLE;
-                                wr2_en1 = `ENABLE;
-                                wr2_en2 = `ENABLE;
-                                wr2_en3 = `ENABLE;
-                            end
-                            `L2_WAY3:begin
-                                // l2_data3_rw  = `WRITE;
-                                l2_tag3_rw   = `WRITE;
-                                l2_dirty3_rw = `WRITE;
-                                wr3_en0 = `ENABLE;
-                                wr3_en1 = `ENABLE;
-                                wr3_en2 = `ENABLE;
-                                wr3_en3 = `ENABLE;
-                            end
-                        endcase
+                        // case(choose_way)
+                        //     `L2_WAY0:begin
+                        //         // l2_data0_rw  = `WRITE;
+                        //         l2_tag0_rw   = `WRITE;
+                        //         l2_dirty0_rw = `WRITE;
+                        //         wr0_en0 = `WRITE;
+                        //         wr0_en1 = `WRITE;
+                        //         wr0_en2 = `WRITE;
+                        //         wr0_en3 = `WRITE;
+                        //     end
+                        //     `L2_WAY1:begin
+                        //         // l2_data1_rw  = `WRITE;
+                        //         l2_tag1_rw   = `WRITE;
+                        //         l2_dirty1_rw = `WRITE;
+                        //         wr1_en0 = `WRITE;
+                        //         wr1_en1 = `WRITE;
+                        //         wr1_en2 = `WRITE;
+                        //         wr1_en3 = `WRITE;
+                        //     end
+                        //     `L2_WAY2:begin
+                        //         // l2_data2_rw  = `WRITE;
+                        //         l2_tag2_rw   = `WRITE;
+                        //         l2_dirty2_rw = `WRITE;
+                        //         wr2_en0 = `ENABLE;
+                        //         wr2_en1 = `ENABLE;
+                        //         wr2_en2 = `ENABLE;
+                        //         wr2_en3 = `ENABLE;
+                        //     end
+                        //     `L2_WAY3:begin
+                        //         // l2_data3_rw  = `WRITE;
+                        //         l2_tag3_rw   = `WRITE;
+                        //         l2_dirty3_rw = `WRITE;
+                        //         wr3_en0 = `ENABLE;
+                        //         wr3_en1 = `ENABLE;
+                        //         wr3_en2 = `ENABLE;
+                        //         wr3_en3 = `ENABLE;
+                        //     end
+                        // endcase
                         /* write l1 part */ 
                         data_wd_l2_en = `ENABLE;
                         // data_wd_l2    = data_wd_l2_copy;
@@ -528,48 +673,46 @@ module l2_cache_ctrl(
                     mem_rw       = `READ; 
                     nextstate    = `WRITE_TO_L2_DIRTY;
                     l2_dirty_wd  = 1'b0;
-                    // l2_tag_wd    = {1'b1,l2_addr[31:15]};
-                    l2_tag_wd    = {1'b1,l2_addr[27:11]};
                     wd_from_mem_en = `ENABLE;
                     // l2_data_wd   = mem_rd;
-                    case(choose_way)
-                        `L2_WAY0:begin
-                            // l2_data0_rw  = `WRITE;
-                            l2_tag0_rw   = `WRITE;
-                            l2_dirty0_rw = `WRITE;
-                            wr0_en0 = `WRITE;
-                            wr0_en1 = `WRITE;
-                            wr0_en2 = `WRITE;
-                            wr0_en3 = `WRITE;
-                        end
-                        `L2_WAY1:begin
-                            // l2_data1_rw  = `WRITE;
-                            l2_tag1_rw   = `WRITE;
-                            l2_dirty1_rw = `WRITE;
-                            wr1_en0 = `WRITE;
-                            wr1_en1 = `WRITE;
-                            wr1_en2 = `WRITE;
-                            wr1_en3 = `WRITE;
-                        end
-                        `L2_WAY2:begin
-                            // l2_data2_rw  = `WRITE;
-                            l2_tag2_rw   = `WRITE;
-                            l2_dirty2_rw = `WRITE;
-                            wr2_en0 = `ENABLE;
-                            wr2_en1 = `ENABLE;
-                            wr2_en2 = `ENABLE;
-                            wr2_en3 = `ENABLE;
-                        end
-                        `L2_WAY3:begin
-                            // l2_data3_rw  = `WRITE;
-                            l2_tag3_rw   = `WRITE;
-                            l2_dirty3_rw = `WRITE;
-                            wr3_en0 = `ENABLE;
-                            wr3_en1 = `ENABLE;
-                            wr3_en2 = `ENABLE;
-                            wr3_en3 = `ENABLE;
-                        end
-                    endcase
+                    // case(choose_way)
+                    //     `L2_WAY0:begin
+                    //         // l2_data0_rw  = `WRITE;
+                    //         l2_tag0_rw   = `WRITE;
+                    //         l2_dirty0_rw = `WRITE;
+                    //         wr0_en0 = `WRITE;
+                    //         wr0_en1 = `WRITE;
+                    //         wr0_en2 = `WRITE;
+                    //         wr0_en3 = `WRITE;
+                    //     end
+                    //     `L2_WAY1:begin
+                    //         // l2_data1_rw  = `WRITE;
+                    //         l2_tag1_rw   = `WRITE;
+                    //         l2_dirty1_rw = `WRITE;
+                    //         wr1_en0 = `WRITE;
+                    //         wr1_en1 = `WRITE;
+                    //         wr1_en2 = `WRITE;
+                    //         wr1_en3 = `WRITE;
+                    //     end
+                    //     `L2_WAY2:begin
+                    //         // l2_data2_rw  = `WRITE;
+                    //         l2_tag2_rw   = `WRITE;
+                    //         l2_dirty2_rw = `WRITE;
+                    //         wr2_en0 = `ENABLE;
+                    //         wr2_en1 = `ENABLE;
+                    //         wr2_en2 = `ENABLE;
+                    //         wr2_en3 = `ENABLE;
+                    //     end
+                    //     `L2_WAY3:begin
+                    //         // l2_data3_rw  = `WRITE;
+                    //         l2_tag3_rw   = `WRITE;
+                    //         l2_dirty3_rw = `WRITE;
+                    //         wr3_en0 = `ENABLE;
+                    //         wr3_en1 = `ENABLE;
+                    //         wr3_en2 = `ENABLE;
+                    //         wr3_en3 = `ENABLE;
+                    //     end
+                    // endcase
                 end else begin
                     nextstate = `WRITE_MEM;
                 end
@@ -579,34 +722,34 @@ module l2_cache_ctrl(
                     wd_from_mem_en = `DISABLE;
                     mem_wr_dc_en   = `DISABLE;
                     mem_wr_ic_en   = `DISABLE;  
-                    l2_tag0_rw   =  `READ;
-                    l2_tag1_rw   =  `READ;
-                    l2_tag2_rw   =  `READ;
-                    l2_tag3_rw   =  `READ;
-                    // l2_data0_rw  =  `READ;
-                    // l2_data1_rw  =  `READ;
-                    // l2_data2_rw  =  `READ;
-                    // l2_data3_rw  =  `READ;  
-                    l2_dirty0_rw =  `READ;
-                    l2_dirty1_rw =  `READ; 
-                    l2_dirty2_rw =  `READ;
-                    l2_dirty3_rw =  `READ;
-                    wr0_en0 = `READ;
-                    wr0_en1 = `READ;
-                    wr0_en2 = `READ;
-                    wr0_en3 = `READ;
-                    wr1_en0 = `READ;
-                    wr1_en1 = `READ;
-                    wr1_en2 = `READ;
-                    wr1_en3 = `READ;
-                    wr2_en0 = `READ;
-                    wr2_en1 = `READ;
-                    wr2_en2 = `READ;
-                    wr2_en3 = `READ;
-                    wr3_en0 = `READ;
-                    wr3_en1 = `READ;
-                    wr3_en2 = `READ;
-                    wr3_en3 = `READ;
+                    // l2_tag0_rw   =  `READ;
+                    // l2_tag1_rw   =  `READ;
+                    // l2_tag2_rw   =  `READ;
+                    // l2_tag3_rw   =  `READ;
+                    // // l2_data0_rw  =  `READ;
+                    // // l2_data1_rw  =  `READ;
+                    // // l2_data2_rw  =  `READ;
+                    // // l2_data3_rw  =  `READ;  
+                    // l2_dirty0_rw =  `READ;
+                    // l2_dirty1_rw =  `READ; 
+                    // l2_dirty2_rw =  `READ;
+                    // l2_dirty3_rw =  `READ;
+                    // wr0_en0 = `READ;
+                    // wr0_en1 = `READ;
+                    // wr0_en2 = `READ;
+                    // wr0_en3 = `READ;
+                    // wr1_en0 = `READ;
+                    // wr1_en1 = `READ;
+                    // wr1_en2 = `READ;
+                    // wr1_en3 = `READ;
+                    // wr2_en0 = `READ;
+                    // wr2_en1 = `READ;
+                    // wr2_en2 = `READ;
+                    // wr2_en3 = `READ;
+                    // wr3_en0 = `READ;
+                    // wr3_en1 = `READ;
+                    // wr3_en2 = `READ;
+                    // wr3_en3 = `READ;
                     // nextstate  =  `ACCESS_L2;
                     // l2_miss_stall = `DISABLE;
                     l2_busy       = `DISABLE;
@@ -621,34 +764,34 @@ module l2_cache_ctrl(
                     wd_from_mem_en = `DISABLE;
                     mem_wr_dc_en   = `DISABLE;
                     mem_wr_ic_en   = `DISABLE;  
-                    l2_tag0_rw   =  `READ;
-                    l2_tag1_rw   =  `READ;
-                    l2_tag2_rw   =  `READ;
-                    l2_tag3_rw   =  `READ;
-                    // l2_data0_rw  =  `READ;
-                    // l2_data1_rw  =  `READ;
-                    // l2_data2_rw  =  `READ;
-                    // l2_data3_rw  =  `READ;  
-                    l2_dirty0_rw =  `READ;
-                    l2_dirty1_rw =  `READ; 
-                    l2_dirty2_rw =  `READ;
-                    l2_dirty3_rw =  `READ;
-                    wr0_en0 = `READ;
-                    wr0_en1 = `READ;
-                    wr0_en2 = `READ;
-                    wr0_en3 = `READ;
-                    wr1_en0 = `READ;
-                    wr1_en1 = `READ;
-                    wr1_en2 = `READ;
-                    wr1_en3 = `READ;
-                    wr2_en0 = `READ;
-                    wr2_en1 = `READ;
-                    wr2_en2 = `READ;
-                    wr2_en3 = `READ;
-                    wr3_en0 = `READ;
-                    wr3_en1 = `READ;
-                    wr3_en2 = `READ;
-                    wr3_en3 = `READ;
+                    // l2_tag0_rw   =  `READ;
+                    // l2_tag1_rw   =  `READ;
+                    // l2_tag2_rw   =  `READ;
+                    // l2_tag3_rw   =  `READ;
+                    // // l2_data0_rw  =  `READ;
+                    // // l2_data1_rw  =  `READ;
+                    // // l2_data2_rw  =  `READ;
+                    // // l2_data3_rw  =  `READ;  
+                    // l2_dirty0_rw =  `READ;
+                    // l2_dirty1_rw =  `READ; 
+                    // l2_dirty2_rw =  `READ;
+                    // l2_dirty3_rw =  `READ;
+                    // wr0_en0 = `READ;
+                    // wr0_en1 = `READ;
+                    // wr0_en2 = `READ;
+                    // wr0_en3 = `READ;
+                    // wr1_en0 = `READ;
+                    // wr1_en1 = `READ;
+                    // wr1_en2 = `READ;
+                    // wr1_en3 = `READ;
+                    // wr2_en0 = `READ;
+                    // wr2_en1 = `READ;
+                    // wr2_en2 = `READ;
+                    // wr2_en3 = `READ;
+                    // wr3_en0 = `READ;
+                    // wr3_en1 = `READ;
+                    // wr3_en2 = `READ;
+                    // wr3_en3 = `READ;
                     nextstate  =  `ACCESS_L2;                                         
                 end else begin
                     nextstate  =  `WRITE_TO_L2_DIRTY;
@@ -657,34 +800,34 @@ module l2_cache_ctrl(
             `L2_WRITE_HIT:begin // write into l2_cache from L1 
                 if(l2_complete == `ENABLE)begin
                     wd_from_l1_en = `DISABLE;  // ++++++++++
-                    l2_tag0_rw   =  `READ;
-                    l2_tag1_rw   =  `READ;
-                    l2_tag2_rw   =  `READ;
-                    l2_tag3_rw   =  `READ;
-                    // l2_data0_rw  =  `READ;
-                    // l2_data1_rw  =  `READ;
-                    // l2_data2_rw  =  `READ;
-                    // l2_data3_rw  =  `READ;  
-                    l2_dirty0_rw =  `READ;
-                    l2_dirty1_rw =  `READ; 
-                    l2_dirty2_rw =  `READ;
-                    l2_dirty3_rw =  `READ;
-                    wr0_en0 = `READ;
-                    wr0_en1 = `READ;
-                    wr0_en2 = `READ;
-                    wr0_en3 = `READ;
-                    wr1_en0 = `READ;
-                    wr1_en1 = `READ;
-                    wr1_en2 = `READ;
-                    wr1_en3 = `READ;
-                    wr2_en0 = `READ;
-                    wr2_en1 = `READ;
-                    wr2_en2 = `READ;
-                    wr2_en3 = `READ;
-                    wr3_en0 = `READ;
-                    wr3_en1 = `READ;
-                    wr3_en2 = `READ;
-                    wr3_en3 = `READ;
+                    // l2_tag0_rw   =  `READ;
+                    // l2_tag1_rw   =  `READ;
+                    // l2_tag2_rw   =  `READ;
+                    // l2_tag3_rw   =  `READ;
+                    // // l2_data0_rw  =  `READ;
+                    // // l2_data1_rw  =  `READ;
+                    // // l2_data2_rw  =  `READ;
+                    // // l2_data3_rw  =  `READ;  
+                    // l2_dirty0_rw =  `READ;
+                    // l2_dirty1_rw =  `READ; 
+                    // l2_dirty2_rw =  `READ;
+                    // l2_dirty3_rw =  `READ;
+                    // wr0_en0 = `READ;
+                    // wr0_en1 = `READ;
+                    // wr0_en2 = `READ;
+                    // wr0_en3 = `READ;
+                    // wr1_en0 = `READ;
+                    // wr1_en1 = `READ;
+                    // wr1_en2 = `READ;
+                    // wr1_en3 = `READ;
+                    // wr2_en0 = `READ;
+                    // wr2_en1 = `READ;
+                    // wr2_en2 = `READ;
+                    // wr2_en3 = `READ;
+                    // wr3_en0 = `READ;
+                    // wr3_en1 = `READ;
+                    // wr3_en2 = `READ;
+                    // wr3_en3 = `READ;
                     nextstate   = `ACCESS_L2;                                     
                 end else begin
                     nextstate =  `L2_WRITE_HIT;

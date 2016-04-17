@@ -23,7 +23,7 @@ module l2_top(
     input               l2_cache_rw_ic,
     input               l2_cache_rw_dc, 
     output              l2_busy,                 // busy mark of L2C        
-    output              l2_miss_stall,
+    // output              l2_miss_stall,
     output              l2_rdy,
     output              l2_complete,             // complete write from MEM to L2
     /*dcache part*/
@@ -109,7 +109,7 @@ l2_cache_ctrl l2_cache_ctrl(
         .l2_cache_rw_ic (l2_cache_rw_ic),// read / write signal of CPU
         .l2_addr_dc     (l2_addr_dc),    // address of fetching instruction
         .l2_cache_rw_dc (l2_cache_rw_dc),// read / write signal of CPU
-        .l2_miss_stall  (l2_miss_stall), // stall caused by l2_miss
+        // .l2_miss_stall  (l2_miss_stall), // stall caused by l2_miss
         .l2_index       (l2_index),
         .offset         (l2_offset), 
         /*cache part*/

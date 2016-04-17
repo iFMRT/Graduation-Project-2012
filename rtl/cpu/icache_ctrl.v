@@ -32,7 +32,7 @@ module icache_ctrl(
     // output to L1_cache
     output reg         tag0_rw,       // read / write signal of L1_tag0
     output reg         tag1_rw,       // read / write signal of L1_tag1
-    output reg [20:0]  tag_wd,        // write data of L1_tag
+    output     [20:0]  tag_wd,        // write data of L1_tag
     output reg         data0_rw,      // read / write signal of data0
     output reg         data1_rw,      // read / write signal of data1
     output     [7:0]   index,         // address of L1_cache
@@ -44,8 +44,8 @@ module icache_ctrl(
     output reg         irq,           // icache request
     output reg         ic_rw_en,      // enable signal of writing icache 
     // output reg [31:0]  l2_addr,
-    output reg [27:0]  l2_addr,
-    output reg         l2_cache_rw,
+    output     [27:0]  l2_addr,
+    output             l2_cache_rw,
     /* if_reg part */
     output reg         data_rdy       // tag hit mark
     );
@@ -59,13 +59,18 @@ module icache_ctrl(
     // reg        [127:0] data_rd;          // read data of data
     // reg        [31:0]  cpu_data_copy;
     
-    assign valid0        = tag0_rd[20];
-    assign valid1        = tag1_rd[20];
-    assign index         = if_addr[9:2];
-    assign offset        = if_addr[1:0];
-    // assign index         = if_addr[11:4];
-    // assign offset        = if_addr[3:2];
-
+    assign valid0      = tag0_rd[20];
+    assign valid1      = tag1_rd[20];
+    // assign index       = if_addr[11:4];
+    // assign offset      = if_addr[3:2];
+    assign index       = if_addr[9:2];
+    assign offset      = if_addr[1:0];
+    // assign l2_addr     = if_addr;
+    assign l2_addr     = if_addr[29:2];
+    assign l2_cache_rw = rw;
+    // assign tag_wd      = {1'b1,if_addr[31:12]};
+    assign tag_wd = {1'b1,if_addr[29:10]};
+    
     always @(*)begin // path choose
         // hitway0 = (tag0_rd[19:0] == if_addr[31:12]) & valid0;
         // hitway1 = (tag1_rd[19:0] == if_addr[31:12]) & valid1;
@@ -111,12 +116,12 @@ module icache_ctrl(
         end          
     end
 
-    always @(*) begin
+    always @(*) begin 
+        data0_rw    = `READ;
+        data1_rw    = `READ;                    
+        tag0_rw     = `READ;
+        tag1_rw     = `READ; 
         if(rst == `ENABLE) begin
-            data0_rw    = `READ;
-            data1_rw    = `READ;                    
-            tag0_rw     = `READ;
-            tag1_rw     = `READ;
             miss_stall  = `DISABLE;
             irq         = `DISABLE;
             data_rdy    = `DISABLE;
@@ -124,8 +129,8 @@ module icache_ctrl(
         end
         case(state)
             `IC_ACCESS:begin
-                ic_rw_en  = `DISABLE;
-                data_rdy  = `DISABLE;
+                ic_rw_en    = `DISABLE;
+                data_rdy    = `DISABLE;
                 if ( rw == `READ && tagcomp_hit == `ENABLE) begin // cache hit
                     // read l1_block ,write to cpu
                     miss_stall  = `DISABLE;
@@ -168,9 +173,9 @@ module icache_ctrl(
                         nextstate   = `WAIT_L2_BUSY;
                     end else begin
                         irq         = `ENABLE;
-                        l2_cache_rw = rw;
-                        // l2_addr     = if_addr;
-                        l2_addr     = if_addr[29:2];
+                        // l2_cache_rw = rw;
+                        // // l2_addr     = if_addr;
+                        // l2_addr     = if_addr[29:2];
                         nextstate   = `IC_ACCESS_L2;
                     end
                 end 
@@ -181,8 +186,6 @@ module icache_ctrl(
                 ic_rw_en   = `ENABLE;
                 if(l2_rdy == `ENABLE || mem_wr_ic_en == `ENABLE)begin
                     nextstate  = `WRITE_IC;
-                    // tag_wd = {1'b1,if_addr[31:12]};
-                    tag_wd = {1'b1,if_addr[29:10]};
                     case(choose_way)
                         `WAY0:begin
                             data0_rw  = `WRITE;
@@ -218,9 +221,9 @@ module icache_ctrl(
                     nextstate   = `WAIT_L2_BUSY;
                 end else begin
                     irq         = `ENABLE;
-                    // l2_addr     = if_addr;
-                    l2_addr     = if_addr[29:2];
-                    l2_cache_rw = rw;
+                    // // l2_addr     = if_addr;
+                    // l2_addr     = if_addr[29:2];
+                    // l2_cache_rw = rw;
                     nextstate   = `IC_ACCESS_L2;
                 end
             end
@@ -229,10 +232,10 @@ module icache_ctrl(
                     irq        = `DISABLE;
                     miss_stall = `DISABLE;
                     nextstate  = `IC_ACCESS;
-                    data0_rw   = `READ;
-                    data1_rw   = `READ;                    
-                    tag0_rw    = `READ;
-                    tag1_rw    = `READ;
+                    // data0_rw   = `READ;
+                    // data1_rw   = `READ;                    
+                    // tag0_rw    = `READ;
+                    // tag1_rw    = `READ;
                 end else begin
                     nextstate  = `WRITE_IC;
                 end

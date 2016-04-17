@@ -147,13 +147,21 @@ module dcache_ctrl(
     end
 
     always @(*) begin
+        tag0_rw    = `READ;
+        tag1_rw    = `READ;
+        dirty0_rw  = `READ;
+        dirty1_rw  = `READ;
+        wr0_en0    = `READ;
+        wr0_en1    = `READ;
+        wr0_en2    = `READ;
+        wr0_en3    = `READ;
+        wr1_en0    = `READ;
+        wr1_en1    = `READ;
+        wr1_en2    = `READ;
+        wr1_en3    = `READ;
         if(rst == `ENABLE) begin
             // data0_rw    =  `READ;
             // data1_rw    =  `READ;                    
-            tag0_rw     =  `READ;
-            tag1_rw     =  `READ;
-            dirty0_rw   =  `READ;
-            dirty1_rw   =  `READ;
             miss_stall  =  `DISABLE;
             l2_cache_rw =  `READ;
             dc_rw_en    = `DISABLE;
@@ -263,26 +271,26 @@ module dcache_ctrl(
                 end else begin // cache miss
                     miss_stall =  `ENABLE; 
                     if(valid == `ENABLE && dirty == `ENABLE) begin 
-                            // dirty block of l1, write to l2
-                            if(l2_busy == `ENABLE) begin
-                                nextstate   =  `WAIT_L2_BUSY_DIRTY;
-                            end else begin 
-                                l2_cache_rw =  memwrite_m; 
-                                drq         =  `ENABLE;
-                                nextstate   =  `DC_WRITE_L2;
+                        // dirty block of l1, write to l2
+                        if(l2_busy == `ENABLE) begin
+                            nextstate   =  `WAIT_L2_BUSY_DIRTY;
+                        end else begin 
+                            l2_cache_rw =  `WRITE; 
+                            drq         =  `ENABLE;
+                            nextstate   =  `DC_WRITE_L2;
+                        end
+                        case(choose_way)
+                            `WAY0:begin
+                                rd_to_l2   =  data0_rd;
+                                // l2_addr    =  {tag0_rd[19:0],index,4'b0};
+                                l2_addr    =  {tag0_rd[19:0],index};
                             end
-                            case(choose_way)
-                                `WAY0:begin
-                                    rd_to_l2   =  data0_rd;
-                                    // l2_addr    =  {tag0_rd[19:0],index,4'b0};
-                                    l2_addr    =  {tag0_rd[19:0],index};
-                                end
-                                `WAY1:begin
-                                    rd_to_l2   =  data1_rd;
-                                    // l2_addr    =  {tag1_rd[19:0],index,4'b0};
-                                    l2_addr    =  {tag1_rd[19:0],index};
-                                end
-                            endcase
+                            `WAY1:begin
+                                rd_to_l2   =  data1_rd;
+                                // l2_addr    =  {tag1_rd[19:0],index,4'b0};
+                                l2_addr    =  {tag1_rd[19:0],index};
+                            end
+                        endcase
                     end else if(l2_busy == `ENABLE && (valid == `DISABLE || dirty == `DISABLE)) begin
                         nextstate    =  `WAIT_L2_BUSY_CLEAN;
                     end else if(l2_busy == `DISABLE && (valid == `DISABLE || dirty == `DISABLE)) begin
@@ -362,7 +370,7 @@ module dcache_ctrl(
                 if(l2_busy == `ENABLE) begin
                     nextstate       =  `WAIT_L2_BUSY_DIRTY;
                 end else begin
-                    l2_cache_rw =  memwrite_m; 
+                    l2_cache_rw =  `WRITE; 
                     drq         =  `ENABLE;
                     nextstate   =  `DC_WRITE_L2;
                 end
@@ -372,18 +380,18 @@ module dcache_ctrl(
                     drq        =  `DISABLE;
                     // data0_rw   =  `READ;
                     // data1_rw   =  `READ;
-                    tag0_rw    =  `READ;
-                    tag1_rw    =  `READ;
-                    dirty0_rw  =  `READ;
-                    dirty1_rw  =  `READ;
-                    wr0_en0    = `READ;
-                    wr0_en1    = `READ;
-                    wr0_en2    = `READ;
-                    wr0_en3    = `READ;
-                    wr1_en0    = `READ;
-                    wr1_en1    = `READ;
-                    wr1_en2    = `READ;
-                    wr1_en3    = `READ;
+                    // tag0_rw    =  `READ;
+                    // tag1_rw    =  `READ;
+                    // dirty0_rw  =  `READ;
+                    // dirty1_rw  =  `READ;
+                    // wr0_en0    = `READ;
+                    // wr0_en1    = `READ;
+                    // wr0_en2    = `READ;
+                    // wr0_en3    = `READ;
+                    // wr1_en0    = `READ;
+                    // wr1_en1    = `READ;
+                    // wr1_en2    = `READ;
+                    // wr1_en3    = `READ;
                     miss_stall  =  `DISABLE;
                     if(access_mem_ex == `ENABLE) begin
                         nextstate   =  `DC_ACCESS;
@@ -399,18 +407,18 @@ module dcache_ctrl(
                     drq        =  `DISABLE;
                     // data0_rw   =  `READ;
                     // data1_rw   =  `READ;
-                    tag0_rw    =  `READ;
-                    tag1_rw    =  `READ;
-                    dirty0_rw  =  `READ;
-                    dirty1_rw  =  `READ;
-                    wr0_en0    = `READ;
-                    wr0_en1    = `READ;
-                    wr0_en2    = `READ;
-                    wr0_en3    = `READ;
-                    wr1_en0    = `READ;
-                    wr1_en1    = `READ;
-                    wr1_en2    = `READ;
-                    wr1_en3    = `READ;
+                    // tag0_rw    =  `READ;
+                    // tag1_rw    =  `READ;
+                    // dirty0_rw  =  `READ;
+                    // dirty1_rw  =  `READ;
+                    // wr0_en0    = `READ;
+                    // wr0_en1    = `READ;
+                    // wr0_en2    = `READ;
+                    // wr0_en3    = `READ;
+                    // wr1_en0    = `READ;
+                    // wr1_en1    = `READ;
+                    // wr1_en2    = `READ;
+                    // wr1_en3    = `READ;
                     nextstate  =  `DC_ACCESS;
                 end else begin
                     nextstate  =  `WRITE_DC_W;
@@ -419,20 +427,18 @@ module dcache_ctrl(
              `WRITE_HIT:begin // Write to L1,read from CPU
                 if(complete == `ENABLE)begin
                     data_wd_dc_en =  `DISABLE;
-                    // data0_rw   =  `READ;
-                    // data1_rw   =  `READ;
-                    tag0_rw    =  `READ;
-                    tag1_rw    =  `READ;
-                    dirty0_rw  =  `READ;
-                    dirty1_rw  =  `READ;
-                    wr0_en0    =  `READ;
-                    wr0_en1    =  `READ;
-                    wr0_en2    =  `READ;
-                    wr0_en3    =  `READ;
-                    wr1_en0    =  `READ;
-                    wr1_en1    =  `READ;
-                    wr1_en2    =  `READ;
-                    wr1_en3    =  `READ;
+                    // tag0_rw    =  `READ;
+                    // tag1_rw    =  `READ;
+                    // dirty0_rw  =  `READ;
+                    // dirty1_rw  =  `READ;
+                    // wr0_en0    =  `READ;
+                    // wr0_en1    =  `READ;
+                    // wr0_en2    =  `READ;
+                    // wr0_en3    =  `READ;
+                    // wr1_en0    =  `READ;
+                    // wr1_en1    =  `READ;
+                    // wr1_en2    =  `READ;
+                    // wr1_en3    =  `READ;
                     miss_stall  =  `DISABLE;
                     if(access_mem_ex == `ENABLE) begin
                         nextstate  =  `DC_ACCESS;
