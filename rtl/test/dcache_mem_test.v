@@ -889,7 +889,7 @@ module dcache_mem_test();
             // l2_rdy  <= `ENABLE;                                       // ready signal of l2_cache
             // data_wd <= 128'h0876547A_00000000_ABF00000_123BC000;      // write data of L1_cache
         end
-        #STEP begin // L1_ACCESS & L2_IDLE 
+        #STEP begin // DC_ACCESS & L2_IDLE 
             $display("\n========= Clock 1 ========");
             l2_cache_ctrl_tb(
                 `DISABLE,           // miss caused by L2C             
@@ -915,7 +915,7 @@ module dcache_mem_test();
                 1'bx                // read / write signal of memory                
                 ); 
         end
-        #STEP begin // L2_ACCESS & ACCESS_L2 
+        #STEP begin // DC_ACCESS_L2 & ACCESS_L2 
             $display("\n========= Clock 2 ========");
             mem_stage_tb(
                 32'bx,          // read data of CPU
@@ -945,7 +945,7 @@ module dcache_mem_test();
                 128'hx                                      // read data of cache_data1
                 );  
             l2_cache_ctrl_tb(
-                `ENABLE,            // miss caused by L2C             
+                `ENABLE,           // miss caused by L2C             
                 `ENABLE,            // L2C busy mark
                 128'h0876547A_00000000_ABF00000_123BC000,             // write data to L1_IC
                 `WRITE,             // read / write signal of tag0

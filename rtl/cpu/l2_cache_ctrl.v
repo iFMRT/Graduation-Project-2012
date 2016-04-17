@@ -23,8 +23,8 @@ module l2_cache_ctrl(
     input       [31:0]  l2_addr_dc,         // address of fetching instruction
     input               l2_cache_rw_dc,     // read / write signal of CPU
     output reg          l2_miss_stall,      // miss caused by l2C miss
-    output      [8:0]   l2_index,
-    output      [1:0]   offset,             // offset of block
+    output reg  [8:0]   l2_index,
+    output reg  [1:0]   offset,             // offset of block
     /*cache part*/
     input               irq,                // icache request
     input               drq,
@@ -114,8 +114,7 @@ module l2_cache_ctrl(
     reg        [31:0]   l2_addr;            // address of fetching instruction
     reg                 l2_cache_rw;        // read / write signal of CPU      
     reg                 complete;
-    assign l2_index   = l2_addr[14:6];
-    assign offset     = l2_addr[5:4];
+    
     always @(*) begin // path choose
         if(ic_rw_en == `ENABLE) begin
             complete    = complete_ic;
@@ -273,6 +272,8 @@ module l2_cache_ctrl(
         end
         case(state)
             `L2_IDLE:begin
+                l2_index  = l2_addr[14:6];
+                offset    = l2_addr[5:4];
                 if (irq || drq == `ENABLE) begin  
                     nextstate   = `ACCESS_L2;
                 end else begin
@@ -312,7 +313,7 @@ module l2_cache_ctrl(
                     end
                 end else if( l2_cache_rw == `WRITE && tagcomp_hit == `ENABLE) begin // write hit
                     // dirty block of l1, write to l2
-                    l2_miss_stall = `DISABLE;
+                    l2_miss_stall = `ENABLE;
                     nextstate     = `L2_WRITE_HIT;
                     l2_dirty_wd   = 1'b1;
                     l2_tag_wd     = {1'b1,l2_addr[31:15]};
@@ -590,9 +591,9 @@ module l2_cache_ctrl(
                     wr3_en3 = `READ;
                     // nextstate  =  `ACCESS_L2;
                     l2_miss_stall = `DISABLE;
-                    l2_busy = `DISABLE;
+                    l2_busy       = `DISABLE;
                     data_wd_l2_en = `DISABLE;
-                    nextstate   = `L2_IDLE;                                         
+                    nextstate     = `L2_IDLE;                                         
                 end else begin
                     nextstate  =  `WRITE_TO_L2_CLEAN;
                 end
@@ -666,12 +667,7 @@ module l2_cache_ctrl(
                     wr3_en1 = `READ;
                     wr3_en2 = `READ;
                     wr3_en3 = `READ;
-                    if (irq || drq == `ENABLE) begin
-                        nextstate   = `ACCESS_L2;
-                     end else begin
-                        l2_busy = `DISABLE;
-                        nextstate   =  `L2_IDLE;
-                     end                                      
+                    nextstate   = `ACCESS_L2;                                     
                 end else begin
                     nextstate =  `L2_WRITE_HIT;
                 end

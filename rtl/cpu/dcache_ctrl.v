@@ -207,7 +207,7 @@ module dcache_ctrl(
                         // read_data_m =  read_data_m_copy;
                     end else if (memwrite_m == `WRITE) begin  // begin: write hit
                         // cpu data write to l1
-                        miss_stall     =  `DISABLE;
+                        miss_stall     =  `ENABLE;
                         nextstate      =  `WRITE_HIT;
                         dirty_wd       =  1'b1;
                         data_wd_dc_en  =  `ENABLE;
@@ -422,6 +422,7 @@ module dcache_ctrl(
                     wr1_en1    =  `READ;
                     wr1_en2    =  `READ;
                     wr1_en3    =  `READ;
+                    miss_stall  =  `DISABLE;
                     if(access_mem_ex == `ENABLE) begin
                         nextstate  =  `DC_ACCESS;
                     end else begin

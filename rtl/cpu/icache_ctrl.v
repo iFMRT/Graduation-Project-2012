@@ -186,6 +186,7 @@ module icache_ctrl(
                         end
                     endcase
                     /* write cpu part */ 
+                    data_rdy    = `ENABLE;
                     case(offset)
                         `WORD0:begin
                             cpu_data = data_wd_l2[31:0];
