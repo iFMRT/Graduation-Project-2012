@@ -15,7 +15,8 @@ module l1_ic_top(
     input            clk,           // clock
     input            rst,           // reset   
     /* CPU part */
-    input    [31:0]  if_pc,         // address of fetching instruction
+    // input    [31:0]  if_pc,         // address of fetching instruction
+    input    [29:0]  if_pc,         // address of fetching instruction
     output   [31:0]  insn,          // read data of CPU
     output           if_busy,       // the signal of stall caused by cache miss
     /* L2_cache part */
@@ -27,7 +28,8 @@ module l1_ic_top(
     output           complete_ic,   // complete write from L2 to L1
     output           irq,           // icache request
     output           ic_rw_en,      // enable signal of writing icache 
-    output   [31:0]  l2_addr_ic,       // addr of l2_cache
+    // output   [31:0]  l2_addr_ic,       // addr of l2_cache
+    output   [27:0]  l2_addr_ic,       // addr of l2_cache
     output           l2_cache_rw_ic,   // write signal of l2_cache
     /* if_reg part */
     output           data_rdy       // tag hit mark

@@ -17,7 +17,8 @@ module dcache_ctrl(
     input              clk,           // clock
     input              rst,           // reset
     /* CPU part */
-    input      [31:0]  addr,          // address of fetching instruction
+    // input      [31:0]  addr,          // address of accessing memory
+    input      [29:0]  addr,          // address of accessing memory
     // input      [31:0]  wr_data_m,
     input              memwrite_m,    // read / write signal of CPU
     input              access_mem,
@@ -64,7 +65,8 @@ module dcache_ctrl(
     input      [127:0] data_wd_l2,    // ++++++++++++++++++++
     output reg         drq,           // dcache request
     output reg         dc_rw_en,      // enable signal of writing dcache 
-    output reg [31:0]  l2_addr, 
+    // output reg [31:0]  l2_addr, 
+    output reg [27:0]  l2_addr,
     output reg         l2_cache_rw    // l2_cache read/write signal
     );
 
@@ -80,13 +82,18 @@ module dcache_ctrl(
 
     assign valid0        = tag0_rd[20];
     assign valid1        = tag1_rd[20];
-    assign index         = addr[11:4];
-    assign offset        = addr[3:2];
-    assign tag_wd        = {1'b1,addr [31:12]};  // 写入 tag，valid恒为 1。
+    // assign index         = addr[11:4];
+    // assign offset        = addr[3:2];
+    // assign tag_wd        = {1'b1,addr [31:12]};  // 写入 tag，valid恒为 1。
+    assign index         = addr[9:2];
+    assign offset        = addr[1:0];
+    assign tag_wd        = {1'b1,addr[29:10]};  // 写入 tag，valid恒为 1。
 
     always @(*)begin // path choose
-        hitway0 = (tag0_rd[19:0] == addr[31:12]) & valid0;
-        hitway1 = (tag1_rd[19:0] == addr[31:12]) & valid1;
+        // hitway0 = (tag0_rd[19:0] == addr[31:12]) & valid0;
+        // hitway1 = (tag1_rd[19:0] == addr[31:12]) & valid1;
+        hitway0 = (tag0_rd[19:0] == addr[29:10]) & valid0;
+        hitway1 = (tag1_rd[19:0] == addr[29:10]) & valid1;
         if(hitway0 == `ENABLE)begin
             tagcomp_hit  = `ENABLE;
             hitway       = `WAY0;
@@ -267,18 +274,21 @@ module dcache_ctrl(
                             case(choose_way)
                                 `WAY0:begin
                                     rd_to_l2   =  data0_rd;
-                                    l2_addr    =  {tag0_rd[19:0],index,4'b0};
+                                    // l2_addr    =  {tag0_rd[19:0],index,4'b0};
+                                    l2_addr    =  {tag0_rd[19:0],index};
                                 end
                                 `WAY1:begin
                                     rd_to_l2   =  data1_rd;
-                                    l2_addr    =  {tag1_rd[19:0],index,4'b0};
+                                    // l2_addr    =  {tag1_rd[19:0],index,4'b0};
+                                    l2_addr    =  {tag1_rd[19:0],index};
                                 end
                             endcase
                     end else if(l2_busy == `ENABLE && (valid == `DISABLE || dirty == `DISABLE)) begin
                         nextstate    =  `WAIT_L2_BUSY_CLEAN;
                     end else if(l2_busy == `DISABLE && (valid == `DISABLE || dirty == `DISABLE)) begin
                         drq       =  `ENABLE;
-                        l2_addr   =  addr; 
+                        // l2_addr   =  addr; 
+                        l2_addr   =  addr[29:2]; 
                         nextstate =  `DC_ACCESS_L2;
                     end 
                 end 
@@ -343,7 +353,8 @@ module dcache_ctrl(
                     nextstate =  `WAIT_L2_BUSY_CLEAN;
                 end else begin
                     drq       =  `ENABLE;
-                    l2_addr   =  addr;
+                    // l2_addr   =  addr;
+                    l2_addr   =  addr[29:2]; 
                     nextstate =  `DC_ACCESS_L2;
                 end
             end
@@ -435,8 +446,8 @@ module dcache_ctrl(
             `DC_WRITE_L2:begin // load dirty block to L2
                 if (l2_complete == `ENABLE) begin
                     l2_cache_rw =  `READ;  
-                    l2_addr     =  addr;
-                    // l2_index    =  addr[14:6]; // new index of L2
+                    // l2_addr     =  addr;
+                    l2_addr   =  addr[29:2]; 
                     nextstate   =  `DC_ACCESS_L2;
                 end else begin
                     nextstate   =  `DC_WRITE_L2;

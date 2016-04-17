@@ -18,11 +18,11 @@
     `define L2_WAY1              2'h1  // second WAY
     `define L2_WAY2              2'h2  // third WAY
     `define L2_WAY3              2'h3  // forth WAY
-
     // state of L2_icache
     `define L2_IDLE              3'h0  // free
-    `define ACCESS_L2            3'h1  // access L2_icache
-    `define WRITE_MEM			 3'h2  // load L2_icache's dirty block to memory
-    `define WRITE_TO_L2          3'h3  // write block to L2_icache from memory
-    `define L2_WRITE_HIT         3'h4  // write block to L2_icache from L1
+    `define ACCESS_L2            3'h1  // access L2_cache
+    `define WRITE_MEM			 3'h2  // load L2_cache's dirty block to memory
+    `define WRITE_TO_L2_CLEAN    3'h3  // write clean block to L2_cache from memory
+    `define WRITE_TO_L2_DIRTY    3'h4  // write dirty block to L2_cache from memory
+    `define L2_WRITE_HIT         3'h5  // write block to L2_cache from L1
 `endif

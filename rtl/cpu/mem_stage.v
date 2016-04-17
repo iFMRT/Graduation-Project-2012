@@ -52,7 +52,8 @@ module mem_stage (
     input                        l2_complete,
     output                       drq,           // icache request
     output                       dc_rw_en, 
-    output     [`WORD_DATA_BUS]  l2_addr, 
+    // output     [`WORD_DATA_BUS]  l2_addr, 
+    output     [27:0]            l2_addr,
     // output     [8:0]             l2_index,
     output                       l2_cache_rw,   // l2_cache read/write signal
    /********** EX/MEM Pipeline Register **********/
@@ -119,7 +120,7 @@ module mem_stage (
         .clk            (clk),           // clock
         .rst            (reset),         // reset
         /* CPU part */
-        .addr           (addr),       // address of fetching instruction
+        .addr           (addr[31:2]),       // address of fetching instruction
         // .wr_data_m      (wr_data_m),
         .memwrite_m     (memwrite_m),            // read / write signal of CPU
         .access_mem     (access_mem), 

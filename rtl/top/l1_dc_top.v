@@ -15,7 +15,8 @@ module l1_dc_top(
     input              clk,           // clock
     input              rst,           // reset
     /* CPU part */
-    input      [31:0]  addr,          // address of accessing memory
+    // input      [31:0]  addr,          // address of accessing memory
+    input      [29:0]  addr,          // address of accessing memory
     input      [31:0]  wr_data_m,
     input              memwrite_m,    // read / write signal of CPU
     input              access_mem,
@@ -35,7 +36,8 @@ module l1_dc_top(
     output             complete_dc,   // complete write from L2 to L1
     output             drq,           // dcache request
     output             dc_rw_en,      // enable signal of writing dcache 
-    output     [31:0]  l2_addr_dc,
+    // output     [31:0]  l2_addr_dc,
+    output     [27:0]  l2_addr_dc,
     output             l2_cache_rw_dc // l2_cache read/write signal
     );    
 	/*dtag*/

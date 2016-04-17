@@ -16,8 +16,10 @@ module l2_top(
     input               clk_2,                   // clock of L2C
     input               rst,                     // Asynchronous Reset
     /*l2_cache part*/
-    input       [31:0]  l2_addr_ic,  
-    input       [31:0]  l2_addr_dc,
+    // input       [31:0]  l2_addr_ic,  
+    // input       [31:0]  l2_addr_dc,
+    input       [27:0]  l2_addr_ic,  
+    input       [27:0]  l2_addr_dc,
     input               l2_cache_rw_ic,
     input               l2_cache_rw_dc, 
     output              l2_busy,                 // busy mark of L2C        

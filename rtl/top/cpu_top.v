@@ -103,9 +103,11 @@ module cpu_top(
     wire [`WORD_DATA_BUS]      ex_fwd_data;     // EX Stage
     wire [`WORD_DATA_BUS]      mem_fwd_data;    // MEM Stage
     /* CPU part */
-    wire     [31:0]  l2_addr_ic;  
-    wire     [31:0]  l2_addr_dc;  
-    wire             l2_miss_stall; // stall caused by l2_miss
+    // wire     [31:0]  l2_addr_ic;  
+    // wire     [31:0]  l2_addr_dc;  
+    wire     [27:0]  l2_addr_ic;  
+    wire     [27:0]  l2_addr_dc; 
+    // wire             l2_miss_stall; // stall caused by l2_miss
     wire             l2_cache_rw_ic;
     wire             l2_cache_rw_dc;
     /*cache part*/
@@ -440,7 +442,7 @@ module cpu_top(
         .l2_cache_rw_ic (l2_cache_rw_ic),// read / write signal of CPU
         .l2_addr_dc     (l2_addr_dc),    // address of fetching instruction
         .l2_cache_rw_dc (l2_cache_rw_dc),// read / write signal of CPU
-        .l2_miss_stall  (l2_miss_stall), // stall caused by l2_miss
+        // .l2_miss_stall  (l2_miss_stall), // stall caused by l2_miss
         .l2_index       (l2_index),
         .offset         (l2_offset), 
         /*cache part*/

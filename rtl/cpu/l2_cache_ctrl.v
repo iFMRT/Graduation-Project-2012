@@ -18,11 +18,13 @@ module l2_cache_ctrl(
     input               clk,                // clock
     input               rst,                // reset
     /* CPU part */
-    input       [31:0]  l2_addr_ic,         // address of fetching instruction
+    // input       [31:0]  l2_addr_ic,         // address of fetching instruction
+    input       [27:0]  l2_addr_ic,         // address of fetching instruction
     input               l2_cache_rw_ic,     // read / write signal of CPU
-    input       [31:0]  l2_addr_dc,         // address of fetching instruction
+    // input       [31:0]  l2_addr_dc,         // address of accessing memory
+    input       [27:0]  l2_addr_dc,         // address of accessing memory
     input               l2_cache_rw_dc,     // read / write signal of CPU
-    output reg          l2_miss_stall,      // miss caused by l2C miss
+    // output reg          l2_miss_stall,      // miss caused by l2C miss
     output reg  [8:0]   l2_index,
     output reg  [1:0]   offset,             // offset of block
     /*cache part*/
@@ -111,7 +113,8 @@ module l2_cache_ctrl(
     reg        [511:0]  l2_data_rd;
     // reg        [127:0]  data_wd_l2_copy;
     // reg        [511:0]  l2_data_wd_copy;
-    reg        [31:0]   l2_addr;            // address of fetching instruction
+    // reg        [31:0]   l2_addr;            // address of accessing L2
+    reg        [27:0]   l2_addr;            // address of accessing L2
     reg                 l2_cache_rw;        // read / write signal of CPU      
     reg                 complete;
     
@@ -130,10 +133,14 @@ module l2_cache_ctrl(
             l2_cache_rw = l2_cache_rw_dc;
         end
 
-        hitway0 = (l2_tag0_rd[16:0] == l2_addr[31:15]) & l2_tag0_rd[17];
-        hitway1 = (l2_tag1_rd[16:0] == l2_addr[31:15]) & l2_tag1_rd[17];
-        hitway2 = (l2_tag2_rd[16:0] == l2_addr[31:15]) & l2_tag2_rd[17];
-        hitway3 = (l2_tag3_rd[16:0] == l2_addr[31:15]) & l2_tag3_rd[17];
+        // hitway0 = (l2_tag0_rd[16:0] == l2_addr[31:15]) & l2_tag0_rd[17];
+        // hitway1 = (l2_tag1_rd[16:0] == l2_addr[31:15]) & l2_tag1_rd[17];
+        // hitway2 = (l2_tag2_rd[16:0] == l2_addr[31:15]) & l2_tag2_rd[17];
+        // hitway3 = (l2_tag3_rd[16:0] == l2_addr[31:15]) & l2_tag3_rd[17];
+        hitway0 = (l2_tag0_rd[16:0] == l2_addr[27:11]) & l2_tag0_rd[17];
+        hitway1 = (l2_tag1_rd[16:0] == l2_addr[27:11]) & l2_tag1_rd[17];
+        hitway2 = (l2_tag2_rd[16:0] == l2_addr[27:11]) & l2_tag2_rd[17];
+        hitway3 = (l2_tag3_rd[16:0] == l2_addr[27:11]) & l2_tag3_rd[17];
         
         if(hitway0 == `ENABLE)begin
             tagcomp_hit  = `ENABLE;
@@ -268,12 +275,14 @@ module l2_cache_ctrl(
             l2_dirty1_rw  = `READ;
             l2_dirty2_rw  = `READ;
             l2_dirty3_rw  = `READ;
-            l2_miss_stall = `DISABLE;
+            // l2_miss_stall = `DISABLE;
         end
         case(state)
             `L2_IDLE:begin
-                l2_index  = l2_addr[14:6];
-                offset    = l2_addr[5:4];
+                // l2_index  = l2_addr[14:6];
+                // offset    = l2_addr[5:4];
+                l2_index  = l2_addr[10:2];
+                offset    = l2_addr[1:0];
                 if (irq || drq == `ENABLE) begin  
                     nextstate   = `ACCESS_L2;
                 end else begin
@@ -285,7 +294,7 @@ module l2_cache_ctrl(
                 // read hit
                 if ( l2_cache_rw == `READ && tagcomp_hit == `ENABLE) begin 
                     // read l2_block ,write to l1
-                    l2_miss_stall = `DISABLE;
+                    // l2_miss_stall = `DISABLE;
                     l2_rdy        = `ENABLE;
                     data_wd_l2_en = `ENABLE;
                     // data_wd_l2    = data_wd_l2_copy;
@@ -313,10 +322,11 @@ module l2_cache_ctrl(
                     end
                 end else if( l2_cache_rw == `WRITE && tagcomp_hit == `ENABLE) begin // write hit
                     // dirty block of l1, write to l2
-                    l2_miss_stall = `ENABLE;
+                    // l2_miss_stall = `ENABLE;
                     nextstate     = `L2_WRITE_HIT;
                     l2_dirty_wd   = 1'b1;
-                    l2_tag_wd     = {1'b1,l2_addr[31:15]};
+                    // l2_tag_wd     = {1'b1,l2_addr[31:15]};
+                    l2_tag_wd     = {1'b1,l2_addr[27:11]};
                     wd_from_l1_en = `ENABLE;
                     // l2_data_wd    = l2_data_wd_copy;
                     case(hitway)
@@ -398,15 +408,17 @@ module l2_cache_ctrl(
                         end // hitway == 11
                     endcase // case(hitway) 
                 end else begin // cache miss
-                    l2_miss_stall = `ENABLE;
+                    // l2_miss_stall = `ENABLE;
                     // read mem_block ,write to l1 and l2
                     if (valid == `DISABLE || dirty == `DISABLE) begin
                         /* write l2 part */ 
                         mem_rw        = `READ;
-                        mem_addr      = l2_addr[31:6];
+                        // mem_addr      = l2_addr[31:6];
+                        mem_addr      = l2_addr[27:2];
                         nextstate     = `WRITE_TO_L2_CLEAN;
                         l2_dirty_wd   = 1'b0;
-                        l2_tag_wd     = {1'b1,l2_addr[31:15]};
+                        // l2_tag_wd     = {1'b1,l2_addr[31:15]};
+                        l2_tag_wd     = {1'b1,l2_addr[27:11]};
                         wd_from_mem_en = `ENABLE;
                         // l2_data_wd    = mem_rd;
                         case(choose_way)
@@ -473,23 +485,27 @@ module l2_cache_ctrl(
                     end else if(valid == `ENABLE && dirty == `ENABLE) begin 
                         // dirty block of l2, write to mem
                         nextstate  = `WRITE_MEM;
-                        mem_rw = l2_cache_rw; 
+                        mem_rw = `WRITE; 
                         case(choose_way)
                             `L2_WAY0:begin
                                 mem_wd      = l2_data0_rd;
-                                mem_addr    = {l2_tag0_rd[16:0],l2_addr[14:6]};  
+                                // mem_addr    = {l2_tag0_rd[16:0],l2_addr[14:6]};  
+                                mem_addr    = {l2_tag0_rd[16:0],l2_addr[10:2]};  
                             end
                             `L2_WAY1:begin
                                 mem_wd      = l2_data1_rd;
-                                mem_addr    = {l2_tag1_rd[16:0],l2_addr[14:6]};
+                                // mem_addr    = {l2_tag1_rd[16:0],l2_addr[14:6]};
+                                mem_addr    = {l2_tag1_rd[16:0],l2_addr[10:2]};
                             end
                             `L2_WAY2:begin
                                 mem_wd      = l2_data2_rd;
-                                mem_addr    = {l2_tag2_rd[16:0],l2_addr[14:6]}; 
+                                // mem_addr    = {l2_tag2_rd[16:0],l2_addr[14:6]}; 
+                                mem_addr    = {l2_tag2_rd[16:0],l2_addr[10:2]};
                             end
                             `L2_WAY3:begin
                                 mem_wd      = l2_data3_rd;
-                                mem_addr    = {l2_tag3_rd[16:0],l2_addr[14:6]};
+                                // mem_addr    = {l2_tag3_rd[16:0],l2_addr[14:6]};
+                                mem_addr    = {l2_tag3_rd[16:0],l2_addr[10:2]};
                             end
                         endcase
                     end
@@ -507,11 +523,13 @@ module l2_cache_ctrl(
             // end
             `WRITE_MEM:begin // load block of L2 with dirty to mem.                     
                 if (mem_complete == `ENABLE) begin
-                    mem_addr     = l2_addr[31:6];
+                    // mem_addr     = l2_addr[31:6];
+                    mem_addr     = l2_addr[27:2];
                     mem_rw       = `READ; 
                     nextstate    = `WRITE_TO_L2_DIRTY;
                     l2_dirty_wd  = 1'b0;
-                    l2_tag_wd    = {1'b1,l2_addr[31:15]};
+                    // l2_tag_wd    = {1'b1,l2_addr[31:15]};
+                    l2_tag_wd    = {1'b1,l2_addr[27:11]};
                     wd_from_mem_en = `ENABLE;
                     // l2_data_wd   = mem_rd;
                     case(choose_way)
@@ -590,7 +608,7 @@ module l2_cache_ctrl(
                     wr3_en2 = `READ;
                     wr3_en3 = `READ;
                     // nextstate  =  `ACCESS_L2;
-                    l2_miss_stall = `DISABLE;
+                    // l2_miss_stall = `DISABLE;
                     l2_busy       = `DISABLE;
                     data_wd_l2_en = `DISABLE;
                     nextstate     = `L2_IDLE;                                         

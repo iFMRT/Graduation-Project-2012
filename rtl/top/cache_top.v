@@ -18,12 +18,14 @@ module cache_top(
     input               clk_2,          // clock of L2C
     input               rst,            // reset
     /*CPU part*/
-    input      [31:0]   addr,           // address of accessing memory
+    // input      [31:0]   addr,           // address of accessing memory
+    input      [29:0]   addr,           // address of accessing memory
     input      [31:0]   wr_data_m,
     input               memwrite_m,     // read / write signal of CPU
     input               access_mem,
     input               access_mem_ex,
-    input      [31:0]   if_pc,          // address of fetching instruction
+    // input      [31:0]   if_pc,          // address of fetching instruction
+    input      [29:0]   if_pc,          // address of fetching instruction
     output     [31:0]   insn,           // read data of CPU
     output              if_busy,        // the signal of stall caused by cache miss   
     output     [31:0]   read_data_m,    // read data of CPU
@@ -55,8 +57,10 @@ module cache_top(
     wire                l2_complete;
     wire                l2_rdy;         // ready signal of L2_cache 
     wire                l2_busy;        // busy signal of L2_cache
-    wire        [31:0]  l2_addr_ic;     // addr of l2_cache
-    wire        [31:0]  l2_addr_dc;     // addr of l2_cache
+    // wire        [31:0]  l2_addr_ic;     // addr of l2_cache
+    // wire        [31:0]  l2_addr_dc;     // addr of l2_cache
+    wire        [27:0]  l2_addr_ic;     // addr of l2_cache
+    wire        [27:0]  l2_addr_dc;     // addr of l2_cache
     wire                l2_cache_rw_ic;
     wire                l2_cache_rw_dc; 
     wire        [127:0] data_wd_l2;     // write data to L1    

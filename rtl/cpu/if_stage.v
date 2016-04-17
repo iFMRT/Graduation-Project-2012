@@ -12,8 +12,8 @@
 
 module if_stage(
     /********** clock & reset *********/
-    input                   clk,            // Clk
-    input                   reset,          // Reset
+    input              clk,           // Clk
+    input              reset,         // Reset
     /************* Icache ************/
     /* CPU part */ 
     output             miss_stall,    // the signal of stall caused by cache miss
@@ -37,8 +37,8 @@ module if_stage(
     input              mem_wr_ic_en,
     output             irq,           // icache request
     output             ic_rw_en,
-    // output     [8:0]   l2_index,
-    output     [31:0]  l2_addr,
+    // output     [31:0]  l2_addr,
+    output     [27:0]  l2_addr,
     output             l2_cache_rw,
     /******** Pipeline control ********/
     input                   stall,          // Stall
@@ -46,7 +46,7 @@ module if_stage(
     input  [`WORD_DATA_BUS] new_pc,         // New value of program counter
     input                   br_taken,       // Branch taken
     input  [`WORD_DATA_BUS] br_addr,        // Branch target
-    // output                  busy,           // Busy Signal
+    // output                  busy,        // Busy Signal
     /******** IF/ID Pipeline Register ********/
     output [`WORD_DATA_BUS] pc,             // Current Program counter
     output [`WORD_DATA_BUS] if_pc,          // Current Program counter
@@ -60,11 +60,11 @@ module if_stage(
 
 icache_ctrl icache_ctrl(
         .clk            (clk),           // clock
-        .rst            (reset),           // reset
+        .rst            (reset),         // reset
         /* CPU part */
-        .if_addr        (if_pc),         // address of fetching instruction
-        .rw             (`READ),            // read / write signal of CPU
-        .cpu_data       (insn),      // read data of CPU
+        .if_addr        (if_pc[31:2]),   // address of fetching instruction
+        .rw             (`READ),         // read / write signal of CPU
+        .cpu_data       (insn),          // read data of CPU
         .miss_stall     (miss_stall),    // the signal of stall caused by cache miss
         /* L1_cache part */
         .lru            (lru),           // mark of replacing
@@ -98,7 +98,7 @@ icache_ctrl icache_ctrl(
         /******** Read Instruction ********/
         .insn         (insn),                 // Reading instruction
         .stall        (stall),                // Stall
-        .data_rdy     (data_rdy),          // tag hit mark
+        .data_rdy     (data_rdy),             // tag hit mark
         .flush        (flush),                // Flush
         .new_pc       (new_pc),               // New value of program counter
         .br_taken     (br_taken),             // Branch taken
