@@ -1,5 +1,11 @@
 # BUS_IF_OBJS specifies which files to compile as part of bus_if testbench
-BUS_IF_OBJS = bus_if_test.v ../cpu/bus_if.v
+BUS_IF_OBJS = bus_if/bus_if_test.v ../cpu/bus_if.v
+
+# IF_REG_OBJS specifies which files to compile as part of mem reg testbench
+IF_REG_OBJS = if_stage/if_reg_test.v ../cpu/if_reg.v
+
+# IF_STAGE_OBJS specifies which files to compile as part of mem stage testbench
+IF_STAGE_OBJS = if_stage/if_stage_test.v ../cpu/if_stage.v $(BUS_IF_OBJS) $(IF_REG_OBJS)
 
 # MEM_REG_OBJS specifies which files to compile as part of mem reg testbench
 MEM_REG_OBJS = mem_reg_test.v ../cpu/mem_reg.v
@@ -27,6 +33,8 @@ CC = iverilog
 INCLUDE_PATHS = -I ../include
 
 BUS_IF_OBJ_NAME    = bus_if.out
+IF_REG_OBJ_NAME    = if_reg.out
+IF_STAGE_OBJ_NAME  = if_stage.out
 MEM_REG_OBJ_NAME   = mem_reg.out
 MEM_CTRL_OBJ_NAME  = mem_ctrl.out
 MEM_STAGE_OBJ_NAME = mem_stage.out
@@ -38,6 +46,14 @@ CPU_OBJ_NAME 	     = cpu.out
 bus_if : $(BUS_IF_OBJS)
 	$(CC) $(INCLUDE_PATHS) $(BUS_IF_OBJS)  -o $(BUS_IF_OBJ_NAME) -s bus_if_test
 	vvp $(BUS_IF_OBJ_NAME)
+
+if_reg : $(IF_REG_OBJS)
+	$(CC) $(INCLUDE_PATHS) $(IF_REG_OBJS)  -o $(IF_REG_OBJ_NAME) -s if_reg_test
+	vvp $(IF_REG_OBJ_NAME)
+
+if_stage : $(IF_STAGE_OBJS)
+	$(CC) $(INCLUDE_PATHS) $(IF_STAGE_OBJS)  -o $(IF_STAGE_OBJ_NAME) -s if_stage_test
+	vvp $(IF_STAGE_OBJ_NAME)
 
 mem_reg : $(MEM_REG_OBJS)
 	$(CC) $(INCLUDE_PATHS) $(MEM_REG_OBJS)  -o $(MEM_REG_OBJ_NAME) -s mem_reg_test

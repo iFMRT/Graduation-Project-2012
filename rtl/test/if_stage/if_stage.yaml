@@ -1,0 +1,64 @@
+# Input Ports
+clk:          "`ENABLE" 
+reset:        "`ENABLE" 
+spm_rd_data:  "`WORD_DATA_W'h128" 
+stall:        "`DISABLE" 
+flush:        "`DISABLE" 
+new_pc:       "`WORD_DATA_W'h160" 
+br_taken:     "`DISABLE" 
+br_addr:      "`WORD_DATA_W'h128" 
+---
+# Output Ports
+display:      "\\n=== Initialize: Reset ==="
+spm_addr:     "`WORD_ADDR_W'h0" 
+spm_as_:      "`ENABLE_" 
+spm_rw:       "`READ" 
+spm_wr_data:  "`WORD_DATA_W'h0" 
+pc:           "`WORD_DATA_W'h0" 
+if_pc:        "`WORD_DATA_W'h0"
+if_insn:      "`ISA_NOP" 
+if_en:        "`DISABLE" 
+---
+# Input Ports
+reset:        "`DISABLE" 
+---
+# Output Ports
+display:      "\\n=== Clock 1: Next PC ==="
+spm_addr:     "`WORD_ADDR_W'h1" 
+spm_as_:      "`ENABLE_" 
+spm_rw:       "`READ" 
+spm_wr_data:  "`WORD_DATA_W'h0" 
+pc:           "`WORD_DATA_W'h0" 
+if_pc:        "`WORD_DATA_W'h4" 
+if_insn:      "`WORD_DATA_W'h128" 
+if_en:        "`ENABLE" 
+---
+# Input Ports
+flush:        "`ENABLE" 
+---
+# Output Ports
+display:      "\\n=== Clock 2: Flush ==="
+spm_addr:     "`WORD_ADDR_W'h58" 
+spm_as_:      "`DISABLE_" 
+spm_rw:       "`READ" 
+spm_wr_data:  "`WORD_DATA_W'h0"
+pc:           "`WORD_DATA_W'h0" 
+if_pc:        "`WORD_DATA_W'h160" 
+if_insn:      "`ISA_NOP" 
+if_en:        "`DISABLE" 
+---
+# Input Ports
+flush:        "`DISABLE" 
+br_taken:     "`ENABLE" 
+---
+# Output Ports
+display:      "\\n=== Clock 3: Branch ==="
+spm_addr:     "`WORD_ADDR_W'h4a" 
+spm_as_:      "`ENABLE_" 
+spm_rw:       "`READ" 
+spm_wr_data:  "`WORD_DATA_W'h0"
+pc:           "`WORD_DATA_W'h0" 
+if_pc:        "`WORD_DATA_W'h128" 
+if_insn:      "`ISA_NOP" 
+if_en:        "`DISABLE" 
+ 

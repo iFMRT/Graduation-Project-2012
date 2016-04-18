@@ -1,0 +1,47 @@
+# Input Ports
+clk:       "`ENABLE" 
+reset:     "`ENABLE" 
+insn:      "`WORD_DATA_W'h124" 
+stall:     "`DISABLE" 
+flush:     "`DISABLE" 
+new_pc:    "`WORD_DATA_W'h154" 
+br_taken:  "`DISABLE" 
+br_addr:   "`WORD_DATA_W'h100" 
+---
+# Output Ports
+display:   "\\n=== Initialize ==="
+pc:        "`WORD_DATA_W'h0" 
+if_pc:     "`WORD_DATA_W'h0" 
+if_insn:   "`ISA_NOP"
+if_en:     "`DISABLE" 
+---
+# Input Ports
+reset:     "`DISABLE" 
+---
+# Output Ports
+display:   "\\n=== Clock 1 ==="
+pc:        "`WORD_DATA_W'h0"   
+if_pc:     "`WORD_DATA_W'h4" 
+if_insn:   "`WORD_DATA_W'h124" 
+if_en:     "`ENABLE"
+---
+# Input Ports
+flush:     "`ENABLE" 
+---
+# Output Ports
+display:   "\\n=== Clock 2: Flush ==="
+pc:        "`WORD_DATA_W'h0"   
+if_pc:     "`WORD_DATA_W'h154" 
+if_insn:   "`ISA_NOP" 
+if_en:     "`DISABLE"
+---
+# Input Ports
+flush:     "`DISABLE" 
+br_taken:  "`ENABLE" 
+---
+# Output Ports
+display:   "\\n=== Clock 3: Branch ==="
+pc:        "`WORD_DATA_W'h0" 
+if_pc:     "`WORD_DATA_W'h100" 
+if_insn:   "`ISA_NOP" 
+if_en:     "`DISABLE"

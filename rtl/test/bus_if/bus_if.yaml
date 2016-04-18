@@ -1,0 +1,55 @@
+# Input Ports
+stall:        "`DISABLE" 
+flush:        "`DISABLE" 
+addr:         "`WORD_ADDR_W'h55" 
+as_:          "`ENABLE_" 
+rw:           "`READ" 
+wr_data:      "`WORD_DATA_W'h999" 
+spm_rd_data:  "`WORD_DATA_W'h24" 
+---
+# Output Ports
+display:      "\\n== Read Data Test =="
+rd_data:      "`WORD_DATA_W'h24" 
+spm_addr:     "`WORD_ADDR_W'h55" 
+spm_as_:      "`ENABLE_" 
+spm_rw:       "`READ" 
+spm_wr_data:  "`WORD_DATA_W'h999" 
+---
+# Input Ports
+as_:          "`DISABLE_" 
+---
+# Output Ports
+display:      "\\n== No Memory Access Test =="
+rd_data:      "`WORD_DATA_W'h0" 
+spm_addr:     "`WORD_ADDR_W'h55" 
+spm_as_:      "`DISABLE_" 
+spm_rw:       "`READ" 
+spm_wr_data:  "`WORD_DATA_W'h999" 
+---
+# Input Ports
+as_:          "`ENABLE_" 
+rw:           "`WRITE" 
+wr_data:      "`WORD_DATA_W'h59" 
+---
+# Output Ports
+display:      "\\n== Write Data Test =="
+rd_data:      "`WORD_DATA_W'h24" 
+spm_addr:     "`WORD_ADDR_W'h55" 
+spm_as_:      "`ENABLE_" 
+spm_rw:       "`WRITE" 
+spm_wr_data:  "`WORD_DATA_W'h59" 
+---
+# Input Ports
+stall:        "`ENABLE" 
+flush:        "`ENABLE" 
+as_:          "`DISABLE_" 
+rw:           "`READ" 
+wr_data:      "`WORD_DATA_W'h999" 
+---
+# Output Ports
+display:      "\\n== Pipeline flush or stall Test =="
+rd_data:      "`WORD_DATA_W'h0" 
+spm_addr:     "`WORD_ADDR_W'h55" 
+spm_as_:      "`DISABLE_" 
+spm_rw:       "`READ" 
+spm_wr_data:  "`WORD_DATA_W'h999" 
