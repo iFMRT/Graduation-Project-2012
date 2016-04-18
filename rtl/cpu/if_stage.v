@@ -25,11 +25,11 @@ module if_stage(
     input      [127:0] data1_rd,      // read data of data1
     input      [127:0] data_wd_l2,
     input              complete,      // complete op writing to L1
-    output             tag0_rw,       // read / write signal of L1_tag0
-    output             tag1_rw,       // read / write signal of L1_tag1
+    // output             tag0_rw,       // read / write signal of L1_tag0
+    // output             tag1_rw,       // read / write signal of L1_tag1
     output     [20:0]  tag_wd,        // write data of L1_tag
-    output             data0_rw,      // read / write signal of data0
-    output             data1_rw,      // read / write signal of data1
+    output             block0_rw,     // read / write signal of block0
+    output             block1_rw,     // read / write signal of block1
     output     [7:0]   index,         // address of L1_cache
     /* L2_cache part */
     input              l2_busy,       // busy signal of L2_cache
@@ -74,11 +74,11 @@ icache_ctrl icache_ctrl(
         .data1_rd       (data1_rd),      // read data of data1
         .data_wd_l2     (data_wd_l2), 
         .complete       (complete),      // complete op writing to L1
-        .tag0_rw        (tag0_rw),       // read / write signal of L1_tag0
-        .tag1_rw        (tag1_rw),       // read / write signal of L1_tag1
+        // .tag0_rw        (tag0_rw),       // read / write signal of L1_tag0
+        // .tag1_rw        (tag1_rw),       // read / write signal of L1_tag1
         .tag_wd         (tag_wd),        // write data of L1_tag
-        .data0_rw       (data0_rw),      // read / write signal of data0
-        .data1_rw       (data1_rw),      // read / write signal of data1
+        .block0_rw      (block0_rw),     // read / write signal of block0
+        .block1_rw      (block1_rw),     // read / write signal of block1
         .index          (index),         // address of L1_cache
         /* l2_cache part */
         .l2_busy        (l2_busy),       // busy signal of l2_cache

@@ -14,11 +14,12 @@
 module l1_dram_top(
     input           clk,               // clock
     /*dtag*/
-    input           tag0_rw_dc,        // read / write signal of tag0
-    input           tag1_rw_dc,        // read / write signal of tag1
+    // input           tag0_rw_dc,        // read / write signal of tag0
+    // input           tag1_rw_dc,        // read / write signal of tag1
     input   [7:0]   index_dc,          // address of cache
-    input           dirty0_rw,
-    input           dirty1_rw,
+    input           tagcomp_hit, 
+    input           block0_rw,
+    input           block1_rw,
     input           dirty_wd,
     input   [20:0]  tag_wd_dc,         // write data of tag
     output  [20:0]  tag0_rd_dc,        // read data of tag0
@@ -28,14 +29,14 @@ module l1_dram_top(
     output          lru_dc,            // read data of lru_field
     output          complete_dc,       // complete write from L2 to L1
     /*ddata*/
-    input              wr0_en0,
-    input              wr0_en1,
-    input              wr0_en2,
-    input              wr0_en3,
-    input              wr1_en0,
-    input              wr1_en1,
-    input              wr1_en2,
-    input              wr1_en3,
+    // input              wr0_en0,
+    // input              wr0_en1,
+    // input              wr0_en2,
+    // input              wr0_en3,
+    // input              wr1_en0,
+    // input              wr1_en1,
+    // input              wr1_en2,
+    // input              wr1_en3,
     input      [31:0]  wr_data_m,       // ++++++++++
     input      [1:0]   offset, 
     // input           data0_rw_dc,       // the mark of cache_data0 write signal 
@@ -49,11 +50,11 @@ module l1_dram_top(
     );
     dtag_ram dtag_ram(
         .clk            (clk),              // clock
-        .tag0_rw        (tag0_rw_dc),       // read / write signal of tag0
-        .tag1_rw        (tag1_rw_dc),       // read / write signal of tag1
+        // .tag0_rw        (tag0_rw_dc),       // read / write signal of tag0
+        // .tag1_rw        (tag1_rw_dc),       // read / write signal of tag1
         .index          (index_dc),         // address of cache
-        .dirty0_rw      (dirty0_rw),        
-        .dirty1_rw      (dirty1_rw),   
+        .block0_rw      (block0_rw),        
+        .block1_rw      (block1_rw),   
         .dirty_wd       (dirty_wd), 
         .tag_wd         (tag_wd_dc),        // write data of tag
         .tag0_rd        (tag0_rd_dc),       // read data of tag0
@@ -67,15 +68,18 @@ module l1_dram_top(
         .clk            (clk),           // clock
         // .data0_rw       (data0_rw_dc),      // the mark of cache_data0 write signal 
         // .data1_rw       (data1_rw_dc),      // the mark of cache_data1 write signal 
-        .wr0_en0        (wr0_en0),   // the mark of cache_data0 write signal 
-        .wr0_en1        (wr0_en1),   // the mark of cache_data1 write signal 
-        .wr0_en2        (wr0_en2),   // the mark of cache_data2 write signal 
-        .wr0_en3        (wr0_en3),   // the mark of cache_data3 write signal         
-        .wr1_en0        (wr1_en0),
-        .wr1_en1        (wr1_en1),
-        .wr1_en2        (wr1_en2),
-        .wr1_en3        (wr1_en3),
-        .index          (index_dc),         // address of cache__
+        // .wr0_en0        (wr0_en0),   // the mark of cache_data0 write signal 
+        // .wr0_en1        (wr0_en1),   // the mark of cache_data1 write signal 
+        // .wr0_en2        (wr0_en2),   // the mark of cache_data2 write signal 
+        // .wr0_en3        (wr0_en3),   // the mark of cache_data3 write signal         
+        // .wr1_en0        (wr1_en0),
+        // .wr1_en1        (wr1_en1),
+        // .wr1_en2        (wr1_en2),
+        // .wr1_en3        (wr1_en3),
+        .index          (index_dc),         // address of cache
+        .tagcomp_hit    (tagcomp_hit),   // +++++++++
+        .block0_rw      (block0_rw),     // read / write signal of block0
+        .block1_rw      (block1_rw),     // read / write signal of block1
         .data_wd_l2     (data_wd_l2),    // write data of l2_cache
         // .data_wd_dc     (data_wd_dc),    // write data of l2_cache
         .data_wd_l2_en  (data_wd_l2_en), // write data of l2_cache

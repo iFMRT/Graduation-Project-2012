@@ -24,20 +24,21 @@ module mem_stage (
     input                        dirty0,
     input                        dirty1,
     output                       dirty_wd,
-    output                       dirty0_rw,
-    output                       dirty1_rw,
-    output                       wr0_en0,
-    output                       wr0_en1,
-    output                       wr0_en2,
-    output                       wr0_en3,
-    output                       wr1_en0,
-    output                       wr1_en1,
-    output                       wr1_en2,
-    output                       wr1_en3,
+    output                       block0_rw,
+    output                       block1_rw,
+    output                       tagcomp_hit,
+    // output                       wr0_en0,
+    // output                       wr0_en1,
+    // output                       wr0_en2,
+    // output                       wr0_en3,
+    // output                       wr1_en0,
+    // output                       wr1_en1,
+    // output                       wr1_en2,
+    // output                       wr1_en3,
     output     [1:0]             offset, 
     output     [127:0]           rd_to_l2,
-    output                       tag0_rw,       // read / write signal of L1_tag0
-    output                       tag1_rw,       // read / write signal of L1_tag1
+    // output                       tag0_rw,       // read / write signal of L1_tag0
+    // output                       tag1_rw,       // read / write signal of L1_tag1
     output     [20:0]            tag_wd,        // write data of L1_tag
     output                       data_wd_dc_en, // choose signal of data_wd           
     input                        mem_wr_dc_en,
@@ -136,20 +137,21 @@ module mem_stage (
         .dirty0         (dirty0),        // 
         .dirty1         (dirty1),        //  
         .dirty_wd       (dirty_wd),      //       
-        .dirty0_rw      (dirty0_rw),     //       
-        .dirty1_rw      (dirty1_rw),     //        
-        .wr0_en0        (wr0_en0),   // the mark of cache_data0 write signal 
-        .wr0_en1        (wr0_en1),   // the mark of cache_data1 write signal 
-        .wr0_en2        (wr0_en2),   // the mark of cache_data2 write signal 
-        .wr0_en3        (wr0_en3),   // the mark of cache_data3 write signal         
-        .wr1_en0        (wr1_en0),
-        .wr1_en1        (wr1_en1),
-        .wr1_en2        (wr1_en2),
-        .wr1_en3        (wr1_en3),
-        .offset         (offset),     //  
+        .block0_rw      (block0_rw),     //       
+        .block1_rw      (block1_rw),     //        
+        // .wr0_en0        (wr0_en0),   // the mark of cache_data0 write signal 
+        // .wr0_en1        (wr0_en1),   // the mark of cache_data1 write signal 
+        // .wr0_en2        (wr0_en2),   // the mark of cache_data2 write signal 
+        // .wr0_en3        (wr0_en3),   // the mark of cache_data3 write signal         
+        // .wr1_en0        (wr1_en0),
+        // .wr1_en1        (wr1_en1),
+        // .wr1_en2        (wr1_en2),
+        // .wr1_en3        (wr1_en3),
+        .offset         (offset),      
+        .tagcomp_hit    (tagcomp_hit),  
         // .data_wd_dc     (data_wd_dc), 
-        .tag0_rw        (tag0_rw),       // read / write signal of L1_tag0
-        .tag1_rw        (tag1_rw),       // read / write signal of L1_tag1
+        // .tag0_rw        (tag0_rw),       // read / write signal of L1_tag0
+        // .tag1_rw        (tag1_rw),       // read / write signal of L1_tag1
         .tag_wd         (tag_wd),        // write data of L1_tag
         .data_wd_dc_en  (data_wd_dc_en),
         .hitway         (hitway),

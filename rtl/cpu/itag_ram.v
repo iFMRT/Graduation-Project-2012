@@ -12,8 +12,8 @@
 
 module itag_ram(
     input               clk,            // clock
-    input               tag0_rw,        // read / write signal of tag0
-    input               tag1_rw,        // read / write signal of tag1
+    input               block0_rw,      // read / write signal of tag0
+    input               block1_rw,      // read / write signal of tag1
     input       [7:0]   index,          // address of cache
     input       [20:0]  tag_wd,         // write data of tag
     output      [20:0]  tag0_rd,        // read data of tag0
@@ -25,10 +25,10 @@ module itag_ram(
     reg                 lru_wd;         // write data of lru_field
 
     always @(*) begin
-        if (tag0_rw == `WRITE) begin 
+        if (block0_rw == `WRITE) begin 
             lru_wd   <= 1'b1;
             lru_we   <= `WRITE;    
-        end else if (tag1_rw == `WRITE) begin
+        end else if (block1_rw == `WRITE) begin
             lru_wd   <= 1'b0; 
             lru_we   <= `WRITE;    
         end else begin
@@ -36,9 +36,9 @@ module itag_ram(
         end
     end
     always @(posedge clk) begin
-        if (tag0_rw == `WRITE) begin
+        if (block0_rw == `WRITE) begin
             complete <= `ENABLE;      
-        end else if (tag1_rw == `WRITE) begin
+        end else if (block1_rw == `WRITE) begin
             complete <= `ENABLE;   
         end else begin
             complete <= `DISABLE;
@@ -57,7 +57,7 @@ module itag_ram(
     ram_256x21 tag_way0(
         .clock  (clk),
         .address(index),
-        .wren   (tag0_rw),
+        .wren   (block0_rw),
         .q      (tag0_rd),
         .data   (tag_wd)
         );
@@ -65,7 +65,7 @@ module itag_ram(
     ram_256x21 tag_way1(
         .clock  (clk),
         .address(index),
-        .wren   (tag1_rw),
+        .wren   (block1_rw),
         .q      (tag1_rd),
         .data   (tag_wd)
         );

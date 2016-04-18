@@ -23,7 +23,7 @@ module l1_ic_top(
     input            l2_busy,       // busy signal of L2_cache
     input            l2_rdy,        // ready signal of L2_cache
     input   [127:0]  data_wd_l2,    // write data of l2_cache
-    input            data_wd_l2_en, // write enable signal of l2_cache's data
+    // input            data_wd_l2_en, // write enable signal of l2_cache's data
     input            mem_wr_ic_en, 
     output           complete_ic,   // complete write from L2 to L1
     output           irq,           // icache request
@@ -34,24 +34,26 @@ module l1_ic_top(
     /* if_reg part */
     output           data_rdy       // tag hit mark
     );
+    wire            block0_rw_ic;        // the mark of cache_block0 write signal 
+    wire            block1_rw_ic;        // the mark of cache_block1 write signal 
     /*itag*/
-    wire            tag0_rw_ic;          // read / write signal of tag0
-    wire            tag1_rw_ic;          // read / write signal of tag1
+    // wire            tag0_rw_ic;          // read / write signal of tag0
+    // wire            tag1_rw_ic;          // read / write signal of tag1
     wire    [7:0]   index_ic;            // address of cache
     wire    [20:0]  tag_wd_ic;           // write data of tag
     wire    [20:0]  tag0_rd_ic;          // read data of tag0
     wire    [20:0]  tag1_rd_ic;          // read data of tag1
     wire            lru_ic;              // read data of lru_field
     /*idata*/
-    wire            data0_rw_ic;         // the mark of cache_data0 write signal 
-    wire            data1_rw_ic;         // the mark of cache_data1 write signal     
+    // wire            data0_rw_ic;         // the mark of cache_data0 write signal 
+    // wire            data1_rw_ic;         // the mark of cache_data1 write signal     
     wire    [127:0] data0_rd_ic;         // read data of cache_data0
     wire    [127:0] data1_rd_ic;         // read data of cache_data1
 
     itag_ram itag_ram(
-        .clk            (clk),           // clock
-        .tag0_rw        (tag0_rw_ic),       // read / write signal of tag0
-        .tag1_rw        (tag1_rw_ic),       // read / write signal of tag1
+        .clk            (clk),              // clock
+        .block0_rw      (block0_rw_ic),     // read / write signal of block0
+        .block1_rw      (block1_rw_ic),     // read / write signal of block1
         .index          (index_ic),         // address of cache
         .tag_wd         (tag_wd_ic),        // write data of tag
         .tag0_rd        (tag0_rd_ic),       // read data of tag0
@@ -61,11 +63,10 @@ module l1_ic_top(
         );
     idata_ram idata_ram(
         .clk            (clk),           // clock
-        .data0_rw       (data0_rw_ic),   // the mark of cache_data0 write signal 
-        .data1_rw       (data1_rw_ic),   // the mark of cache_data1 write signal 
+        .block0_rw      (block0_rw_ic),  // the mark of cache_block0 write signal 
+        .block1_rw      (block1_rw_ic),  // the mark of cache_block1 write signal 
         .index          (index_ic),      // address of cache__
         .data_wd_l2     (data_wd_l2),    // write data of l2_cache
-        .data_wd_l2_en  (data_wd_l2_en), // write data of l2_cache
         .data0_rd       (data0_rd_ic),   // read data of cache_data0
         .data1_rd       (data1_rd_ic)    // read data of cache_data1
     );
@@ -84,11 +85,11 @@ module l1_ic_top(
         .data0_rd       (data0_rd_ic),      // read data of data0
         .data1_rd       (data1_rd_ic),      // read data of data1
         .data_wd_l2     (data_wd_l2),
-        .tag0_rw        (tag0_rw_ic),       // read / write signal of L1_tag0
-        .tag1_rw        (tag1_rw_ic),       // read / write signal of L1_tag1
+        // .tag0_rw        (tag0_rw_ic),       // read / write signal of L1_tag0
+        // .tag1_rw        (tag1_rw_ic),       // read / write signal of L1_tag1
         .tag_wd         (tag_wd_ic),        // write data of L1_tag
-        .data0_rw       (data0_rw_ic),      // read / write signal of data0
-        .data1_rw       (data1_rw_ic),      // read / write signal of data1
+        .block0_rw      (block0_rw_ic),     // read / write signal of block0
+        .block1_rw      (block1_rw_ic),     // read / write signal of block1
         .index          (index_ic),         // address of L1_cache
         /* l2_cache part */
         .l2_busy        (l2_busy),       // busy signal of l2_cache

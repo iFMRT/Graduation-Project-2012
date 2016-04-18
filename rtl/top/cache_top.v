@@ -106,7 +106,7 @@ module cache_top(
         .l2_busy        (l2_busy),          // busy signal of l2_cache
         .l2_rdy         (l2_rdy),           // ready signal of l2_cache
         .data_wd_l2     (data_wd_l2),       // write data of l2_cache
-        .data_wd_l2_en  (data_wd_l2_en),    // write data of l2_cache
+        // .data_wd_l2_en  (data_wd_l2_en),    // write data of l2_cache
         .mem_wr_ic_en   (mem_wr_ic_en),
         .complete_ic    (complete_ic),      // complete op writing to L1
         .irq            (irq),
@@ -127,7 +127,6 @@ module cache_top(
         .l2_cache_rw_ic (l2_cache_rw_ic),   // read / write signal of CPU
         .l2_cache_rw_dc (l2_cache_rw_dc),   // read / write signal of CPU
         .l2_busy        (l2_busy),
-        // .l2_miss_stall  (l2_miss_stall),    // stall caused by l2_miss
         .l2_rdy         (l2_rdy),
         .l2_complete    (l2_complete),
         /*icache part*/
