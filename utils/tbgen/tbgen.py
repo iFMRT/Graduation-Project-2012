@@ -1,3 +1,4 @@
+#! /usr/bin/python3
 import sys
 import yaml
 import argparse
@@ -16,7 +17,7 @@ class TestbenchGenerator(object):
     def __parse_header_line(self, line):
         # remove 'wire' and 'reg'
         # remove ')' is the same as replacing ');' to ';'
-        line = re.sub('\wire|reg|\(|\)', '', line)
+        line = re.sub('\ wire | reg |\(|\)', '', line)
         # replace input to reg, output and inout to wire
         line = re.sub('input', 'reg ', line)
         line = re.sub('output', 'wire', line)
@@ -94,13 +95,15 @@ class TestbenchGenerator(object):
     def gen_footer(self):
         module_footer = """\n\t/******** Output Waveform ********/
     initial begin
-       $dumpfile("gpio.vcd");
-       $dumpvars(0, gpio);
+       $dumpfile("{}.vcd");
+       $dumpvars(0, {});
     end
 
-endmodule"""
+endmodule""".format(self.module_name, self.module_name)
 
         return module_footer
+
+
     def gen_dut(self):
         dut = self.module_name + " " + self.module_name + " (\n"
         last_port = self.ports_name.pop()
@@ -110,6 +113,9 @@ endmodule"""
 
         dut += "        " + "." + last_port + "(" + last_port + ")\n"
         dut += "    );"
+
+        # resume original ports_name list
+        self.ports_name.append(last_port)
 
         return dut
 
@@ -126,30 +132,34 @@ endmodule"""
 
         last_port = ports.pop()
 
-        task_ctx   = {'task_name'  : 'gpio_tb',
+        task_ctx   = {'task_name' : self.module_name + '_tb',
                      'width_ports': width_ports,
                      'ports'      : ports,
                      'last_port'  : last_port,
         }
 
+
+        # use to serialize testcase arguments
+        self.task_ports = ports + last_port.split()
         # task context
         return task_ctx
 
 
     def gen_test_case_yaml(self):
-        init_input  = {}
-        init_output = {'display': 'something you want to display'}
+        init_input  = '# Input Ports\n'
+        init_output = '---\n# Output Ports\n'
+        init_output += 'display: something you want to display\n'
+
+        # The max length of all ports' name
+        name_max = max(len(name) for name in self.ports_name) + 1
 
         for port in self.ports_name:
             if self.ports_type[port] == 'input':
-                init_input[port]  = "placeholder"
+                init_input += ('{:<'+str(name_max)+'}  {} \n').format(port+':', '"placeholder"')
             else:
-                init_output[port] = "placeholder"
+                init_output += ('{:<'+str(name_max)+'}  {} \n').format(port+':', '"placeholder"')
 
-        return yaml.dump_all([init_input, init_output,],
-                             indent=4,
-                             default_flow_style=False
-        )
+        return init_input + init_output
 
 
     def __convert_to_case_input(self, case):
@@ -161,18 +171,24 @@ endmodule"""
 
         return case_input
 
+
     def __convert_to_case_result(self, case):
 
-        case_result = ['gpio_tb(']
+        case_result = [self.module_name+'_tb(']
         display_string = ''
 
         if 'display' in case:
             display_string = '$display("%s");' % (case.pop('display'))
 
-        for(k, v) in case.items():
-            case_result.append('\t'+v+', '+'// '+k)
+        for port in self.task_ports:
+            case_result.append('\t'+case[port]+', '+'// '+port)
+
+        # remove last ','
+        # e.g task foobar(a, b, c,) to task foobar(a, b, c)
+        case_result[-1] = case_result[-1].replace(',', '')
 
         case_result.append(');')
+        case_result.insert(0, display_string)
         return case_result
 
 
