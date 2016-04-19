@@ -47,7 +47,7 @@ module mem_stage (
     output     [7:0]             index,         // address of L1_cache
     output     [`WORD_DATA_BUS]  wr_data_m,     // Write data
     /* L2_cache part */
-    input                        l2_busy,       // busy signal of L2_cache
+    input                        dc_en,       // busy signal of L2_cache
     input                        l2_rdy,        // ready signal of L2_cache
     input                        complete,      // complete op writing to L1
     input                        l2_complete,
@@ -161,7 +161,7 @@ module mem_stage (
         .rd_to_l2       (rd_to_l2),
         /* l2_cache part */
         .l2_complete    (l2_complete),   // complete signal of l2_cache
-        .l2_busy        (l2_busy),       // busy signal of l2_cache
+        .dc_en        (dc_en),       // busy signal of l2_cache
         .l2_rdy         (l2_rdy),        // ready signal of l2_cache
         .mem_wr_dc_en   (mem_wr_dc_en), 
         .complete       (complete),   // complete op writing to L1

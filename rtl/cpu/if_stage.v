@@ -6,6 +6,7 @@
  -- Date : 2015/12/25
  -- ============================================================================
 */
+`timescale 1ns/1ps
 
 /* General header file */
 `include "stddef.h"
@@ -32,12 +33,11 @@ module if_stage(
     output             block1_rw,     // read / write signal of block1
     output     [7:0]   index,         // address of L1_cache
     /* L2_cache part */
-    input              l2_busy,       // busy signal of L2_cache
+    input              ic_en,       // busy signal of L2_cache
     input              l2_rdy,        // ready signal of L2_cache
     input              mem_wr_ic_en,
     output             irq,           // icache request
     output             ic_rw_en,
-    // output     [31:0]  l2_addr,
     output     [27:0]  l2_addr,
     output             l2_cache_rw,
     /******** Pipeline control ********/
@@ -73,7 +73,6 @@ icache_ctrl icache_ctrl(
         .data0_rd       (data0_rd),      // read data of data0
         .data1_rd       (data1_rd),      // read data of data1
         .data_wd_l2     (data_wd_l2), 
-        .complete       (complete),      // complete op writing to L1
         // .tag0_rw        (tag0_rw),       // read / write signal of L1_tag0
         // .tag1_rw        (tag1_rw),       // read / write signal of L1_tag1
         .tag_wd         (tag_wd),        // write data of L1_tag
@@ -81,8 +80,9 @@ icache_ctrl icache_ctrl(
         .block1_rw      (block1_rw),     // read / write signal of block1
         .index          (index),         // address of L1_cache
         /* l2_cache part */
-        .l2_busy        (l2_busy),       // busy signal of l2_cache
+        .ic_en          (ic_en),         // busy signal of l2_cache
         .l2_rdy         (l2_rdy),        // ready signal of l2_cache
+        .complete       (complete),      // complete op writing to L1
         .mem_wr_ic_en   (mem_wr_ic_en), 
         .irq            (irq),
         .ic_rw_en       (ic_rw_en),      

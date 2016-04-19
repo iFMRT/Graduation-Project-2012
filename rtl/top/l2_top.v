@@ -20,7 +20,8 @@ module l2_top(
     input       [27:0]  l2_addr_dc,
     input               l2_cache_rw_ic,
     input               l2_cache_rw_dc, 
-    output              l2_busy,                 // busy mark of L2C        
+    output              ic_en,                   // busy mark of L2C        
+    output              dc_en,         
     output              l2_rdy,
     output              l2_complete,             // complete write from MEM to L2
     /*dcache part*/
@@ -119,7 +120,8 @@ l2_cache_ctrl l2_cache_ctrl(
         /*l2_cache part*/
         .l2_complete    (l2_complete),   // complete write from MEM to L2
         .l2_rdy         (l2_rdy),
-        .l2_busy        (l2_busy),
+        .ic_en          (ic_en),
+        .dc_en          (dc_en),
         // l2_tag part
         .plru           (plru),          // replace mark
         .l2_tag0_rd     (l2_tag0_rd),    // read data of tag0

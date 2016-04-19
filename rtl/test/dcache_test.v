@@ -40,8 +40,6 @@ module dcache_test();
     wire             drq;           // dcache request
     wire             ic_rw_en;      // write enable signal
     wire             dc_rw_en;
-    // reg              l2_busy;    // L2C busy mark
-    // reg              l2_rdy;     // L2C ready mark
     // reg      [127:0] data_wd;    // write data to L1_IC
     // l2_icache
     /* CPU part */
@@ -58,7 +56,8 @@ module dcache_test();
     // wire     [8:0]   l2_index_ic;      // address of cache
     // wire     [8:0]   l2_index_dc;      // address of cache
     /*cache part*/
-    wire             l2_busy;       // busy mark of L2C
+    wire             dc_en;       // busy mark of L2C
+    wire             ic_en;       // busy mark of L2C
     wire     [127:0] rd_to_l2;
     wire             l2_block0_rw;  // read / write signal of block0
     wire             l2_block1_rw;  // read / write signal of block1
@@ -181,7 +180,7 @@ module dcache_test();
         .rd_to_l2       (rd_to_l2),
         /* l2_cache part */
         .l2_complete    (l2_complete),   // complete signal of l2_cache
-        .l2_busy        (l2_busy),       // busy signal of l2_cache
+        .dc_en          (dc_en),         // busy signal of l2_cache
         .l2_rdy         (l2_rdy),        // ready signal of l2_cache
         .mem_wr_dc_en   (mem_wr_dc_en), 
         .complete       (complete_dc),   // complete op writing to L1
@@ -220,7 +219,8 @@ module dcache_test();
         /*l2_cache part*/
         .l2_complete    (l2_complete),   // complete write from MEM to L2
         .l2_rdy         (l2_rdy),
-        .l2_busy        (l2_busy),
+        .dc_en          (dc_en),
+        .ic_en          (ic_en),
         // l2_tag part
         .plru           (plru),          // replace mark
         .l2_tag0_rd     (l2_tag0_rd),    // read data of tag0
@@ -479,7 +479,7 @@ module dcache_test();
     endtask 
     task l2_cache_ctrl_tb;
         // input           _l2_miss_stall;      // miss caused by L2C
-        input           _l2_busy;            // L2C busy mark
+        input           _dc_en;            // L2C busy mark
         input   [127:0] _data_wd_l2;         // write data to L1_IC
         input           _l2_block0_rw;       // read / write signal of block0
         input           _l2_block1_rw;       // read / write signal of block1
@@ -502,7 +502,7 @@ module dcache_test();
         input           _mem_rw;             // read / write signal of memory
         begin 
             if( //(l2_miss_stall === _l2_miss_stall)  && 
-                (l2_busy       === _l2_busy)        && 
+                (dc_en         === _dc_en)          && 
                 (data_wd_l2    === _data_wd_l2)     && 
                 (l2_block0_rw  === _l2_block0_rw)   && 
                 (l2_block1_rw  === _l2_block1_rw)   && 
@@ -531,8 +531,8 @@ module dcache_test();
             // if(l2_miss_stall !== _l2_miss_stall)begin 
                 // $display("l2_miss_stall Test Failed !"); 
             // end
-            if(l2_busy       !== _l2_busy)     begin
-                $display("l2_busy Test Failed !"); 
+            if(dc_en         !== _dc_en)     begin
+                $display("dc_en Test Failed !"); 
             end
             if(data_wd_l2    !== _data_wd_l2)     begin
                 $display("data_wd_l2:%b(excepted %b)",data_wd_l2,_data_wd_l2); 
@@ -729,7 +729,7 @@ module dcache_test();
             access_mem <= `ENABLE;
             memwrite_m <= `READ;
             mem_rd <= 512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000;      // write data of l2_cache
-            // l2_busy <= `DISABLE;                                      // busy signal of l2_cache
+            // dc_en <= `DISABLE;                                      // busy signal of l2_cache
             // l2_rdy  <= `ENABLE;                                       // ready signal of l2_cache
             // data_wd <= 128'h0876547A_00000000_ABF00000_123BC000;      // write data of L1_cache
         end
@@ -755,7 +755,7 @@ module dcache_test();
                 );
             l2_cache_ctrl_tb(
                 // `DISABLE,           // miss caused by L2C             
-                `DISABLE,            // L2C busy mark
+                `ENABLE,            // L2C busy mark
                 128'bx,             // write data to L1_IC
                 `READ,              // read / write signal of tag0
                 `READ,              // read / write signal of tag1

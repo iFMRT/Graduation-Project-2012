@@ -56,7 +56,8 @@ module cache_top(
     /*l2_cache part*/
     wire                l2_complete;
     wire                l2_rdy;         // ready signal of L2_cache 
-    wire                l2_busy;        // busy signal of L2_cache
+    wire                ic_en;          // busy signal of L2_cache
+    wire                dc_en;
     // wire        [31:0]  l2_addr_ic;     // addr of l2_cache
     // wire        [31:0]  l2_addr_dc;     // addr of l2_cache
     wire        [27:0]  l2_addr_ic;     // addr of l2_cache
@@ -85,7 +86,7 @@ module cache_top(
         .data_wd_l2     (data_wd_l2),    // write data of l2_cache
         .data_wd_l2_en  (data_wd_l2_en), // write data of l2_cache
         .l2_complete    (l2_complete),
-        .l2_busy        (l2_busy),       // busy signal of l2_cache
+        .dc_en          (dc_en),         // busy signal of l2_cache
         .l2_rdy         (l2_rdy),        // ready signal of l2_cache
         .mem_wr_dc_en   (mem_wr_dc_en), 
         .complete_dc    (complete_dc),   // complete op writing to L1
@@ -103,7 +104,7 @@ module cache_top(
         .insn           (insn),             // read data from cache to CPU
         .if_busy        (if_busy),          // the signal of stall caused by cache miss
         /* l2_cache part */
-        .l2_busy        (l2_busy),          // busy signal of l2_cache
+        .ic_en          (ic_en),            // busy signal of l2_cache
         .l2_rdy         (l2_rdy),           // ready signal of l2_cache
         .data_wd_l2     (data_wd_l2),       // write data of l2_cache
         // .data_wd_l2_en  (data_wd_l2_en),    // write data of l2_cache
@@ -126,7 +127,8 @@ module cache_top(
         .l2_addr_dc     (l2_addr_dc),       // address of fetching instruction
         .l2_cache_rw_ic (l2_cache_rw_ic),   // read / write signal of CPU
         .l2_cache_rw_dc (l2_cache_rw_dc),   // read / write signal of CPU
-        .l2_busy        (l2_busy),
+        .ic_en          (ic_en),
+        .dc_en          (dc_en),
         .l2_rdy         (l2_rdy),
         .l2_complete    (l2_complete),
         /*icache part*/

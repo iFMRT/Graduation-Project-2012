@@ -20,7 +20,7 @@ module l1_ic_top(
     output   [31:0]  insn,          // read data of CPU
     output           if_busy,       // the signal of stall caused by cache miss
     /* L2_cache part */
-    input            l2_busy,       // busy signal of L2_cache
+    input            ic_en,         // busy signal of L2_cache
     input            l2_rdy,        // ready signal of L2_cache
     input   [127:0]  data_wd_l2,    // write data of l2_cache
     // input            data_wd_l2_en, // write enable signal of l2_cache's data
@@ -92,7 +92,7 @@ module l1_ic_top(
         .block1_rw      (block1_rw_ic),     // read / write signal of block1
         .index          (index_ic),         // address of L1_cache
         /* l2_cache part */
-        .l2_busy        (l2_busy),       // busy signal of l2_cache
+        .ic_en          (ic_en),         // busy signal of l2_cache
         .l2_rdy         (l2_rdy),        // ready signal of l2_cache
         .mem_wr_ic_en   (mem_wr_ic_en), 
         .complete       (complete_ic),      // complete op writing to L1

@@ -35,7 +35,7 @@ module icache_ctrl(
     output reg         block1_rw,     // read / write signal of block1
     output     [7:0]   index,         // address of L1_cache
     /* L2_cache part */
-    input              l2_busy,       // busy signal of L2_cache
+    input              ic_en,         // icache enable signal of accessing L2_cache
     input              l2_rdy,        // ready signal of L2_cache
     input              complete,      // complete op writing to L1
     input              mem_wr_ic_en,
@@ -147,12 +147,12 @@ module icache_ctrl(
                         endcase // case(if_addr[1:0])   
                     end
                 end else begin // cache miss
-                    miss_stall = `ENABLE;  
-                    if(l2_busy == `ENABLE) begin
-                        nextstate   = `WAIT_L2_BUSY;
+                    miss_stall = `ENABLE; 
+                    irq        = `ENABLE; 
+                    if(ic_en == `ENABLE) begin
+                        nextstate   = #1 `IC_ACCESS_L2;
                     end else begin
-                        irq         = `ENABLE;
-                        nextstate   = `IC_ACCESS_L2;
+                        nextstate   = #1 `WAIT_L2_BUSY;
                     end
                 end 
             end
@@ -186,11 +186,10 @@ module icache_ctrl(
                 end
             end
             `WAIT_L2_BUSY:begin
-                if(l2_busy == `ENABLE) begin
-                    nextstate   = `WAIT_L2_BUSY;
-                end else begin
-                    irq         = `ENABLE;
+                if(ic_en == `ENABLE) begin
                     nextstate   = `IC_ACCESS_L2;
+                end else begin
+                    nextstate   = `WAIT_L2_BUSY;
                 end
             end
             `WRITE_IC:begin // 使用L2返回的指令块填充IC

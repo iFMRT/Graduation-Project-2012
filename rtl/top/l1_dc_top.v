@@ -30,7 +30,7 @@ module l1_dc_top(
     input      [127:0] data_wd_l2,    // write data of l2_cache
     input              data_wd_l2_en,
     input              l2_complete,
-    input              l2_busy,       // busy signal of L2_cache
+    input              dc_en,         // busy signal of L2_cache
     input              l2_rdy,        // ready signal of L2_cache
     input              mem_wr_dc_en,   
     output             complete_dc,   // complete write from L2 to L1
@@ -152,7 +152,7 @@ module l1_dc_top(
         .rd_to_l2       (rd_to_l2), 
         /* l2_cache part */
         .l2_complete    (l2_complete),
-        .l2_busy        (l2_busy),       // busy signal of l2_cache
+        .dc_en          (dc_en),         // busy signal of l2_cache
         .l2_rdy         (l2_rdy),        // ready signal of l2_cache
         .mem_wr_dc_en   (mem_wr_dc_en), 
         .complete       (complete_dc),      // complete op writing to L1

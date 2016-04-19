@@ -6,6 +6,7 @@
  -- Date：2015/12/29
  -- ============================================================================
 */
+`timescale 1ns/1ps
 
 /********** Header file **********/
 `include "isa.h"
@@ -20,6 +21,7 @@
 /********** module **********/
 module ctrl (
     /********* pipeline control signals ********/
+    input                         rst,
     //  State of Pipeline
     input  wire                   if_busy,      // IF busy mark // miss stall of if_stage
     input  wire                   br_taken,    // branch hazard mark
@@ -68,13 +70,14 @@ module ctrl (
 );
 
     reg     ld_hazard;       // LOAD hazard
-    wire   stall;
+    wire    stall;
     /********** pipeline control **********/
     // stall
     // assign if_stall  = ld_hazard;
     // assign id_stall  = `DISABLE;
     // assign ex_stall  = `DISABLE;
     // assign mem_stall = `DISABLE;
+    
     assign stall     = if_busy | mem_busy;
     assign if_stall  = stall   | ld_hazard;
     assign id_stall  = stall;
@@ -102,6 +105,9 @@ module ctrl (
 
     /********** Forward **********/
     always @(*) begin
+        if (rst == `ENABLE) begin
+            ld_hazard = `DISABLE;
+        end
         /* Forward Ra */
         if( (id_en           == `ENABLE)  &&
             (id_gpr_we_      == `ENABLE_) &&

@@ -44,7 +44,7 @@ module dcache_ctrl(
     output reg [127:0] rd_to_l2,      // read data of L1_cache's data
     /* L2_cache part */
     input              l2_complete,
-    input              l2_busy,       // busy signal of L2_cache
+    input              dc_en,       // busy signal of L2_cache
     input              l2_rdy,        // ready signal of L2_cache
     input              mem_wr_dc_en,
     input              complete,      // complete op writing to L1
@@ -199,14 +199,14 @@ module dcache_ctrl(
                     end // end：write hit
                 end else begin // cache miss
                     miss_stall =  `ENABLE; 
+                    drq        =  `ENABLE;
                     if(valid == `ENABLE && dirty == `ENABLE) begin 
                         // dirty block of l1, write to l2
-                        if(l2_busy == `ENABLE) begin
-                            nextstate   =  `WAIT_L2_BUSY_DIRTY;
-                        end else begin 
+                        if(dc_en == `ENABLE) begin
                             l2_cache_rw =  `WRITE; 
-                            drq         =  `ENABLE;
                             nextstate   =  `DC_WRITE_L2;
+                        end else begin 
+                            nextstate   =  `WAIT_L2_BUSY_DIRTY;
                         end
                         case(choose_way)
                             `WAY0:begin
@@ -218,10 +218,9 @@ module dcache_ctrl(
                                 l2_addr    =  {tag1_rd[19:0],index};
                             end
                         endcase
-                    end else if(l2_busy == `ENABLE && (valid == `DISABLE || dirty == `DISABLE)) begin
+                    end else if(dc_en != `ENABLE && (valid == `DISABLE || dirty == `DISABLE)) begin
                         nextstate    =  `WAIT_L2_BUSY_CLEAN;
-                    end else if(l2_busy == `DISABLE && (valid == `DISABLE || dirty == `DISABLE)) begin
-                        drq       =  `ENABLE; 
+                    end else if(dc_en == `ENABLE && (valid == `DISABLE || dirty == `DISABLE)) begin
                         l2_addr   =  addr[29:2]; 
                         nextstate =  `DC_ACCESS_L2;
                     end 
@@ -270,21 +269,19 @@ module dcache_ctrl(
                         
             end
             `WAIT_L2_BUSY_CLEAN:begin
-                if(l2_busy == `ENABLE) begin
-                    nextstate =  `WAIT_L2_BUSY_CLEAN;
-                end else begin
-                    drq       =  `ENABLE;
+                if(dc_en == `ENABLE) begin
                     l2_addr   =  addr[29:2]; 
                     nextstate =  `DC_ACCESS_L2;
+                end else begin
+                    nextstate =  `WAIT_L2_BUSY_CLEAN;
                 end
             end
             `WAIT_L2_BUSY_DIRTY:begin
-                if(l2_busy == `ENABLE) begin
-                    nextstate   =  `WAIT_L2_BUSY_DIRTY;
-                end else begin
+                if(dc_en == `ENABLE) begin
                     l2_cache_rw =  `WRITE; 
-                    drq         =  `ENABLE;
-                    nextstate   =  `DC_WRITE_L2;
+                    nextstate   =  `DC_WRITE_L2; 
+                end else begin
+                    nextstate   =  `WAIT_L2_BUSY_DIRTY;
                 end
             end
             `WRITE_DC_R:begin // Write to L1,read from L2
@@ -330,10 +327,10 @@ module dcache_ctrl(
                     nextstate  =  `WRITE_HIT;
                 end        
             end
-            `DC_WRITE_L2:begin // load dirty block to L2
+            `DC_WRITE_L2:begin // load dirty block to L2,THEN read l2 to l1.
                 if (l2_complete == `ENABLE) begin
                     l2_cache_rw =  `READ;  
-                    l2_addr   =  addr[29:2]; 
+                    l2_addr     =  addr[29:2]; 
                     nextstate   =  `DC_ACCESS_L2;
                 end else begin
                     nextstate   =  `DC_WRITE_L2;

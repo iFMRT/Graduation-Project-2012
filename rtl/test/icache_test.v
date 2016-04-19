@@ -35,7 +35,7 @@ module icache_test();
     wire             drq;           // dcache request
     wire             ic_rw_en;      // write enable signal
     wire             dc_rw_en;
-    // reg              l2_busy;    // L2C busy mark
+    // reg              ic_en;    // L2C busy mark
     // reg              l2_rdy;     // L2C ready mark
     // reg      [127:0] data_wd;    // write data to L1_IC
     // l2_icache
@@ -52,7 +52,7 @@ module icache_test();
     wire     [8:0]   l2_index_ic;      // address of cache
     // wire     [8:0]   l2_index_dc;      // address of cache
     /*cache part*/
-    wire             l2_busy;       // busy mark of L2C
+    wire             ic_en;       // busy mark of L2C
     wire     [127:0] data_wd_l2;    // write data to L1 from L2
     wire     [127:0] data_wd_dc;    // write data to L1 from CPU
     wire             data_wd_l2_en; // enable signal of writing data to L1 from L2
@@ -110,7 +110,8 @@ module icache_test();
     wire       [1:0] offset;
     wire             mem_wr_dc_en;
     wire             mem_wr_ic_en;
-icache_ctrl icache_ctrl(
+    
+    icache_ctrl icache_ctrl(
         .clk            (clk),           // clock
         .rst            (rst),           // reset
         /* CPU part */
@@ -132,7 +133,7 @@ icache_ctrl icache_ctrl(
         .block1_rw      (block1_rw),     // read / write signal of block1
         .index          (index),         // address of L1_cache
         /* l2_cache part */
-        .l2_busy        (l2_busy),       // busy signal of l2_cache
+        .ic_en          (ic_en),         // busy signal of l2_cache
         .l2_rdy         (l2_rdy),        // ready signal of l2_cache
         .complete       (complete_ic),      // complete op writing to L1
         .mem_wr_ic_en   (mem_wr_ic_en),
@@ -171,7 +172,8 @@ icache_ctrl icache_ctrl(
         /*l2_cache part*/
         .l2_complete    (l2_complete),   // complete write from MEM to L2
         .l2_rdy         (l2_rdy),
-        .l2_busy        (l2_busy),
+        .ic_en          (ic_en),
+        .dc_en          (dc_en),
         // l2_tag part
         .plru           (plru),          // replace mark
         .l2_tag0_rd     (l2_tag0_rd),    // read data of tag0
@@ -376,7 +378,7 @@ icache_ctrl icache_ctrl(
     endtask 
     task l2_cache_ctrl_tb;
         //input           _l2_miss_stall;      // miss caused by L2C
-        input           _l2_busy;            // L2C busy mark
+        input           _ic_en;            // L2C busy mark
         input   [127:0] _data_wd_l2;            // write data to L1_IC
         input           _l2_block0_rw;       // read / write signal of block0
         input           _l2_block1_rw;       // read / write signal of block1
@@ -399,7 +401,7 @@ icache_ctrl icache_ctrl(
         input           _mem_rw;             // read / write signal of memory
         begin 
             if( //(l2_miss_stall === _l2_miss_stall)  && 
-                (l2_busy       === _l2_busy)        && 
+                (ic_en         === _ic_en)          && 
                 (data_wd_l2    === _data_wd_l2)     && 
                 (l2_block0_rw  === _l2_block0_rw)   && 
                 (l2_block1_rw  === _l2_block1_rw)   && 
@@ -428,8 +430,8 @@ icache_ctrl icache_ctrl(
             // if(l2_miss_stall !== _l2_miss_stall)begin 
             //     $display("l2_miss_stall Test Failed !"); 
             // end
-            if(l2_busy       !== _l2_busy)     begin
-                $display("l2_busy Test Failed !"); 
+            if(ic_en         !== _ic_en)     begin
+                $display("ic_en Test Failed !"); 
             end
             if(data_wd_l2    !== _data_wd_l2)     begin
                 $display("data_wd_l2:%b(excepted %b)",data_wd_l2,_data_wd_l2); 
@@ -626,14 +628,14 @@ icache_ctrl icache_ctrl(
             if_addr    <= 30'b1110_0001_0000_00;
             rw         <= `READ;
             mem_rd <= 512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000;      // write data of l2_cache
-            // l2_busy <= `DISABLE;                                      // busy signal of l2_cache
+            // ic_en <= `DISABLE;                                      // busy signal of l2_cache
             // l2_rdy  <= `ENABLE;                                       // ready signal of l2_cache
             // data_wd <= 128'h0876547A_00000000_ABF00000_123BC000;      // write data of L1_cache
             // IC_ACCESS & L2_IDLE 
             $display("\n========= Clock 0 ========");
             l2_cache_ctrl_tb(
                 // `DISABLE,           // miss caused by L2C             
-                `DISABLE,           // L2C busy mark
+                `ENABLE,           // L2C busy mark
                 128'bx,             // write data to L1_IC
                 `READ,              // read / write signal of tag0
                 `READ,              // read / write signal of tag1
