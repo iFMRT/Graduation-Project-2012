@@ -487,19 +487,21 @@ module l2_tag_ram(
 
     always @(*) begin
         if (l2_block0_rw == `WRITE) begin
-            plru_wd   <= {plru[2],2'b11};
-            plru_we   <= `WRITE;    
+            plru_wd[1:0] <= 2'b11;
+            plru_we      <= `WRITE;    
         end else if (l2_block1_rw == `WRITE) begin 
-            plru_wd   <= {plru[2],2'b01};
-            plru_we   <= `WRITE;    
+            plru_wd[1:0] <= 2'b01;
+            plru_we      <= `WRITE;    
         end else if (l2_block2_rw == `WRITE) begin  
-            plru_wd   <= {1'b1,plru[1],1'b0};
-            plru_we   <= `WRITE;    
+            plru_wd[2]   <= 1'b1;
+            plru_wd[0]   <= 1'b0;
+            plru_we      <= `WRITE;    
         end else if (l2_block3_rw == `WRITE) begin
-            plru_wd   <= {1'b0,plru[1],1'b0}; 
-            plru_we   <= `WRITE;    
+            plru_wd[2]   <= 1'b0;
+            plru_wd[0]   <= 1'b0; 
+            plru_we      <= `WRITE;    
         end else begin
-            plru_we   <= `READ;
+            plru_we      <= `READ;
         end
     end
 
@@ -543,12 +545,26 @@ module l2_tag_ram(
         .wd     (l2_dirty_wd)
         );
     // sram_512x1
-    sram_512 #(3) plru_field(        
+    sram_512 #(1) plru0_field(        
         .clk    (clk),
         .a      (l2_index),
         .wr     (plru_we),
-        .rd     (plru),
-        .wd     (plru_wd)
+        .rd     (plru[0]),
+        .wd     (plru_wd[0])
+        );
+    sram_512 #(1) plru1_field(        
+        .clk    (clk),
+        .a      (l2_index),
+        .wr     (plru_we),
+        .rd     (plru[1]),
+        .wd     (plru_wd[1])
+        );
+    sram_512 #(1) plru2_field(        
+        .clk    (clk),
+        .a      (l2_index),
+        .wr     (plru_we),
+        .rd     (plru[2]),
+        .wd     (plru_wd[2])
         );
     // sram_512x18
     sram_512 #(18) tag_way0(

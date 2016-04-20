@@ -8,7 +8,7 @@
 */
 `timescale 1ns/1ps
 /********** General header file **********/
-`include "ram_512x256.v"
+`include "stddef.h"
 
 module l2_data_ram(
     input              clk,             // clock

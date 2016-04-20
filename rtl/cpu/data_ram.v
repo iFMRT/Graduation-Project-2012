@@ -24,8 +24,6 @@ module data_ram(
     input              tagcomp_hit,
     input              block0_rw,       // read / write signal of block0
     input              block1_rw,       // read / write signal of block1
-    input              block2_rw,       // read / write signal of block2
-    input              block3_rw,       // read / write signal of block3
     input      [127:0] data_wd_l2,      // read data of l2_cache
     // input   [127:0] data_wd_dc,
     input              data_wd_l2_en,

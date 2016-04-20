@@ -21,7 +21,7 @@
 /********** module **********/
 module ctrl (
     /********* pipeline control signals ********/
-    input                         rst,
+    // input                         rst,
     //  State of Pipeline
     input  wire                   if_busy,      // IF busy mark // miss stall of if_stage
     input  wire                   br_taken,    // branch hazard mark
@@ -105,9 +105,9 @@ module ctrl (
 
     /********** Forward **********/
     always @(*) begin
-        if (rst == `ENABLE) begin
-            ld_hazard = `DISABLE;
-        end
+        // if (rst == `ENABLE) begin
+        //     ld_hazard = `DISABLE;
+        // end
         /* Forward Ra */
         if( (id_en           == `ENABLE)  &&
             (id_gpr_we_      == `ENABLE_) &&

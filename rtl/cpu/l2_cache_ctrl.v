@@ -436,9 +436,9 @@ module l2_cache_ctrl(
             `WRITE_MEM:begin // load block of L2 with dirty to mem,then read mem to l2.                 
                 if (mem_complete == `ENABLE) begin
                     /* read mem and write l2 part */ 
-                    mem_addr     = l2_addr[27:2];
-                    mem_rw       = `READ; 
-                    l2_dirty_wd  = 1'b0;
+                    mem_addr       = l2_addr[27:2];
+                    mem_rw         = `READ; 
+                    l2_dirty_wd    = 1'b0;
                     wd_from_mem_en = `ENABLE;
                     ////////////////////////////
                     /*enable WRITE signal part*/

@@ -196,7 +196,7 @@ module dcache_mem_test();
     
     ctrl ctrl(
 	    /********* pipeline control signals ********/
-	    //  State of Pipeline
+        //  State of Pipeline
 	    .if_busy		(if_busy),        // IF busy mark // miss stall of if_stage
 	    .br_taken		(br_taken),       // branch hazard mark
 	    //  br_flag,      // branch instruction flag
@@ -337,7 +337,8 @@ module dcache_mem_test();
         /*l2_cache part*/
         .l2_complete    (l2_complete),   // complete write from MEM to L2
         .l2_rdy         (l2_rdy),
-        .dc_en        (dc_en),
+        .ic_en          (ic_en),
+        .dc_en          (dc_en),
         // l2_tag part
         .plru           (plru),          // replace mark
         .l2_tag0_rd     (l2_tag0_rd),    // read data of tag0

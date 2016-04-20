@@ -6,6 +6,7 @@
  -- Date:2016/4/12         Coding_by:kippy   
  -- ============================================================================
 */
+`timescale 1ns/1ps
 /********** General header file **********/
 `include "stddef.h"
 
@@ -119,12 +120,26 @@ module l2_tag_ram(
         .data     (l2_dirty_wd)
         );
     // sram_512x1
-    ram_512x3 plru_field(        
+    ram_512x1 plru0_field(        
         .clock    (clk),
         .address  (l2_index),
         .wren     (plru_we),
-        .q        (plru),
-        .data     (plru_wd)
+        .q        (plru[0]),
+        .data     (plru_wd[0])
+        );
+    ram_512x1 plru1_field(        
+        .clock    (clk),
+        .address  (l2_index),
+        .wren     (plru_we),
+        .q        (plru[1]),
+        .data     (plru_wd[1])
+        );
+    ram_512x1 plru2_field(        
+        .clock    (clk),
+        .address  (l2_index),
+        .wren     (plru_we),
+        .q        (plru[2]),
+        .data     (plru_wd[2])
         );
     // sram_512x18
     ram_512x18 tag_way0(
