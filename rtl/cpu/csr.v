@@ -1,9 +1,9 @@
 /////////////////////////////////////////////////////////////////////
-// Engineer:       Kippy Chen - 799182081@qq.com                   //
+// Engineer:       Leway Colin - colin4124@gmail.com               //
 //                                                                 //
 // Additional contributions by:                                    //
 //                 Beyond Sky - fan-dave@163.com                   //
-//                 Leway Colin - colin4124@gmail.com               //
+//                 Kippy Chen - 799182081@qq.com                   //
 //                 Junhao Chen                                     //
 //                                                                 //
 // Design Name:    Control and Status Registers                    //
