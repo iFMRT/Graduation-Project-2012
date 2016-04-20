@@ -108,6 +108,26 @@
 `define ISA_OP_ALS_SR_SRL	    7'b0000000 // Register-register shift right logical
 `define ISA_OP_ALS_SR_SRA	    7'b0100000 // Register-register shift right arithmetic
 
+/////////////////////////////////////////////////////////
+//    ____ ____    ____            _     _             //
+//   / ___/ ___|  |  _ \ ___  __ _(_)___| |_ ___ _ __  //
+//  | |   \___ \  | |_) / _ \/ _` | / __| __/ _ \ '__| //
+//  | |___ ___) | |  _ <  __/ (_| | \__ \ ||  __/ |    //
+//   \____|____/  |_| \_\___|\__, |_|___/\__\___|_|    //
+//                           |___/                     //
+/////////////////////////////////////////////////////////
 
+// CSR operations
+`define CSR_OP_NONE    2'b00
+`define CSR_OP_WRITE   2'b01
+`define CSR_OP_SET     2'b10
+`define CSR_OP_CLEAR   2'b11
+
+`define EXP_CODE_BUS   5:0   // Exception code bus
+`define EXP_CODE_W	   6     // Exception code width
+
+`define CSR_ADDR_BUS   11:0  // CSRs address bus
+
+`define CSR_OP_BUS     1:0   // CSRs operation bus
 
 `endif

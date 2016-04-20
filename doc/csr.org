@@ -1,0 +1,185 @@
+* Control and Status Registers (CSRs)
+
+** 控制和状态寄存器（CSRs）
+
+** 信号线一览
+
+|---------------+----------+----------+------+----------------------------|
+| 信号名        | 信号类型 | 数据类型 | 位宽 | 说明                       |
+|---------------+----------+----------+------+----------------------------|
+| clk           | 输入端口 | wire     |    1 | 时钟                       |
+| reset         | 输入端口 | wire     |    1 | 异步复位                   |
+| csr_addr      | 输入端口 | wire     |   12 | 访问 csr 地址              |
+| csr_rd_data   | 输出端口 | reg      |   32 | 读取 csr 数据              |
+| csr_wr_data_i | 输入端口 | wire     |   32 | 写入 csr 数据              |
+| csr_op        | 输入端口 | wire     |    2 | 对 csr 的操作              |
+| mepc_i        | 输入端口 | wire     |   32 | 异常程序计数器             |
+| exp_code_i    | 输入端口 | wire     |    6 | 异常原因代码               |
+| save_exp_code | 输入端口 | wire     |    1 | 保存异常原因代码           |
+| save_exp      | 输入端口 | wire     |    1 | 保存异常                   |
+| restore_exp   | 输入端口 | wire     |    1 | 恢复异常                   |
+|---------------+----------+----------+------+----------------------------|
+| mepc_q        | 内部信号 | reg      |   32 | 异常程序计数器: 现态       |
+| mepc_n        | 内部信号 | reg      |   32 | 异常程序计数器: 次态       |
+| mestatus_ie_q | 内部信号 | reg      |    1 | 前一个状态中断使能位: 现态 |
+| mestatus_ie_n | 内部信号 | reg      |    1 | 前一个状态中断使能位: 次态 |
+| mstatus_ie_q  | 内部信号 | reg      |    1 | 状态中断使能位: 现态       |
+| mstatus_ie_n  | 内部信号 | reg      |    1 | 状态中断使能位: 次态       |
+| exp_code_q    | 内部信号 | reg      |    6 | 异常原因代码: 现态         |
+| exp_code_n    | 内部信号 | reg      |    6 | 异常原因代码: 次态         |
+| csr_wr_data   | 内部信号 | reg      |   32 | 写入 csr 数据              |
+| csr_we        | 内部信号 | reg      |    1 | 写入 csr 使能              |
+|---------------+----------+----------+------+----------------------------|
+
+** 代码详解
+
+这里更新 CSRs 的内容采用 Moore 型有限状态机的方式，包括了两个组合逻辑：1） *确定写入 CSRs 的内容* 、 *写入 CSRs 的次态* 是确定次态的逻辑；2） *读取CSRs* 是输出逻辑。还包括了一个保存状态的时序逻辑： *更新 CSRs 的现态* 。
+
+[[file:img/csr-fms.png]]
+
+*** 读取 CSRs
+
+根据 csr_addr 端口提供的地址，读取对应的 CSR 内容。如果地址找不到对应的 CSR， 则读取到内容是不确定的值 x。
+
+#+BEGIN_SRC verilog
+
+    /******** Read Logic ********/
+    always @ (*) begin
+        // defalut value
+        csr_rd_data = `WORD_DATA_W'hx;
+
+        case (csr_addr)
+            // mstatus: always M-mode, contains IE bit
+            12'h300: csr_rd_data = {29'b0, 2'b11, mstatus_ie_q};
+
+            // mepc: exception program counter
+            12'h341: csr_rd_data = mepc_q;
+            // mcause: exception cause
+            12'h342: csr_rd_data = {exp_code_q[5], 26'b0, exp_code_q[4:0]};
+
+            // mcpuid: RV32I
+            12'hF00: csr_rd_data = 32'h00_00_01_00;
+            // mimpid: anonymous source (no allocated ID yet)
+            12'hF01: csr_rd_data = 32'h00_00_80_00;
+
+            // mestatus
+            12'h7C0: csr_rd_data = {29'b0, 2'b11, mestatus_ie_q};
+        endcase
+    end
+
+#+END_SRC
+
+
+*** 确定写入 CSRs 的内容
+
+RISC-V 中访问 CSRs 的指令有三种操作：写（write），置位（Set）和清零（Clear）。根据不同的操作，确定写入 CSRs 的内容：csr_wr_data 。
+
+写操作（CSRRW rd, csr, rs）：先把 csr 原来的值写到rd，再把 rs 的值写入 csr。
+
+置位操作（CSRRS rd, csr, rs）：先把 csr 原来的值写到rd，rs 中的值跟原来 csr 的值相或，rs 上的高位（值为 1）使得对应 csr 的位置 1，其他位置内容没有改变。
+
+清零操作（CSRRS rd, csr, rs）：先把 csr 原来的值写到rd，rs 上的高位（值为 1）使得对应 csr 的位清零，其他位置内容没有改变。所以先对 rs 的值取反，高位变成低位（值为 0），与 csr 原来的值相与，这样 rs 原本值为 1 对应到 csr 的位就会清零。
+
+#+BEGIN_SRC verilog
+
+/******** CSR Operation Logic ********/
+always @ (*) begin
+    csr_wr_data = csr_wr_data_i;
+    csr_we      = `ENABLE;
+    
+    case (csr_op)
+        `CSR_OP_WRITE: csr_wr_data = csr_wr_data_i;
+        `CSR_OP_SET:   csr_wr_data = csr_wr_data_i | csr_rd_data;
+        `CSR_OP_CLEAR: csr_wr_data = (~csr_wr_data_i) & csr_rd_data;
+        
+        `CSR_OP_NONE: begin
+            csr_wr_data = csr_wr_data_i;
+            csr_we      = `DISABLE;
+        end
+    endcase
+end
+
+#+END_SRC
+
+*** 写入 CSRs 的次态
+
+在 csr_addr 无效的情况，次态的（带 _n 后缀的变量）变量默认值是现态（带 _q 后缀的变量），即没有变化。
+
+当 csr_addr 有效时，把 csr_wr_data 的值写入到对应 CSRs 的现态。
+
+#+BEGIN_SRC verilog
+
+/********** Write Logic **********/
+always @ (*) begin
+    mstatus_ie_n  = mstatus_ie_q;
+    mepc_n        = mepc_q;
+    exp_code_n    = exp_code_q;
+    mestatus_ie_n = mestatus_ie_q;
+    case (csr_addr)
+        // mstatus: only IE bit is writable
+        12'h300: if (csr_we)
+        mstatus_ie_n  <= #1 csr_wr_data[0];
+        
+        // mepc: exception program counter
+        12'h341: if (csr_we)
+        mepc_n        <= #1 csr_wr_data;
+        // mcause
+        12'h342: if (csr_we)
+        exp_code_n    <= #1 {csr_wr_data[5], csr_wr_data[4:0]};
+        
+        // mestatus: machine exception status
+        12'h7C0: if (csr_we)
+        mestatus_ie_n <= #1 csr_wr_data[0];
+    endcase
+
+#+END_SRC
+
+除了写入 CSRs ，在需要保存异常原因时（save_exp_code 有效），把输入端口 exp_code_i 的值写入对应的次态；在需要处理异常时（save_exp 有效），把输入端口 mepc_i 的值写入对应的次态，保存当前的状态寄存器的中断使能位到 mestatus_ie_n；把 mstatus_ie_n 置零，防止在处理异常的过程中再次处理异常。
+
+当处理完异常之后（restore_exp 有效），把保存原来状态的 mestatus_ie_q 恢复到 mstatus_ie_n。
+
+#+BEGIN_SRC verilog
+
+    // save exception cause
+    if (save_exp_code)
+        exp_code_n = exp_code_i;
+
+    // save exception
+    if (save_exp) begin
+        mepc_n = mepc_i;
+        mestatus_ie_n = mstatus_ie_q;
+        mstatus_ie_n  = 1'b0;
+    end
+
+    // restore after handling exception
+    if (restore_exp) begin
+        mstatus_ie_n = mestatus_ie_q;
+    end
+end  
+
+#+END_SRC
+
+*** 更新 CSRs 的现态
+
+在时钟的上升沿触发时，会更新状态寄存器的内容，也就是把次态的值赋值给现态。
+
+#+BEGIN_SRC verilog
+
+/******** Actual Registers ********/
+always @(posedge clk) begin
+    if (reset == `ENABLE) begin
+        // Reset
+        mstatus_ie_q  <= #1 `DISABLE;
+        mepc_q        <= #1 `WORD_DATA_W'h0;
+        exp_code_q    <= #1 `EXP_CODE_W'h0;
+        mestatus_ie_q <= #1 `DISABLE;
+    end else begin
+        // update CSRs
+        mstatus_ie_q  <= #1 mstatus_ie_n;
+        mepc_q        <= #1 mepc_n;
+        exp_code_q    <= #1 exp_code_n;
+        mestatus_ie_q <= #1 mestatus_ie_n;
+    end
+end
+
+#+END_SRC
