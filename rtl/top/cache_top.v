@@ -18,13 +18,11 @@ module cache_top(
     input               clk_2,          // clock of L2C
     input               rst,            // reset
     /*CPU part*/
-    // input      [31:0]   addr,           // address of accessing memory
     input      [29:0]   addr,           // address of accessing memory
     input      [31:0]   wr_data_m,
     input               memwrite_m,     // read / write signal of CPU
     input               access_mem,
     input               access_mem_ex,
-    // input      [31:0]   if_pc,          // address of fetching instruction
     input      [29:0]   if_pc,          // address of fetching instruction
     output     [31:0]   insn,           // read data of CPU
     output              if_busy,        // the signal of stall caused by cache miss   
@@ -34,8 +32,6 @@ module cache_top(
     output              hitway,         // path hit mark                
     /*if_reg part*/
     output              data_rdy,       // tag hit mark
-    /*l2_cache part*/       
-    // output              l2_miss_stall,
     /*memory part*/
     input               mem_complete,
     input       [511:0] mem_rd,
@@ -58,8 +54,6 @@ module cache_top(
     wire                l2_rdy;         // ready signal of L2_cache 
     wire                ic_en;          // busy signal of L2_cache
     wire                dc_en;
-    // wire        [31:0]  l2_addr_ic;     // addr of l2_cache
-    // wire        [31:0]  l2_addr_dc;     // addr of l2_cache
     wire        [27:0]  l2_addr_ic;     // addr of l2_cache
     wire        [27:0]  l2_addr_dc;     // addr of l2_cache
     wire                l2_cache_rw_ic;
@@ -107,7 +101,6 @@ module cache_top(
         .ic_en          (ic_en),            // busy signal of l2_cache
         .l2_rdy         (l2_rdy),           // ready signal of l2_cache
         .data_wd_l2     (data_wd_l2),       // write data of l2_cache
-        // .data_wd_l2_en  (data_wd_l2_en),    // write data of l2_cache
         .mem_wr_ic_en   (mem_wr_ic_en),
         .complete_ic    (complete_ic),      // complete op writing to L1
         .irq            (irq),

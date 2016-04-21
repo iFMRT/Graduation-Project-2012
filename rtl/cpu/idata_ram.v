@@ -12,68 +12,78 @@
 
 module idata_ram(
     input              clk,             // clock
-    input              block0_rw,        // the mark of cache_block0 write signal 
-    input              block1_rw,        // the mark of cache_block1 write signal 
+    input              block0_we,       // the mark of cache_block0 write signal 
+    input              block1_we,       // the mark of cache_block1 write signal 
+    input              block0_re,       // the mark of cache_block0 read signal 
+    input              block1_re,       // the mark of cache_block1 read signal 
     input      [7:0]   index,           // address of cache
     input      [127:0] data_wd_l2,      // write data of l2_cache
     output     [127:0] data0_rd,        // read data of cache_data0
     output     [127:0] data1_rd         // read data of cache_data1
     );
     // sram_256x32
-    ram_256x32 data_way00(
+    ram256x32 data_way00(
         .clock    (clk),
         .address  (index),
-        .wren     (block0_rw),
+        .wren     (block0_we),
+        .rden     (block0_re),
         .q        (data0_rd[31:0]),
         .data     (data_wd_l2[31:0])
         );
-    ram_256x32 data_way01(
+    ram256x32 data_way01(
         .clock    (clk),
         .address  (index),
-        .wren     (block0_rw),
+        .wren     (block0_we),
+        .rden     (block0_re),
         .q        (data0_rd[63:32]),
         .data     (data_wd_l2[63:32])
         );
-    ram_256x32 data_way02(
+    ram256x32 data_way02(
         .clock    (clk),
         .address  (index),
-        .wren     (block0_rw),
+        .wren     (block0_we),
+        .rden     (block0_re),
         .q        (data0_rd[95:64]),
         .data     (data_wd_l2[95:64])
         );
-    ram_256x32 data_way03(
+    ram256x32 data_way03(
         .clock    (clk),
         .address  (index),
-        .wren     (block0_rw),
+        .wren     (block0_we),
+        .rden     (block0_re),
         .q        (data0_rd[127:96]),
         .data     (data_wd_l2[127:96])
         );
     // sram_256x32
-    ram_256x32 data_way10(
+    ram256x32 data_way10(
         .clock    (clk),
         .address  (index),
-        .wren     (block1_rw),
+        .wren     (block1_we),
+        .rden     (block1_re),
         .q        (data1_rd[31:0]),
         .data     (data_wd_l2[31:0])
         );
-    ram_256x32 data_way11(
+    ram256x32 data_way11(
         .clock    (clk),
         .address  (index),
-        .wren     (block1_rw),
+        .wren     (block1_we),
+        .rden     (block1_re),
         .q        (data1_rd[63:32]),
         .data     (data_wd_l2[63:32])
         );
-    ram_256x32 data_way12(
+    ram256x32 data_way12(
         .clock    (clk),
         .address  (index),
-        .wren     (block1_rw),
+        .wren     (block1_we),
+        .rden     (block1_re),
         .q        (data1_rd[95:64]),
         .data     (data_wd_l2[95:64])
         );
-    ram_256x32 data_way13(
+    ram256x32 data_way13(
         .clock    (clk),
         .address  (index),
-        .wren     (block1_rw),
+        .wren     (block1_we),
+        .rden     (block1_re),
         .q        (data1_rd[127:96]),
         .data     (data_wd_l2[127:96])
         );

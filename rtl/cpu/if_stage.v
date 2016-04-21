@@ -13,40 +13,39 @@
 
 module if_stage(
     /********** clock & reset *********/
-    input              clk,           // Clk
-    input              reset,         // Reset
+    input                   clk,           // Clk
+    input                   reset,         // Reset
     /************* Icache ************/
     /* CPU part */ 
-    output             miss_stall,    // the signal of stall caused by cache miss
+    output                  miss_stall,    // the signal of stall caused by cache miss
     /* L1_cache part */
-    input              lru,           // mark of replacing
-    input      [20:0]  tag0_rd,       // read data of tag0
-    input      [20:0]  tag1_rd,       // read data of tag1
-    input      [127:0] data0_rd,      // read data of data0
-    input      [127:0] data1_rd,      // read data of data1
-    input      [127:0] data_wd_l2,
-    input              complete,      // complete op writing to L1
-    // output             tag0_rw,       // read / write signal of L1_tag0
-    // output             tag1_rw,       // read / write signal of L1_tag1
-    output     [20:0]  tag_wd,        // write data of L1_tag
-    output             block0_rw,     // read / write signal of block0
-    output             block1_rw,     // read / write signal of block1
-    output     [7:0]   index,         // address of L1_cache
+    input                   lru,           // mark of replacing
+    input  [20:0]           tag0_rd,       // read data of tag0
+    input  [20:0]           tag1_rd,       // read data of tag1
+    input  [127:0]          data0_rd,      // read data of data0
+    input  [127:0]          data1_rd,      // read data of data1
+    input  [127:0]          data_wd_l2,
+    input                   complete,      // complete op writing to L1
+    output [20:0]           tag_wd,        // write data of L1_tag
+    output                  block0_we,     // write signal of block0
+    output                  block1_we,     // write signal of block1
+    output                  block0_re,     // read signal of block0
+    output                  block1_re,     // read signal of block1
+    output [7:0]            index,         // address of L1_cache
     /* L2_cache part */
-    input              ic_en,       // busy signal of L2_cache
-    input              l2_rdy,        // ready signal of L2_cache
-    input              mem_wr_ic_en,
-    output             irq,           // icache request
-    output             ic_rw_en,
-    output     [27:0]  l2_addr,
-    output             l2_cache_rw,
+    input                   ic_en,         // busy signal of L2_cache
+    input                   l2_rdy,        // ready signal of L2_cache
+    input                   mem_wr_ic_en,
+    output                  irq,           // icache request
+    output                  ic_rw_en,
+    output [27:0]           l2_addr,
+    output                  l2_cache_rw,
     /******** Pipeline control ********/
     input                   stall,          // Stall
     input                   flush,          // Flush
     input  [`WORD_DATA_BUS] new_pc,         // New value of program counter
     input                   br_taken,       // Branch taken
     input  [`WORD_DATA_BUS] br_addr,        // Branch target
-    // output                  busy,        // Busy Signal
     /******** IF/ID Pipeline Register ********/
     output [`WORD_DATA_BUS] pc,             // Current Program counter
     output [`WORD_DATA_BUS] if_pc,          // Current Program counter
@@ -73,11 +72,11 @@ icache_ctrl icache_ctrl(
         .data0_rd       (data0_rd),      // read data of data0
         .data1_rd       (data1_rd),      // read data of data1
         .data_wd_l2     (data_wd_l2), 
-        // .tag0_rw        (tag0_rw),       // read / write signal of L1_tag0
-        // .tag1_rw        (tag1_rw),       // read / write signal of L1_tag1
         .tag_wd         (tag_wd),        // write data of L1_tag
-        .block0_rw      (block0_rw),     // read / write signal of block0
-        .block1_rw      (block1_rw),     // read / write signal of block1
+        .block0_we      (block0_we),     // write signal of block0
+        .block1_we      (block1_we),     // write signal of block1
+        .block0_re      (block0_re),     // read signal of block0
+        .block1_re      (block1_re),     // read signal of block1
         .index          (index),         // address of L1_cache
         /* l2_cache part */
         .ic_en          (ic_en),         // busy signal of l2_cache

@@ -10,7 +10,7 @@ module mem_stage (
     input                        stall,          // Stall
     input                        flush,          // Flush
     /************ Forward *************/
-    output      [`WORD_DATA_BUS] fwd_data,                   
+    output     [`WORD_DATA_BUS]  fwd_data,                   
     /*********** Data_cache ***********/
     /* CPU part */
     output                       miss_stall,    // the signal of stall caused by cache miss
@@ -24,38 +24,26 @@ module mem_stage (
     input                        dirty0,
     input                        dirty1,
     output                       dirty_wd,
-    output                       block0_rw,
-    output                       block1_rw,
+    output                       block0_we,     // write signal of block0
+    output                       block1_we,     // write signal of block1
+    output                       block0_re,     // read signal of block0
+    output                       block1_re,     // read signal of block1
     output                       tagcomp_hit,
-    // output                       wr0_en0,
-    // output                       wr0_en1,
-    // output                       wr0_en2,
-    // output                       wr0_en3,
-    // output                       wr1_en0,
-    // output                       wr1_en1,
-    // output                       wr1_en2,
-    // output                       wr1_en3,
     output     [1:0]             offset, 
     output     [127:0]           rd_to_l2,
-    // output                       tag0_rw,       // read / write signal of L1_tag0
-    // output                       tag1_rw,       // read / write signal of L1_tag1
     output     [20:0]            tag_wd,        // write data of L1_tag
     output                       data_wd_dc_en, // choose signal of data_wd           
     input                        mem_wr_dc_en,
-    // output                       data0_rw,      // read / write signal of data0
-    // output                       data1_rw,      // read / write signal of data1
     output     [7:0]             index,         // address of L1_cache
     output     [`WORD_DATA_BUS]  wr_data_m,     // Write data
     /* L2_cache part */
-    input                        dc_en,       // busy signal of L2_cache
+    input                        dc_en,         // busy signal of L2_cache
     input                        l2_rdy,        // ready signal of L2_cache
     input                        complete,      // complete op writing to L1
     input                        l2_complete,
     output                       drq,           // icache request
     output                       dc_rw_en, 
-    // output     [`WORD_DATA_BUS]  l2_addr, 
     output     [27:0]            l2_addr,
-    // output     [8:0]             l2_index,
     output                       l2_cache_rw,   // l2_cache read/write signal
    /********** EX/MEM Pipeline Register **********/
     input                        ex_en,          // If Pipeline data enable
@@ -73,9 +61,8 @@ module mem_stage (
 );
         
     /********** Internal signals **********/
-    wire [`WORD_DATA_BUS]        read_data_m;         // Read data
+    wire [`WORD_DATA_BUS]        read_data_m;     // Read data
     wire [`WORD_DATA_BUS]        addr;            // Address
-    // wire                         as_;             // Address Strobe
     wire                         memwrite_m;      // Read/Write
     wire [`WORD_DATA_BUS]        out;             // Memory Access Result
     wire                         miss_align;
@@ -121,12 +108,11 @@ module mem_stage (
         .clk            (clk),           // clock
         .rst            (reset),         // reset
         /* CPU part */
-        .addr           (addr[31:2]),       // address of fetching instruction
-        // .wr_data_m      (wr_data_m),
-        .memwrite_m     (memwrite_m),            // read / write signal of CPU
+        .addr           (addr[31:2]),    // address of fetching instruction
+        .memwrite_m     (memwrite_m),    // read / write signal of CPU
         .access_mem     (access_mem), 
         .access_mem_ex  (access_mem_ex), 
-        .read_data_m    (read_data_m),      // read data of CPU
+        .read_data_m    (read_data_m),   // read data of CPU
         .miss_stall     (miss_stall),    // the signal of stall caused by cache miss
         /* L1_cache part */
         .lru            (lru),           // mark of replacing
@@ -134,29 +120,18 @@ module mem_stage (
         .tag1_rd        (tag1_rd),       // read data of tag1
         .data0_rd       (data0_rd),      // read data of data0
         .data1_rd       (data1_rd),      // read data of data1
-        .dirty0         (dirty0),        // 
-        .dirty1         (dirty1),        //  
-        .dirty_wd       (dirty_wd),      //       
-        .block0_rw      (block0_rw),     //       
-        .block1_rw      (block1_rw),     //        
-        // .wr0_en0        (wr0_en0),   // the mark of cache_data0 write signal 
-        // .wr0_en1        (wr0_en1),   // the mark of cache_data1 write signal 
-        // .wr0_en2        (wr0_en2),   // the mark of cache_data2 write signal 
-        // .wr0_en3        (wr0_en3),   // the mark of cache_data3 write signal         
-        // .wr1_en0        (wr1_en0),
-        // .wr1_en1        (wr1_en1),
-        // .wr1_en2        (wr1_en2),
-        // .wr1_en3        (wr1_en3),
+        .dirty0         (dirty0),         
+        .dirty1         (dirty1),          
+        .dirty_wd       (dirty_wd),             
+        .block0_we      (block0_we),     // write signal of block0
+        .block1_we      (block1_we),     // write signal of block1
+        .block0_re      (block0_re),     // read signal of block0
+        .block1_re      (block1_re),     // read signal of block1      
         .offset         (offset),      
         .tagcomp_hit    (tagcomp_hit),  
-        // .data_wd_dc     (data_wd_dc), 
-        // .tag0_rw        (tag0_rw),       // read / write signal of L1_tag0
-        // .tag1_rw        (tag1_rw),       // read / write signal of L1_tag1
         .tag_wd         (tag_wd),        // write data of L1_tag
         .data_wd_dc_en  (data_wd_dc_en),
         .hitway         (hitway),
-        // .data0_rw       (data0_rw),      // read / write signal of data0
-        // .data1_rw       (data1_rw),      // read / write signal of data1
         .index          (index),         // address of L1_cache
         .rd_to_l2       (rd_to_l2),
         /* l2_cache part */

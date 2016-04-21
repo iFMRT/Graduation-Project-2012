@@ -11,18 +11,23 @@
 `include "stddef.h"
 // sram_256 * n
 module sram_256 #(parameter WIDTH = 128)
-   (input              clk,
-    input  [7:0]       a,
-    input              wr,
-    // input              read_en,  // +++++++++
-    output [WIDTH-1:0] rd,
-    input  [WIDTH-1:0] wd
+   (input                   clk,
+    input       [7:0]       a,
+    input                   wr,
+    input                   re,   
+    output  reg [WIDTH-1:0] rd,
+    input       [WIDTH-1:0] wd
     );
-    reg    [WIDTH-1:0] ram[255:0];     
-    assign rd = ram[a];
+    reg         [WIDTH-1:0] ram[255:0];   
 
+    always @(*) begin
+        if (re == `ENABLE) begin
+            rd = ram[a];
+        end
+    end
+      
     always @(posedge clk) begin
-        if (wr == `WRITE) begin
+        if (wr == `ENABLE) begin
             ram[a] <= wd;
         end
     end
@@ -30,16 +35,23 @@ endmodule
 
 // sram_512 * n
 module sram_512 #(parameter WIDTH = 32)
-   (input              clk,
-    input  [8:0]       a,
-    input              wr,
-    output [WIDTH-1:0] rd,
-    input  [WIDTH-1:0] wd);
-    reg    [WIDTH-1:0] ram[511:0]; 
-    assign  rd = ram[a];
+   (input                  clk,
+    input      [8:0]       a,
+    input                  wr,
+    input                  re,  
+    output reg [WIDTH-1:0] rd,
+    input      [WIDTH-1:0] wd
+    );
+    reg        [WIDTH-1:0] ram[511:0]; 
+    
+    always @(*) begin
+        if (re == `ENABLE) begin
+            rd = ram[a];
+        end
+    end
 
     always @(posedge clk) begin
-        if (wr == `WRITE) begin
+        if (wr == `ENABLE) begin
             ram[a] <= wd;
         end
     end
@@ -47,10 +59,11 @@ endmodule
 
 module itag_ram(
     input               clk,            // clock
-    input               block0_rw,      // read / write signal of block0
-    input               block1_rw,      // read / write signal of block1
+    input               block0_we,      // write signal of block0
+    input               block1_we,      // write signal of block1
+    input               block0_re,      // read signal of block0
+    input               block1_re,      // read signal of block1
     input       [7:0]   index,          // address of cache
-    // input       [19:0]  tag_wd,         // write data of tag
     input       [20:0]  tag_wd,         // write data of tag
     output      [20:0]  tag0_rd,        // read data of tag0
     output      [20:0]  tag1_rd,        // read data of tag1
@@ -59,22 +72,27 @@ module itag_ram(
     );
     reg                 lru_we;         // read / write signal of lru_field
     reg                 lru_wd;         // write data of lru_field
-
+    reg                 lru_re;
     always @(*) begin
-        if (block0_rw == `WRITE) begin 
+        if (block0_we == `ENABLE) begin 
             lru_wd   <= 1'b1;
-            lru_we   <= `WRITE;    
-        end else if (block1_rw == `WRITE) begin
+            lru_we   <= `ENABLE;    
+        end else if (block1_we == `ENABLE) begin
             lru_wd   <= 1'b0; 
-            lru_we   <= `WRITE;    
+            lru_we   <= `ENABLE;    
         end else begin
             lru_we   <= `READ;
         end
+        if (block0_re == `ENABLE || block1_re == `ENABLE) begin
+            lru_re = `ENABLE;
+        end else begin
+            lru_re = `DISABLE;
+        end
     end
     always @(posedge clk) begin
-        if (block0_rw == `WRITE) begin
+        if (block0_we == `ENABLE) begin
             complete <= `ENABLE;      
-        end else if (block1_rw == `WRITE) begin
+        end else if (block1_we == `ENABLE) begin
             complete <= `ENABLE;   
         end else begin
             complete <= `DISABLE;
@@ -86,6 +104,7 @@ module itag_ram(
         .clk    (clk),
         .a      (index),
         .wr     (lru_we),
+        .re     (lru_re),
         .rd     (lru),
         .wd     (lru_wd)
         );
@@ -93,7 +112,8 @@ module itag_ram(
     sram_256 #(21) tag_way0(
         .clk    (clk),
         .a      (index),
-        .wr     (block0_rw),
+        .wr     (block0_we),
+        .re     (block0_re),
         .rd     (tag0_rd),
         .wd     (tag_wd)
         );
@@ -101,7 +121,8 @@ module itag_ram(
     sram_256 #(21) tag_way1(
         .clk    (clk),
         .a      (index),
-        .wr     (block1_rw),
+        .wr     (block1_we),
+        .re     (block1_re),
         .rd     (tag1_rd),
         .wd     (tag_wd)
         );
@@ -109,13 +130,11 @@ endmodule
 
 module dtag_ram(
     input               clk,            // clock
-    // input               tag0_rw,        // read / write signal of tag0
-    // input               tag1_rw,        // read / write signal of tag1
     input       [7:0]   index,          // address of cache
-    input               block0_rw,      // read / write signal of block0
-    input               block1_rw,      // read / write signal of block1
-    // input               dirty0_rw,
-    // input               dirty1_rw,
+    input               block0_we,      // read / write signal of block0
+    input               block1_we,      // read / write signal of block1
+    input               block0_re,      // write signal of block0
+    input               block1_re,      // read signal of block1
     input               dirty_wd,
     input       [20:0]  tag_wd,         // write data of tag
     output      [20:0]  tag0_rd,        // read data of tag0
@@ -127,22 +146,28 @@ module dtag_ram(
     );
     reg                 lru_we;         // read / write signal of lru_field
     reg                 lru_wd;         // write data of lru_field
+    reg                 lru_re;
 
     always @(*) begin
-        if (block0_rw == `WRITE) begin 
+        if (block0_we == `ENABLE) begin 
             lru_wd   <= 1'b1;
-            lru_we   <= `WRITE;    
-        end else if (block1_rw == `WRITE) begin
+            lru_we   <= `ENABLE;    
+        end else if (block1_we == `ENABLE) begin
             lru_wd   <= 1'b0; 
-            lru_we   <= `WRITE;    
+            lru_we   <= `ENABLE;    
         end else begin
             lru_we   <= `READ;
         end
+        if (block0_re == `ENABLE || block1_re == `ENABLE) begin
+            lru_re = `ENABLE;
+        end else begin
+            lru_re = `DISABLE;
+        end
     end
     always @(posedge clk) begin
-        if (block0_rw == `WRITE) begin
+        if (block0_we == `ENABLE) begin
             complete <= `ENABLE;      
-        end else if (block1_rw == `WRITE) begin
+        end else if (block1_we == `ENABLE) begin
             complete <= `ENABLE;   
         end else begin
             complete <= `DISABLE;
@@ -153,7 +178,8 @@ module dtag_ram(
     sram_256 #(1) dirty0_field(        
         .clk    (clk),
         .a      (index),
-        .wr     (block0_rw),
+        .wr     (block0_we),
+        .re     (block0_re),
         .rd     (dirty0),
         .wd     (dirty_wd)
         );
@@ -161,7 +187,8 @@ module dtag_ram(
     sram_256 #(1) dirty1_field(        
         .clk    (clk),
         .a      (index),
-        .wr     (block1_rw),
+        .wr     (block1_we),
+        .re     (block1_re),
         .rd     (dirty1),
         .wd     (dirty_wd)
         );
@@ -170,6 +197,7 @@ module dtag_ram(
         .clk    (clk),
         .a      (index),
         .wr     (lru_we),
+        .re     (lru_re),
         .rd     (lru),
         .wd     (lru_wd)
         );
@@ -177,7 +205,8 @@ module dtag_ram(
     sram_256 #(21) tag_way0(
         .clk    (clk),
         .a      (index),
-        .wr     (block0_rw),
+        .wr     (block0_we),
+        .re     (block0_re),
         .rd     (tag0_rd),
         .wd     (tag_wd)
         );
@@ -185,7 +214,8 @@ module dtag_ram(
     sram_256 #(21) tag_way1(
         .clk    (clk),
         .a      (index),
-        .wr     (block1_rw),
+        .re     (block1_re),
+        .wr     (block1_we),
         .rd     (tag1_rd),
         .wd     (tag_wd)
         );
@@ -199,12 +229,11 @@ module data_ram(
     input              clk,             // clock
     input      [7:0]   index,           // address of cache
     input              tagcomp_hit,
-    input              block0_rw,       // read / write signal of block0
-    input              block1_rw,       // read / write signal of block1
-    input              block2_rw,       // read / write signal of block2
-    input              block3_rw,       // read / write signal of block3
+    input              block0_we,       // write signal of block0
+    input              block1_we,       // write signal of block1
+    input              block0_re,       // read signal of block0
+    input              block1_re,       // read signal of block1
     input      [127:0] data_wd_l2,      // read data of l2_cache
-    // input   [127:0] data_wd_dc,
     input              data_wd_l2_en,
     input              data_wd_dc_en,    
     input      [31:0]  wr_data_m,       
@@ -221,60 +250,61 @@ module data_ram(
     reg          wr1_en1;
     reg          wr1_en2;
     reg          wr1_en3;
+
     always @(*) begin
-        wr0_en0       = `READ;
-        wr0_en1       = `READ;
-        wr0_en2       = `READ;
-        wr0_en3       = `READ;
-        wr1_en0       = `READ;
-        wr1_en1       = `READ;
-        wr1_en2       = `READ;
-        wr1_en3       = `READ; 
+        wr0_en0       = `DISABLE;
+        wr0_en1       = `DISABLE;
+        wr0_en2       = `DISABLE;
+        wr0_en3       = `DISABLE;
+        wr1_en0       = `DISABLE;
+        wr1_en1       = `DISABLE;
+        wr1_en2       = `DISABLE;
+        wr1_en3       = `DISABLE; 
         if(tagcomp_hit == `ENABLE)begin
-            if (block0_rw == `WRITE) begin
+            if (block0_we == `ENABLE) begin
                 case(offset)
                     `WORD0:begin
-                        wr0_en0 = `WRITE;
+                        wr0_en0 = `ENABLE;
                     end
                     `WORD1:begin
-                        wr0_en1 = `WRITE;
+                        wr0_en1 = `ENABLE;
                     end
                     `WORD2:begin
-                        wr0_en2 = `WRITE;
+                        wr0_en2 = `ENABLE;
                     end
                     `WORD3:begin
-                        wr0_en3 = `WRITE;
+                        wr0_en3 = `ENABLE;
                     end
                 endcase
             end
-            if (block1_rw == `WRITE) begin
+            if (block1_we == `ENABLE) begin
                 case(offset)
                     `WORD0:begin
-                        wr1_en0 = `WRITE;
+                        wr1_en0 = `ENABLE;
                     end
                     `WORD1:begin
-                        wr1_en1 = `WRITE;
+                        wr1_en1 = `ENABLE;
                     end
                     `WORD2:begin
-                        wr1_en2 = `WRITE;
+                        wr1_en2 = `ENABLE;
                     end
                     `WORD3:begin
-                        wr1_en3 = `WRITE;
+                        wr1_en3 = `ENABLE;
                     end
                 endcase
             end
         end else begin
-            if (block0_rw == `WRITE) begin
-                wr0_en0 = `WRITE;
-                wr0_en1 = `WRITE;
-                wr0_en2 = `WRITE;
-                wr0_en3 = `WRITE;
+            if (block0_we == `ENABLE) begin
+                wr0_en0 = `ENABLE;
+                wr0_en1 = `ENABLE;
+                wr0_en2 = `ENABLE;
+                wr0_en3 = `ENABLE;
             end 
-            if (block1_rw == `WRITE) begin
-                wr1_en0 = `WRITE;
-                wr1_en1 = `WRITE;
-                wr1_en2 = `WRITE;
-                wr1_en3 = `WRITE;
+            if (block1_we == `ENABLE) begin
+                wr1_en0 = `ENABLE;
+                wr1_en1 = `ENABLE;
+                wr1_en2 = `ENABLE;
+                wr1_en3 = `ENABLE;
             end                    
         end
 
@@ -304,6 +334,7 @@ module data_ram(
         .clk    (clk),
         .a      (index),
         .wr     (wr0_en0),
+        .re     (block0_re),
         .rd     (data0_rd[31:0]),
         .wd     (data_wd[31:0])
         );
@@ -311,6 +342,7 @@ module data_ram(
         .clk    (clk),
         .a      (index),
         .wr     (wr0_en1),
+        .re     (block0_re),
         .rd     (data0_rd[63:32]),
         .wd     (data_wd[63:32])
         );
@@ -318,6 +350,7 @@ module data_ram(
         .clk    (clk),
         .a      (index),
         .wr     (wr0_en2),
+        .re     (block0_re),
         .rd     (data0_rd[95:64]),
         .wd     (data_wd[95:64])
         );
@@ -325,6 +358,7 @@ module data_ram(
         .clk    (clk),
         .a      (index),
         .wr     (wr0_en3),
+        .re     (block0_re),
         .rd     (data0_rd[127:96]),
         .wd     (data_wd[127:96])
         );
@@ -333,6 +367,7 @@ module data_ram(
         .clk    (clk),
         .a      (index),
         .wr     (wr1_en0),
+        .re     (block1_re),
         .rd     (data1_rd[31:0]),
         .wd     (data_wd[31:0])
         );
@@ -340,6 +375,7 @@ module data_ram(
         .clk    (clk),
         .a      (index),
         .wr     (wr1_en1),
+        .re     (block1_re),
         .rd     (data1_rd[63:32]),
         .wd     (data_wd[63:32])
         );
@@ -347,6 +383,7 @@ module data_ram(
         .clk    (clk),
         .a      (index),
         .wr     (wr1_en2),
+        .re     (block1_re),
         .rd     (data1_rd[95:64]),
         .wd     (data_wd[95:64])
         );
@@ -354,6 +391,7 @@ module data_ram(
         .clk    (clk),
         .a      (index),
         .wr     (wr1_en3),
+        .re     (block1_re),
         .rd     (data1_rd[127:96]),
         .wd     (data_wd[127:96])
         );
@@ -362,8 +400,10 @@ endmodule
 
 module idata_ram(
     input              clk,             // clock
-    input              block0_rw,       // the mark of cache_block0 write signal 
-    input              block1_rw,       // the mark of cache_block1 write signal 
+    input              block0_we,       // the mark of cache_block0 write signal 
+    input              block1_we,       // the mark of cache_block1 write signal 
+    input              block0_re,       // the mark of cache_block0 read signal 
+    input              block1_re,       // the mark of cache_block1 read signal 
     input      [7:0]   index,           // address of cache
     input      [127:0] data_wd_l2,      // write data of l2_cache
     output     [127:0] data0_rd,        // read data of cache_data0
@@ -373,28 +413,32 @@ module idata_ram(
     sram_256 #(32) data_way00(
         .clk    (clk),
         .a      (index),
-        .wr     (block0_rw),
+        .wr     (block0_we),
+        .re     (block0_re),
         .rd     (data0_rd[31:0]),
         .wd     (data_wd_l2[31:0])
         );
     sram_256 #(32) data_way01(
         .clk    (clk),
         .a      (index),
-        .wr     (block0_rw),
+        .wr     (block0_we),
+        .re     (block0_re),
         .rd     (data0_rd[63:32]),
         .wd     (data_wd_l2[63:32])
         );
     sram_256 #(32) data_way02(
         .clk    (clk),
         .a      (index),
-        .wr     (block0_rw),
+        .wr     (block0_we),
+        .re     (block0_re),
         .rd     (data0_rd[95:64]),
         .wd     (data_wd_l2[95:64])
         );
     sram_256 #(32) data_way03(
         .clk    (clk),
         .a      (index),
-        .wr     (block0_rw),
+        .wr     (block0_we),
+        .re     (block0_re),
         .rd     (data0_rd[127:96]),
         .wd     (data_wd_l2[127:96])
         );
@@ -402,49 +446,35 @@ module idata_ram(
     sram_256 #(32) data_way10(
         .clk    (clk),
         .a      (index),
-        .wr     (block1_rw),
+        .wr     (block1_we),
+        .re     (block1_re),
         .rd     (data1_rd[31:0]),
         .wd     (data_wd_l2[31:0])
         );
     sram_256 #(32) data_way11(
         .clk    (clk),
         .a      (index),
-        .wr     (block1_rw),
+        .wr     (block1_we),
+        .re     (block1_re),
         .rd     (data1_rd[63:32]),
         .wd     (data_wd_l2[63:32])
         );
     sram_256 #(32) data_way12(
         .clk    (clk),
         .a      (index),
-        .wr     (block1_rw),
+        .wr     (block1_we),
+        .re     (block1_re),
         .rd     (data1_rd[95:64]),
         .wd     (data_wd_l2[95:64])
         );
     sram_256 #(32) data_way13(
         .clk    (clk),
         .a      (index),
-        .wr     (block1_rw),
+        .wr     (block1_we),
+        .re     (block1_re),
         .rd     (data1_rd[127:96]),
         .wd     (data_wd_l2[127:96])
         );
-
-    // // sram_256x128 
-    // sram_256 #(128) data_way0(
-    //     .clk    (clk),
-    //     .a      (index),
-    //     .wr     (block0_rw),
-    //     .rd     (data0_rd),
-    //     .wd     (data_wd)
-    //     );
-    // // sram_256x128 
-    // sram_256 #(128) data_way1(
-    //     .clk    (clk),
-    //     .a      (index),
-    //     .wr     (data1_rw),
-    //     .rd     (data1_rd),
-    //     .wd     (data_wd)
-    //     );
-
 endmodule
 
 /********** General header file **********/
@@ -452,24 +482,16 @@ endmodule
 
 module l2_tag_ram(    
     input               clk,               // clock
-    input               l2_block0_rw,      // read / write signal of block0
-    input               l2_block1_rw,      // read / write signal of block1
-    input               l2_block2_rw,      // read / write signal of block2
-    input               l2_block3_rw,      // read / write signal of block3
-    // input               l2_tag0_rw,        // read / write signal of tag0
-    // input               l2_tag1_rw,        // read / write signal of tag1
-    // input               l2_tag2_rw,        // read / write signal of tag2
-    // input               l2_tag3_rw,        // read / write signal of tag3
+    input               l2_block0_we,      // write signal of block0
+    input               l2_block1_we,      // write signal of block1
+    input               l2_block2_we,      // write signal of block2
+    input               l2_block3_we,      // write signal of block3
+    input               l2_block0_re,      // read signal of block0
+    input               l2_block1_re,      // read signal of block1
+    input               l2_block2_re,      // read signal of block2
+    input               l2_block3_re,      // read signal of block3
     input       [8:0]   l2_index,
-    // input               irq,
-    // input               drq,
-    // input       [8:0]   l2_index_ic,       // address of cache
-    // input       [8:0]   l2_index_dc,       // address of cache
     input       [17:0]  l2_tag_wd,         // write data of tag
-    // input               l2_dirty0_rw,
-    // input               l2_dirty1_rw,
-    // input               l2_dirty2_rw,
-    // input               l2_dirty3_rw,
     input               l2_dirty_wd,
     output      [17:0]  l2_tag0_rd,        // read data of tag0
     output      [17:0]  l2_tag1_rd,        // read data of tag1
@@ -482,31 +504,39 @@ module l2_tag_ram(
     output              l2_dirty2,         // dirty signal of L2 
     output              l2_dirty3          // dirty signal of L2 
     );
+    reg                 plru_re; 
     reg                 plru_we;           // read / write signal of plru_field
     reg         [2:0]   plru_wd;           // write data of plru_field
 
     always @(*) begin
-        if (l2_block0_rw == `WRITE) begin
+        if (l2_block0_we == `ENABLE) begin
             plru_wd[1:0] <= 2'b11;
-            plru_we      <= `WRITE;    
-        end else if (l2_block1_rw == `WRITE) begin 
+            plru_we      <= `ENABLE;    
+        end else if (l2_block1_we == `ENABLE) begin 
             plru_wd[1:0] <= 2'b01;
-            plru_we      <= `WRITE;    
-        end else if (l2_block2_rw == `WRITE) begin  
+            plru_we      <= `ENABLE;    
+        end else if (l2_block2_we == `ENABLE) begin  
             plru_wd[2]   <= 1'b1;
             plru_wd[0]   <= 1'b0;
-            plru_we      <= `WRITE;    
-        end else if (l2_block3_rw == `WRITE) begin
+            plru_we      <= `ENABLE;    
+        end else if (l2_block3_we == `ENABLE) begin
             plru_wd[2]   <= 1'b0;
             plru_wd[0]   <= 1'b0; 
-            plru_we      <= `WRITE;    
+            plru_we      <= `ENABLE;    
         end else begin
-            plru_we      <= `READ;
+            plru_we      <= `DISABLE;
+        end
+        if (l2_block0_re == `ENABLE || l2_block1_re == `ENABLE 
+            || l2_block2_re == `ENABLE || l2_block3_re == `ENABLE) begin
+            plru_re      <= `ENABLE;
+        end else begin
+            plru_re      <= `DISABLE;
         end
     end
 
     always @(posedge clk) begin
-        if (l2_block0_rw == `WRITE || l2_block1_rw == `WRITE || l2_block2_rw == `WRITE || l2_block3_rw == `WRITE) begin
+        if (l2_block0_we == `ENABLE || l2_block1_we == `ENABLE 
+            || l2_block2_we == `ENABLE || l2_block3_we == `ENABLE) begin
             l2_complete <= `ENABLE;     
         end else begin
             l2_complete <= `DISABLE;
@@ -516,7 +546,8 @@ module l2_tag_ram(
     sram_512 #(1) dirty0_field(        
         .clk    (clk),
         .a      (l2_index),
-        .wr     (l2_block0_rw),
+        .wr     (l2_block0_we),
+        .re     (l2_block0_re),
         .rd     (l2_dirty0),
         .wd     (l2_dirty_wd)
         );
@@ -524,7 +555,8 @@ module l2_tag_ram(
     sram_512 #(1) dirty1_field(        
         .clk    (clk),
         .a      (l2_index),
-        .wr     (l2_block1_rw),
+        .wr     (l2_block1_we),
+        .re     (l2_block1_re),
         .rd     (l2_dirty1),
         .wd     (l2_dirty_wd)
         );
@@ -532,7 +564,8 @@ module l2_tag_ram(
     sram_512 #(1) dirty2_field(        
         .clk    (clk),
         .a      (l2_index),
-        .wr     (l2_block2_rw),
+        .wr     (l2_block2_we),
+        .re     (l2_block2_re),
         .rd     (l2_dirty2),
         .wd     (l2_dirty_wd)
         );
@@ -540,7 +573,8 @@ module l2_tag_ram(
     sram_512 #(1) dirty3_field(        
         .clk    (clk),
         .a      (l2_index),
-        .wr     (l2_block3_rw),
+        .wr     (l2_block3_we),
+        .re     (l2_block3_re),
         .rd     (l2_dirty3),
         .wd     (l2_dirty_wd)
         );
@@ -549,6 +583,7 @@ module l2_tag_ram(
         .clk    (clk),
         .a      (l2_index),
         .wr     (plru_we),
+        .re     (plru_re),
         .rd     (plru[0]),
         .wd     (plru_wd[0])
         );
@@ -556,6 +591,7 @@ module l2_tag_ram(
         .clk    (clk),
         .a      (l2_index),
         .wr     (plru_we),
+        .re     (plru_re),
         .rd     (plru[1]),
         .wd     (plru_wd[1])
         );
@@ -563,6 +599,7 @@ module l2_tag_ram(
         .clk    (clk),
         .a      (l2_index),
         .wr     (plru_we),
+        .re     (plru_re),
         .rd     (plru[2]),
         .wd     (plru_wd[2])
         );
@@ -570,7 +607,8 @@ module l2_tag_ram(
     sram_512 #(18) tag_way0(
         .clk    (clk),
         .a      (l2_index),
-        .wr     (l2_block0_rw),
+        .wr     (l2_block0_we),
+        .re     (l2_block0_re),
         .rd     (l2_tag0_rd),
         .wd     (l2_tag_wd)
         );
@@ -578,7 +616,8 @@ module l2_tag_ram(
     sram_512 #(18) tag_way1(
         .clk    (clk),
         .a      (l2_index),
-        .wr     (l2_block1_rw),
+        .wr     (l2_block1_we),
+        .re     (l2_block1_re),
         .rd     (l2_tag1_rd),
         .wd     (l2_tag_wd)
         );
@@ -586,7 +625,8 @@ module l2_tag_ram(
     sram_512 #(18) tag_way2(
         .clk    (clk),
         .a      (l2_index),
-        .wr     (l2_block2_rw),
+        .wr     (l2_block2_we),
+        .re     (l2_block2_re),
         .rd     (l2_tag2_rd),
         .wd     (l2_tag_wd)
         );
@@ -594,7 +634,8 @@ module l2_tag_ram(
     sram_512 #(18) tag_way3(
         .clk    (clk),
         .a      (l2_index),
-        .wr     (l2_block3_rw),
+        .wr     (l2_block3_we),
+        .re     (l2_block3_re),
         .rd     (l2_tag3_rd),
         .wd     (l2_tag_wd)
         );
@@ -607,36 +648,24 @@ endmodule
 module l2_data_ram(
     input              clk,             // clock
     input      [8:0]   l2_index,        // address of cache     
-    input      [511:0] mem_rd,          // +++++
-    input      [1:0]   offset,          // +++++++++++
-    input      [127:0] rd_to_l2,        // ++++++++++
+    input      [511:0] mem_rd,          
+    input      [1:0]   offset,          
+    input      [127:0] rd_to_l2,        
     input              wd_from_mem_en,
     input              wd_from_l1_en,
     input              tagcomp_hit,
-    input              l2_block0_rw,    // read / write signal of block0
-    input              l2_block1_rw,    // read / write signal of block1
-    input              l2_block2_rw,    // read / write signal of block2
-    input              l2_block3_rw,    // read / write signal of block3
-    // input              wr0_en0,
-    // input              wr0_en1,
-    // input              wr0_en2,
-    // input              wr0_en3,
-    // input              wr1_en0,
-    // input              wr1_en1,
-    // input              wr1_en2,
-    // input              wr1_en3,
-    // input              wr2_en0,
-    // input              wr2_en1,
-    // input              wr2_en2,
-    // input              wr2_en3,
-    // input              wr3_en0,
-    // input              wr3_en1,
-    // input              wr3_en2,
-    // input              wr3_en3,
-    output     [511:0] l2_data0_rd,            // read data of cache_data0
-    output     [511:0] l2_data1_rd,            // read data of cache_data1
-    output     [511:0] l2_data2_rd,            // read data of cache_data2
-    output     [511:0] l2_data3_rd             // read data of cache_data3
+    input              l2_block0_we,    // write signal of block0
+    input              l2_block1_we,    // write signal of block1
+    input              l2_block2_we,    // write signal of block2
+    input              l2_block3_we,    // write signal of block3
+    input              l2_block0_re,    // read signal of block0
+    input              l2_block1_re,    // read signal of block1
+    input              l2_block2_re,    // read signal of block2
+    input              l2_block3_re,    // read signal of block3
+    output     [511:0] l2_data0_rd,     // read data of cache_data0
+    output     [511:0] l2_data1_rd,     // read data of cache_data1
+    output     [511:0] l2_data2_rd,     // read data of cache_data2
+    output     [511:0] l2_data3_rd      // read data of cache_data3
     );
     reg   [511:0] l2_data_wd;
     reg           wr0_en0;
@@ -656,112 +685,111 @@ module l2_data_ram(
     reg           wr3_en2;
     reg           wr3_en3;
     always @(*) begin
-        wr0_en0       = `READ;
-        wr0_en1       = `READ;
-        wr0_en2       = `READ;
-        wr0_en3       = `READ;
-        wr1_en0       = `READ;
-        wr1_en1       = `READ;
-        wr1_en2       = `READ;
-        wr1_en3       = `READ;
-        wr2_en0       = `READ;
-        wr2_en1       = `READ;
-        wr2_en2       = `READ;
-        wr2_en3       = `READ;
-        wr3_en0       = `READ;
-        wr3_en1       = `READ;
-        wr3_en2       = `READ;
-        wr3_en3       = `READ; 
-
+        wr0_en0       = `DISABLE;
+        wr0_en1       = `DISABLE;
+        wr0_en2       = `DISABLE;
+        wr0_en3       = `DISABLE;
+        wr1_en0       = `DISABLE;
+        wr1_en1       = `DISABLE;
+        wr1_en2       = `DISABLE;
+        wr1_en3       = `DISABLE;
+        wr2_en0       = `DISABLE;
+        wr2_en1       = `DISABLE;
+        wr2_en2       = `DISABLE;
+        wr2_en3       = `DISABLE;
+        wr3_en0       = `DISABLE;
+        wr3_en1       = `DISABLE;
+        wr3_en2       = `DISABLE;
+        wr3_en3       = `DISABLE; 
         if(tagcomp_hit == `ENABLE)begin
-            if (l2_block0_rw == `WRITE) begin
+            if (l2_block0_we == `ENABLE) begin
                 case(offset)
                     `WORD0:begin
-                        wr0_en0 = `WRITE;
+                        wr0_en0 = `ENABLE;
                     end
                     `WORD1:begin
-                        wr0_en1 = `WRITE;
+                        wr0_en1 = `ENABLE;
                     end
                     `WORD2:begin
-                        wr0_en2 = `WRITE;
+                        wr0_en2 = `ENABLE;
                     end
                     `WORD3:begin
-                        wr0_en3 = `WRITE;
+                        wr0_en3 = `ENABLE;
                     end
                 endcase
             end
-            if (l2_block1_rw == `WRITE) begin
+            if (l2_block1_we == `ENABLE) begin
                 case(offset)
                     `WORD0:begin
-                        wr1_en0 = `WRITE;
+                        wr1_en0 = `ENABLE;
                     end
                     `WORD1:begin
-                        wr1_en1 = `WRITE;
+                        wr1_en1 = `ENABLE;
                     end
                     `WORD2:begin
-                        wr1_en2 = `WRITE;
+                        wr1_en2 = `ENABLE;
                     end
                     `WORD3:begin
-                        wr1_en3 = `WRITE;
+                        wr1_en3 = `ENABLE;
                     end
                 endcase
             end
-            if (l2_block2_rw == `WRITE) begin
+            if (l2_block2_we == `ENABLE) begin
                 case(offset)
                     `WORD0:begin
-                        wr2_en0 = `WRITE;
+                        wr2_en0 = `ENABLE;
                     end
                     `WORD1:begin
-                        wr2_en1 = `WRITE;
+                        wr2_en1 = `ENABLE;
                     end
                     `WORD2:begin
-                        wr2_en2 = `WRITE;
+                        wr2_en2 = `ENABLE;
                     end
                     `WORD3:begin
-                        wr2_en3 = `WRITE;
+                        wr2_en3 = `ENABLE;
                     end
                 endcase
             end
-            if (l2_block3_rw == `WRITE) begin
+            if (l2_block3_we == `ENABLE) begin
                 case(offset)
                     `WORD0:begin
-                        wr3_en0 = `WRITE;
+                        wr3_en0 = `ENABLE;
                     end
                     `WORD1:begin
-                        wr3_en1 = `WRITE;
+                        wr3_en1 = `ENABLE;
                     end
                     `WORD2:begin
-                        wr3_en2 = `WRITE;
+                        wr3_en2 = `ENABLE;
                     end
                     `WORD3:begin
-                        wr3_en3 = `WRITE;
+                        wr3_en3 = `ENABLE;
                     end
                 endcase
             end
         end else begin
-            if (l2_block0_rw == `WRITE) begin
-                wr0_en0 = `WRITE;
-                wr0_en1 = `WRITE;
-                wr0_en2 = `WRITE;
-                wr0_en3 = `WRITE;
+            if (l2_block0_we == `ENABLE) begin
+                wr0_en0 = `ENABLE;
+                wr0_en1 = `ENABLE;
+                wr0_en2 = `ENABLE;
+                wr0_en3 = `ENABLE;
             end 
-            if (l2_block1_rw == `WRITE) begin
-                wr1_en0 = `WRITE;
-                wr1_en1 = `WRITE;
-                wr1_en2 = `WRITE;
-                wr1_en3 = `WRITE;
+            if (l2_block1_we == `ENABLE) begin
+                wr1_en0 = `ENABLE;
+                wr1_en1 = `ENABLE;
+                wr1_en2 = `ENABLE;
+                wr1_en3 = `ENABLE;
             end
-            if (l2_block2_rw == `WRITE) begin
-                wr2_en0 = `WRITE;
-                wr2_en1 = `WRITE;
-                wr2_en2 = `WRITE;
-                wr2_en3 = `WRITE;
+            if (l2_block2_we == `ENABLE) begin
+                wr2_en0 = `ENABLE;
+                wr2_en1 = `ENABLE;
+                wr2_en2 = `ENABLE;
+                wr2_en3 = `ENABLE;
             end
-            if (l2_block3_rw == `WRITE) begin
-                wr3_en0 = `WRITE;
-                wr3_en1 = `WRITE;
-                wr3_en2 = `WRITE;
-                wr3_en3 = `WRITE;    
+            if (l2_block3_we == `ENABLE) begin
+                wr3_en0 = `ENABLE;
+                wr3_en1 = `ENABLE;
+                wr3_en2 = `ENABLE;
+                wr3_en3 = `ENABLE;    
             end                    
         end
         if (wd_from_mem_en == `ENABLE) begin
@@ -790,6 +818,7 @@ module l2_data_ram(
         .clk    (clk),
         .a      (l2_index),
         .wr     (wr0_en0),
+        .re     (l2_block0_re),
         .rd     (l2_data0_rd[127:0]),
         .wd     (l2_data_wd[127:0])
         );
@@ -797,6 +826,7 @@ module l2_data_ram(
         .clk    (clk),
         .a      (l2_index),
         .wr     (wr0_en1),
+        .re     (l2_block0_re),
         .rd     (l2_data0_rd[255:128]),
         .wd     (l2_data_wd[255:128])
         );
@@ -804,6 +834,7 @@ module l2_data_ram(
         .clk    (clk),
         .a      (l2_index),
         .wr     (wr0_en2),
+        .re     (l2_block0_re),
         .rd     (l2_data0_rd[383:256]),
         .wd     (l2_data_wd[383:256])
         );
@@ -811,6 +842,7 @@ module l2_data_ram(
         .clk    (clk),
         .a      (l2_index),
         .wr     (wr0_en3),
+        .re     (l2_block0_re),
         .rd     (l2_data0_rd[511:384]),
         .wd     (l2_data_wd[511:384])
         );
@@ -819,13 +851,15 @@ module l2_data_ram(
         .clk    (clk),
         .a      (l2_index),
         .wr     (wr1_en0),
+        .re     (l2_block1_re),
         .rd     (l2_data1_rd[127:0]),
         .wd     (l2_data_wd[127:0])
         );
     sram_512 #(128) data1_way1(
         .clk    (clk),
         .a      (l2_index),
-        .wr  (wr1_en1),
+        .wr     (wr1_en1),
+        .re     (l2_block1_re),
         .rd     (l2_data1_rd[255:128]),
         .wd     (l2_data_wd[255:128])
         );
@@ -833,6 +867,7 @@ module l2_data_ram(
         .clk    (clk),
         .a      (l2_index),
         .wr     (wr1_en2),
+        .re     (l2_block1_re),
         .rd     (l2_data1_rd[383:256]),
         .wd     (l2_data_wd[383:256])
         );
@@ -840,6 +875,7 @@ module l2_data_ram(
         .clk    (clk),
         .a      (l2_index),
         .wr     (wr1_en3),
+        .re     (l2_block1_re),
         .rd     (l2_data1_rd[511:384]),
         .wd     (l2_data_wd[511:384])
         );
@@ -848,6 +884,7 @@ module l2_data_ram(
         .clk    (clk),
         .a      (l2_index),
         .wr     (wr2_en0),
+        .re     (l2_block2_re),
         .rd     (l2_data2_rd[127:0]),
         .wd     (l2_data_wd[127:0])
         );
@@ -855,6 +892,7 @@ module l2_data_ram(
         .clk    (clk),
         .a      (l2_index),
         .wr     (wr2_en1),
+        .re     (l2_block2_re),
         .rd     (l2_data2_rd[255:128]),
         .wd     (l2_data_wd[255:128])
         );
@@ -862,6 +900,7 @@ module l2_data_ram(
         .clk    (clk),
         .a      (l2_index),
         .wr     (wr2_en2),
+        .re     (l2_block2_re),
         .rd     (l2_data2_rd[383:256]),
         .wd     (l2_data_wd[383:256])
         );
@@ -869,6 +908,7 @@ module l2_data_ram(
         .clk    (clk),
         .a      (l2_index),
         .wr     (wr2_en3),
+        .re     (l2_block2_re),
         .rd     (l2_data2_rd[511:384]),
         .wd     (l2_data_wd[511:384])
         );
@@ -877,6 +917,7 @@ module l2_data_ram(
         .clk    (clk),
         .a      (l2_index),
         .wr     (wr3_en0),
+        .re     (l2_block3_re),
         .rd     (l2_data3_rd[127:0]),
         .wd     (l2_data_wd[127:0])
         );
@@ -884,6 +925,7 @@ module l2_data_ram(
         .clk    (clk),
         .a      (l2_index),
         .wr     (wr3_en1),
+        .re     (l2_block3_re),
         .rd     (l2_data3_rd[255:128]),
         .wd     (l2_data_wd[255:128])
         );
@@ -891,6 +933,7 @@ module l2_data_ram(
         .clk    (clk),
         .a      (l2_index),
         .wr     (wr3_en2),
+        .re     (l2_block3_re),
         .rd     (l2_data3_rd[383:256]),
         .wd     (l2_data_wd[383:256])
         );
@@ -898,40 +941,8 @@ module l2_data_ram(
         .clk    (clk),
         .a      (l2_index),
         .wr     (wr3_en3),
+        .re     (l2_block3_re),
         .rd     (l2_data3_rd[511:384]),
         .wd     (l2_data_wd[511:384])
         );
-
-    // sram_512 #(512) data_way0(
-    //     .clk    (clk),
-    //     .a      (l2_index),
-    //     .wr     (l2_data0_rw),
-    //     .rd     (l2_data0_rd),
-    //     .wd     (l2_data_wd)
-    //     );
-    // // sram_512x512 
-    // sram_512 #(512) data_way1(
-    //     .clk    (clk),
-    //     .a      (l2_index),
-    //     .wr     (l2_data1_rw),
-    //     .rd     (l2_data1_rd),
-    //     .wd     (l2_data_wd)
-    //     );
-    // // sram_512x512 
-    // sram_512 #(512) data_way2(
-    //     .clk    (clk),
-    //     .a      (l2_index),
-    //     .wr     (l2_data2_rw),
-    //     .rd     (l2_data2_rd),
-    //     .wd     (l2_data_wd)
-    //     );
-    // // sram_512x512 
-    // sram_512 #(512) data_way3(
-    //     .clk    (clk),
-    //     .a      (l2_index),
-    //     .wr     (l2_data3_rw),
-    //     .rd     (l2_data3_rd),
-    //     .wd     (l2_data_wd)
-    //     );
-
 endmodule

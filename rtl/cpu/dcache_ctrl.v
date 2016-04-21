@@ -33,8 +33,10 @@ module dcache_ctrl(
     input              dirty1,
     // output to L1_cache  
     output reg         dirty_wd,
-    output reg         block0_rw,
-    output reg         block1_rw,
+    output reg         block0_we,
+    output reg         block1_we,
+    output reg         block0_re,
+    output reg         block1_re,
     output     [1:0]   offset,  
     output reg         tagcomp_hit,        
     output     [20:0]  tag_wd,        // write data of L1_tag
@@ -44,7 +46,7 @@ module dcache_ctrl(
     output reg [127:0] rd_to_l2,      // read data of L1_cache's data
     /* L2_cache part */
     input              l2_complete,
-    input              dc_en,       // busy signal of L2_cache
+    input              dc_en,         // busy signal of L2_cache
     input              l2_rdy,        // ready signal of L2_cache
     input              mem_wr_dc_en,
     input              complete,      // complete op writing to L1
@@ -122,23 +124,20 @@ module dcache_ctrl(
     end
 
     always @(*) begin
-        block0_rw  = `READ;
-        block1_rw  = `READ;
-        if(rst == `ENABLE) begin                  
-            miss_stall  =  `DISABLE;
-            l2_cache_rw =  `READ;
-            dc_rw_en    = `DISABLE;
-        end
         case(state)
             `DC_IDLE:begin
+                block0_re  = `DISABLE;
+                block1_re  = `DISABLE;
                 if (access_mem == `ENABLE || access_mem_ex == `ENABLE) begin 
-                    nextstate =  `DC_ACCESS;
+                    block0_re  =  `ENABLE;
+                    block1_re  =  `ENABLE;
+                    nextstate  =  `DC_ACCESS;
                 end else begin 
                     nextstate =  `DC_IDLE;
                 end
             end
             `DC_ACCESS:begin
-                dc_rw_en  = `DISABLE;
+                dc_rw_en   = `DISABLE;
                 if (tagcomp_hit == `ENABLE) begin // cache hit
                     if(memwrite_m == `READ) begin // read hit
                         // read l1_block ,write to cpu
@@ -190,10 +189,10 @@ module dcache_ctrl(
                         data_wd_dc_en  =  `ENABLE;
                         case(hitway)
                             `WAY0:begin
-                                block0_rw = `WRITE;
+                                block0_we = `ENABLE;
                             end // hitway == 0
                             `WAY1:begin
-                                block1_rw = `WRITE;
+                                block1_we = `ENABLE;
                             end // hitway == 1
                         endcase // case(hitway) 
                     end // end：write hit
@@ -229,6 +228,8 @@ module dcache_ctrl(
             `DC_ACCESS_L2:begin // access L2, wait L2 hit,choose replacement block's signal of L1
                 // l2 hit(l2_rdy), read l2_block ,write to l1
                 // l2 miss(mem_wr_dc_en), read mem_block ,write to l1 and l2     
+                block0_re  = `DISABLE;
+                block1_re  = `DISABLE;
                 if(l2_rdy == `ENABLE || mem_wr_dc_en == `ENABLE)begin
                     // wr signal is `READ in MEM stage,read l2_block ,write to l1 and cpu
                     // wr signal is `WRITE in MEM stage,read l2_block ,write to l1
@@ -237,10 +238,10 @@ module dcache_ctrl(
                     dirty_wd  =  1'b0;
                     case(choose_way)
                         `WAY0:begin
-                            block0_rw = `WRITE;
+                            block0_we = `ENABLE;
                         end
                         `WAY1:begin
-                            block1_rw = `WRITE;
+                            block1_we = `ENABLE;
                         end
                     endcase 
                     /* write cpu part */ 
@@ -286,13 +287,14 @@ module dcache_ctrl(
             end
             `WRITE_DC_R:begin // Write to L1,read from L2
                 if(complete == `ENABLE)begin
-                    drq        =  `DISABLE;
-                    ////////////////////////////
-                    /*enable READ signal part*/
-                    ///////////////////////////
+                    block0_we   = `DISABLE;
+                    block1_we   = `DISABLE;
+                    drq         =  `DISABLE;
                     miss_stall  =  `DISABLE;
                     if(access_mem_ex == `ENABLE) begin
                         nextstate   =  `DC_ACCESS;
+                        block0_re   = `ENABLE;
+                        block1_re   = `ENABLE;
                     end else begin
                         nextstate   =  `DC_IDLE;
                     end
@@ -303,23 +305,27 @@ module dcache_ctrl(
             `WRITE_DC_W:begin // Write to L1,read from L2
                 if(complete == `ENABLE)begin
                     drq        =  `DISABLE;
-                    ////////////////////////////
-                    /*enable READ signal part*/
-                    ///////////////////////////
+                    block0_we  = `DISABLE;
+                    block1_we  = `DISABLE;
+                    block0_re  =  `ENABLE;
+                    block1_re  =  `ENABLE;
                     nextstate  =  `DC_ACCESS;
                 end else begin
                     nextstate  =  `WRITE_DC_W;
                 end        
             end
              `WRITE_HIT:begin // Write to L1,read from CPU
+                block0_re  = `DISABLE;
+                block1_re  = `DISABLE;
                 if(complete == `ENABLE)begin
                     data_wd_dc_en =  `DISABLE;
-                    ////////////////////////////
-                    /*enable READ signal part*/
-                    ///////////////////////////
-                    miss_stall  =  `DISABLE;
+                    miss_stall    =  `DISABLE;  
+                    block0_we     = `DISABLE;
+                    block1_we     = `DISABLE;
                     if(access_mem_ex == `ENABLE) begin
                         nextstate  =  `DC_ACCESS;
+                        block0_re  = `ENABLE;
+                        block1_re  = `ENABLE;
                     end else begin
                         nextstate  =  `DC_IDLE;
                     end
@@ -328,6 +334,8 @@ module dcache_ctrl(
                 end        
             end
             `DC_WRITE_L2:begin // load dirty block to L2,THEN read l2 to l1.
+                block0_re  = `DISABLE;
+                block1_re  = `DISABLE;
                 if (l2_complete == `ENABLE) begin
                     l2_cache_rw =  `READ;  
                     l2_addr     =  addr[29:2]; 
