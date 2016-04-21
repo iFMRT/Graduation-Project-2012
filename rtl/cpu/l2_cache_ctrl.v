@@ -218,16 +218,24 @@ module l2_cache_ctrl(
         /*state control part*/
         case(state)
             `L2_IDLE:begin
-                l2_block0_re  = `ENABLE;
-                l2_block1_re  = `ENABLE; 
-                l2_block2_re  = `ENABLE;
-                l2_block3_re  = `ENABLE;
+                l2_block0_re  = `DISABLE;
+                l2_block1_re  = `DISABLE; 
+                l2_block2_re  = `DISABLE;
+                l2_block3_re  = `DISABLE;
                 if (irq == `ENABLE) begin  
-                    nextstate  = `ACCESS_L2;
-                    ic_en      = `ENABLE;
+                    nextstate     = `ACCESS_L2;
+                    ic_en         = `ENABLE;
+                    l2_block0_re  = `ENABLE;
+                    l2_block1_re  = `ENABLE; 
+                    l2_block2_re  = `ENABLE;
+                    l2_block3_re  = `ENABLE;
                 end else if (drq == `ENABLE) begin  
-                    nextstate  = `ACCESS_L2;
-                    dc_en      = `ENABLE;
+                    nextstate     = `ACCESS_L2;
+                    dc_en         = `ENABLE;
+                    l2_block0_re  = `ENABLE;
+                    l2_block1_re  = `ENABLE; 
+                    l2_block2_re  = `ENABLE;
+                    l2_block3_re  = `ENABLE;
                 end else begin
                     nextstate  = `L2_IDLE;
                 end    
@@ -468,15 +476,7 @@ module l2_cache_ctrl(
                 end
             end
             `WRITE_TO_L2_CLEAN:begin // write into l2_cache from memory 
-                l2_block0_re  = `DISABLE;
-                l2_block1_re  = `DISABLE; 
-                l2_block2_re  = `DISABLE;
-                l2_block3_re  = `DISABLE;
                 if(l2_complete == `ENABLE)begin
-                    l2_block0_re  = `ENABLE;
-                    l2_block1_re  = `ENABLE; 
-                    l2_block2_re  = `ENABLE;
-                    l2_block3_re  = `ENABLE; 
                     l2_block0_we  = `DISABLE;
                     l2_block1_we  = `DISABLE; 
                     l2_block2_we  = `DISABLE;
@@ -507,14 +507,10 @@ module l2_cache_ctrl(
                     // l2_busy        = `DISABLE; 
                     ic_en          = `DISABLE;
                     dc_en          = `DISABLE;
-                    l2_block0_re  = `ENABLE;
-                    l2_block1_re  = `ENABLE; 
-                    l2_block2_re  = `ENABLE;
-                    l2_block3_re  = `ENABLE;
-                    l2_block0_we  = `DISABLE;
-                    l2_block1_we  = `DISABLE;
-                    l2_block2_we  = `DISABLE;
-                    l2_block3_we  = `DISABLE;
+                    l2_block0_we   = `DISABLE;
+                    l2_block1_we   = `DISABLE;
+                    l2_block2_we   = `DISABLE;
+                    l2_block3_we   = `DISABLE;
                     if (l2_cache_rw == `READ) begin
                         mem_wr_dc_en  = `DISABLE;
                         mem_wr_ic_en  = `DISABLE;

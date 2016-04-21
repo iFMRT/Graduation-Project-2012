@@ -722,7 +722,7 @@ module dcache_write_test();
                 1'b1                                       // complete write from L2 to L1
                 );
             data_ram_tb(
-                128'h0876547A_00000000_ABF00000_123BC000,  // read data of cache_data0
+                128'h0876547A_00000000_ABF00000_0000123B,  // read data of cache_data0
                 128'hx                                     // read data of cache_data1
                 ); 
         end
@@ -910,7 +910,7 @@ module dcache_write_test();
                 );
             data_ram_tb(
                 128'h0876547A_00000000_ABF00000_0000123B,  // read data of cache_data0
-                128'h0876547A_00000000_ABF00000_00000000   // read data of cache_data1
+                128'h0876547A_00000000_ABF00000_0004A985   // read data of cache_data1
                 );
         end
         #STEP begin // l1_IDLE & l2_IDLE          

@@ -184,7 +184,7 @@ module l2_data_ram(
         .clock    (clk),
         .address  (l2_index),
         .wren     (wr0_en0),
-        .rden     (l2_block1_re),
+        .rden     (l2_block0_re),
         .q        (l2_data0_rd[127:0]),
         .data     (l2_data_wd[127:0])
         );
@@ -192,7 +192,7 @@ module l2_data_ram(
         .clock    (clk),
         .address  (l2_index),
         .wren     (wr0_en1),
-        .rden     (l2_block1_re),
+        .rden     (l2_block0_re),
         .q        (l2_data0_rd[255:128]),
         .data     (l2_data_wd[255:128])
         );
@@ -200,7 +200,7 @@ module l2_data_ram(
         .clock    (clk),
         .address  (l2_index),
         .wren     (wr0_en2),
-        .rden     (l2_block1_re),
+        .rden     (l2_block0_re),
         .q        (l2_data0_rd[383:256]),
         .data     (l2_data_wd[383:256])
         );
@@ -208,7 +208,7 @@ module l2_data_ram(
         .clock    (clk),
         .address  (l2_index),
         .wren     (wr0_en3),
-        .rden     (l2_block1_re),
+        .rden     (l2_block0_re),
         .q        (l2_data0_rd[511:384]),
         .data     (l2_data_wd[511:384])
         );

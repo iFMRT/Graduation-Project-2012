@@ -88,7 +88,6 @@ module dcache_test();
     wire     [2:0]   plru;          // read data of tag
     wire             l2_complete;   // complete write from MEM to L2
     // l2_data_ram
-    wire     [511:0] l2_data_wd;     // write data of l2_cache
     wire     [511:0] l2_data0_rd;    // read data of cache_data0
     wire     [511:0] l2_data1_rd;    // read data of cache_data1
     wire     [511:0] l2_data2_rd;    // read data of cache_data2
@@ -665,14 +664,14 @@ module dcache_test();
                 1'b0                                      // dirty_wd
                 );
             tag_ram_tb(
-                21'bx,                                     // read data of tag0
-                21'bx,                                     // read data of tag1
-                1'bx,                                      // number of replacing block of tag next time
-                1'b1                                       // complete write from L2 to L1
+                21'b1_0000_0000_0000_0000_1110,             // read data of tag0
+                21'bx,                                      // read data of tag1
+                1'b1,                                       // number of replacing block of tag next time
+                1'b1                                        // complete write from L2 to L1
                 );
             data_ram_tb(
-                128'hx,                                    // read data of cache_data0
-                128'hx                                     // read data of cache_data1
+                128'h0876547A_00000000_ABF00000_123BC000,   // read data of cache_data0
+                128'hx                                      // read data of cache_data1
                 );  
         end
         #STEP begin // DC_IDLE  & l2_IDLE        

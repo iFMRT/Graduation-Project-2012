@@ -143,8 +143,6 @@ module icache_ctrl(
                 if(ic_en == `ENABLE) begin
                     /* write l1 part */
                     ic_rw_en   = `ENABLE;
-                    block0_re  = `DISABLE;
-                    block1_re  = `DISABLE;
                     if(l2_rdy == `ENABLE || mem_wr_ic_en == `ENABLE)begin
                         nextstate  = `WRITE_IC;
                         case(choose_way)
@@ -179,8 +177,6 @@ module icache_ctrl(
                 end    
             end
             `WAIT_L2_BUSY:begin
-                block0_re  = `DISABLE;
-                block1_re  = `DISABLE;
                 if(ic_en == `ENABLE) begin
                     nextstate   = `IC_ACCESS_L2;
                 end else begin
@@ -194,8 +190,6 @@ module icache_ctrl(
                     irq        = `DISABLE;
                     miss_stall = `DISABLE;
                     nextstate  = `IC_ACCESS;
-                    block0_re  = `ENABLE;
-                    block1_re  = `ENABLE;
                 end else begin
                     nextstate  = `WRITE_IC;
                 end      
