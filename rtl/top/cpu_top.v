@@ -14,10 +14,8 @@
 `include "dcache.h"
 
 module cpu_top(
-    input                  clk,             // Clock
-    input                  clk_tmp,         // temporary clock of L2C
-    input                  clk_mem,
-    input                  rst,             // Asynchronous Reset
+    input                  clk,             // clock
+    input                  rst,             //  reset
     /*memory part*/
     input    [511:0]       mem_rd,
     output   [511:0]       mem_wd,
@@ -26,6 +24,7 @@ module cpu_top(
     );
     /********** memory part **********/
     wire                   mem_complete;
+    wire                   clk_mem;
     /**********  Pipeline  Register **********/
     // IF/ID
     wire [`WORD_DATA_BUS]  if_pc;          // Next Program count
@@ -102,12 +101,12 @@ module cpu_top(
     /********** Forward  Signal **********/
     wire [`WORD_DATA_BUS]  ex_fwd_data;     // EX Stage
     wire [`WORD_DATA_BUS]  mem_fwd_data;    // MEM Stage
-    /* CPU part */ 
+    /* cach part */ 
+    wire                   clk_l2;
     wire [27:0]            l2_addr_ic;  
     wire [27:0]            l2_addr_dc; 
     wire                   l2_cache_rw_ic;
     wire                   l2_cache_rw_dc;
-    /*cache part*/
     wire                   irq;
     wire                   drq;
     wire                   ic_rw_en;         // write enable signal
@@ -120,6 +119,8 @@ module cpu_top(
     wire [127:0]           rd_to_l2;
     wire [17:0]            l2_tag_wd;        // write data of tag
     wire                   l2_rdy;           // ready mark of L2C
+    wire                   ic_en;            
+    wire                   dc_en;            
     wire [8:0]             l2_index;
     wire [1:0]             l2_offset;
     /*icache part*/
@@ -191,6 +192,14 @@ module cpu_top(
     wire                   data_rdy;
     wire                   mem_wr_dc_en;
     wire                   mem_wr_ic_en;
+    
+    /*********** Clock ************/
+    clk_n clk_n(
+        .clk            (clk),           // clock
+        .rst            (rst),           // reset
+        .clk_2          (clk_l2),        // two divided-frequency clock
+        .clk_4          (clk_mem)        // four divided-frequency clock
+        );
     /********** IF Stage **********/
     if_stage if_stage(
         .clk            (clk),              // clock
@@ -211,7 +220,7 @@ module cpu_top(
         .block1_re      (block1_re_ic),     // read signal of block1
         .index          (index_ic),         // address of L1_cache
         /* l2_cache part */
-        .l2_busy        (l2_busy),          // busy signal of l2_cache
+        .ic_en          (ic_en),            // busy signal of l2_cache
         .l2_rdy         (l2_rdy),           // ready signal of l2_cache
         .mem_wr_ic_en   (mem_wr_ic_en),
         .complete       (complete_ic),      // complete op writing to L1
@@ -368,7 +377,7 @@ module cpu_top(
         .index          (index_dc),      // address of L1_cache
         .wr_data_m      (wr_data_m),
         /* l2_cache part */
-        .l2_busy        (l2_busy),       // busy signal of l2_cache
+        .dc_en          (dc_en),         // busy signal of l2_cache
         .l2_rdy         (l2_rdy),        // ready signal of l2_cache
         .mem_wr_dc_en   (mem_wr_dc_en), 
         .complete       (complete_dc),   // complete op writing to L1
@@ -419,7 +428,8 @@ module cpu_top(
         /*l2_cache part*/
         .l2_complete    (l2_complete),   // complete write from MEM to L2
         .l2_rdy         (l2_rdy),
-        .l2_busy        (l2_busy),
+        .ic_en          (ic_en),         // busy signal of l2_cache
+        .dc_en          (dc_en),         // busy signal of l2_cache
         // l2_tag part
         .plru           (plru),          // replace mark
         .l2_tag0_rd     (l2_tag0_rd),    // read data of tag0
@@ -448,6 +458,7 @@ module cpu_top(
         .l2_dirty3      (l2_dirty3),         
         /*memory part*/
         .mem_complete   (mem_complete),
+        .mem_rd         (mem_rd),
         .mem_wd         (mem_wd), 
         .mem_addr       (mem_addr),       // address of memory
         .mem_rw         (mem_rw)          // read / write signal of memory
@@ -502,7 +513,7 @@ module cpu_top(
     /**********   Cache Ram   **********/
     mem mem(
         .clk        (clk_mem),           // Clock
-        .rst        (rst),               // Asynchronous reset active low
+        .rst        (rst),               // Reset active low
         .rw         (mem_rw),
         .complete   (mem_complete)
       );
@@ -563,7 +574,7 @@ module cpu_top(
         .data1_rd       (data1_rd_ic)    // read data of cache_data1
     );
     l2_data_ram l2_data_ram(
-        .clk            (clk_tmp),       // clock of L2C
+        .clk            (clk_l2),        // clock of L2C
         .l2_index       (l2_index),      // address of cache
         .mem_rd         (mem_rd),
         .offset         (l2_offset),
@@ -585,7 +596,7 @@ module cpu_top(
         .l2_data3_rd    (l2_data3_rd)    // read data of cache_data3
     );
     l2_tag_ram l2_tag_ram(    
-        .clk            (clk_tmp),       // clock of L2C
+        .clk            (clk_l2),        // clock of L2C
         .l2_index       (l2_index),      // address of cache
         .l2_tag_wd      (l2_tag_wd),     // write data of tag
         .l2_block0_we   (l2_block0_we),  // write signal of block0

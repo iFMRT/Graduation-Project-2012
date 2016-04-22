@@ -70,7 +70,7 @@ module icache_if_test();
     wire             mem_rw;        // read / write signal of memory
     wire     [511:0] mem_wd;
     reg      [511:0] mem_rd;
-    reg              mem_complete;
+    wire             mem_complete;
     wire             clk_mem;        // temporary clock of L2C
     // tag_ram part
     wire     [20:0]  tag0_rd;       // read data of tag0

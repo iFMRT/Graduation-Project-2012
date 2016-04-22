@@ -12,15 +12,14 @@ module clk_n(
 	always @(posedge clk) begin
 		if (rst == `ENABLE) begin
 			clk_2 = `LOW;
+			clk_4 = `LOW;
 		end else begin
 			clk_2 = ~clk_2;
 		end
 	end
 
 	always @(posedge clk_2) begin
-		if (rst == `ENABLE) begin
-			clk_4 = `LOW;
-		end else begin
+		if (rst != `ENABLE) begin
 			clk_4 = ~clk_4;
 		end
 	end

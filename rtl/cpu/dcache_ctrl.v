@@ -125,6 +125,7 @@ module dcache_ctrl(
     always @(*) begin
         case(state)
             `DC_IDLE:begin
+                miss_stall = `DISABLE;
                 block0_re  = `DISABLE;
                 block1_re  = `DISABLE;
                 if (access_mem == `ENABLE || access_mem_ex == `ENABLE) begin 
