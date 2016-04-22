@@ -16,21 +16,21 @@
 
 module if_reg(
     /******** Clock & Rest ********/
-    input                   clk,         // Clk
-    input                   reset,       // Reset
-    /******** Read Instruction ********/
-    input  [`WORD_DATA_BUS] insn,        // Reading instruction
-    input                   stall,       // Stall
-    input                   data_rdy, // tag hit mark
-    input                   flush,       // Flush
-    input  [`WORD_DATA_BUS] new_pc,      // New value of program counter
-    input                   br_taken,                    // Branch taken
-    input  [`WORD_DATA_BUS] br_addr,     // Branch target
+    input                       clk,         // Clk
+    input                       reset,       // Reset
+    /***** Read Instruction ******/
+    input      [`WORD_DATA_BUS] insn,        // Reading instruction
+    input                       stall,       // Stall
+    input                       data_rdy,    // tag hit mark
+    input                       flush,       // Flush
+    input      [`WORD_DATA_BUS] new_pc,      // New value of program counter
+    input                       br_taken,    // Branch taken
+    input      [`WORD_DATA_BUS] br_addr,     // Branch target
 
-    output reg [`WORD_DATA_BUS] pc,      // Current Program counter
-    output reg [`WORD_DATA_BUS] if_pc,   // Next Program counter
-    output reg [`WORD_DATA_BUS] if_insn, // Instruction
-    output reg                  if_en    // Effective mark of pipeline
+    output reg [`WORD_DATA_BUS] pc,          // Current Program counter
+    output reg [`WORD_DATA_BUS] if_pc,       // Next Program counter
+    output reg [`WORD_DATA_BUS] if_insn,     // Instruction
+    output reg                  if_en        // Effective mark of pipeline
 );
 
     always @(posedge clk) begin    

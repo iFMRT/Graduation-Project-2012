@@ -17,7 +17,7 @@ module  dpram_sim (
     input         clock_b,          // Clock
     input [11:0]  address_b,        // Address
     input [31:0]  data_b,           // Write data
-    input         wren_b,            // Write enable
+    input         wren_b,           // Write enable
     output [31:0] q_b               // Read data
 );
     

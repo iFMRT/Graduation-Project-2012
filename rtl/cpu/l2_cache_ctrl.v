@@ -45,7 +45,6 @@ module l2_cache_ctrl(
     output reg          ic_en,
     output reg          dc_en,
     // l2_tag part
-    // output reg          plru_re,
     output reg          l2_block0_we,        // the mark of cache_block0 write signal 
     output reg          l2_block1_we,        // the mark of cache_block1 write signal 
     output reg          l2_block2_we,        // the mark of cache_block2 write signal 
@@ -84,7 +83,6 @@ module l2_cache_ctrl(
     reg                 hitway1;            // the mark of choosing path1
     reg                 hitway2;            // the mark of choosing path0 
     reg                 hitway3;            // the mark of choosing path1
-    // reg                 tagcomp_hit;        // tag hit mark
     reg         [2:0]   nextstate,state;              // state of l2_icache
     reg         [1:0]   choose_way;
     reg                 valid;
@@ -241,6 +239,7 @@ module l2_cache_ctrl(
                 end    
             end
             `ACCESS_L2:begin
+                // l2_busy = `ENABLE;
                 // read hit
                 if ( l2_cache_rw == `READ && tagcomp_hit == `ENABLE) begin 
                     // read l2_block ,write to l1
@@ -331,7 +330,7 @@ module l2_cache_ctrl(
                         nextstate   = `ACCESS_L2;
                     end
                 end else if( l2_cache_rw == `WRITE && tagcomp_hit == `ENABLE) begin // write hit
-                    // // write dirty block of l1 into l2_cache
+                    // write dirty block of l1 into l2_cache
                     nextstate     = `L2_WRITE_HIT;
                     l2_dirty_wd   = 1'b1;
                     wd_from_l1_en = `ENABLE;
@@ -350,7 +349,6 @@ module l2_cache_ctrl(
                         end // hitway == 11
                     endcase // case(hitway) 
                 end else begin // cache miss
-                    // plru_re = `ENABLE;
                     // read mem_block ,write to l1 and l2
                     if (valid == `DISABLE || dirty == `DISABLE) begin
                         /* write l2 part */ 
@@ -421,7 +419,6 @@ module l2_cache_ctrl(
                 end
             end
             `WRITE_MEM:begin // load block of L2 with dirty to mem,then read mem to l2.                 
-                // plru_re = `DISABLE;
                 if (mem_complete == `ENABLE) begin
                     /* read mem and write l2 part */ 
                     mem_addr       = l2_addr[27:2];

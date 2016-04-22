@@ -63,7 +63,7 @@ module icache_test();
     wire             mem_rw;        // read / write signal of memory
     wire     [511:0] mem_wd;
     reg      [511:0] mem_rd;
-    reg              mem_complete;
+    wire             mem_complete;
     // tag_ram part
     wire     [20:0]  tag0_rd;       // read data of tag0
     wire     [20:0]  tag1_rd;       // read data of tag1
@@ -90,11 +90,24 @@ module icache_test();
     wire             l2_dirty1;
     wire             l2_dirty2;
     wire             l2_dirty3;
-    reg              clk_tmp;        // temporary clock of L2C
+    wire             clk_l2;         // temporary clock of L2C
+    wire             clk_mem;        // temporary clock of L2C
     wire             data_rdy;
     wire             mem_wr_dc_en;
     wire             mem_wr_ic_en;
     
+    clk_n clk_n(
+        .clk            (clk),           // clock
+        .rst            (rst),           // reset
+        .clk_2          (clk_l2),        // two divided-frequency clock
+        .clk_4          (clk_mem)        // four divided-frequency clock
+        );
+    mem mem(
+        .clk            (clk_mem),       // clock
+        .rst            (rst),           // reset active  
+        .rw             (mem_rw),
+        .complete       (mem_complete)
+        );
     icache_ctrl icache_ctrl(
         .clk            (clk),           // clock
         .rst            (rst),           // reset
@@ -214,7 +227,7 @@ module icache_test();
         .data1_rd       (data1_rd)       // read data of cache_data1
     );
     l2_data_ram l2_data_ram(
-        .clk            (clk_tmp),       // clock of L2C
+        .clk            (clk_l2),       // clock of L2C
         .l2_index       (l2_index),
         .mem_rd         (mem_rd),
         .offset         (l2_offset),
@@ -236,7 +249,7 @@ module icache_test();
         .l2_data3_rd    (l2_data3_rd)    // read data of cache_data3
     );
     l2_tag_ram l2_tag_ram(    
-        .clk            (clk_tmp),       // clock of L2C
+        .clk            (clk_l2),       // clock of L2C
         .l2_block0_we   (l2_block0_we),  // write signal of block0
         .l2_block1_we   (l2_block1_we),  // write signal of block1
         .l2_block2_we   (l2_block2_we),  // write signal of block2
@@ -502,18 +515,12 @@ module icache_test();
     always #(STEP / 2)
         begin
             clk = ~clk;  
-        end
-    always #STEP
-        begin
-            clk_tmp = ~clk_tmp;  
-        end          
+        end      
     /********** Testbench **********/
     initial begin
         #0 begin
             clk     <= `ENABLE;
-            clk_tmp <= `ENABLE;
             rst     <= `ENABLE;
-
         end
         #(STEP * 3/4)
         #STEP begin 
@@ -665,6 +672,6 @@ module icache_test();
     /********** output wave **********/
     initial begin
         $dumpfile("icache.vcd");
-        $dumpvars(0,icache_ctrl,itag_ram,idata_ram,l2_tag_ram,l2_data_ram,l2_cache_ctrl);
+        $dumpvars(0,icache_ctrl,clk_n,mem,itag_ram,idata_ram,l2_tag_ram,l2_data_ram,l2_cache_ctrl);
     end
 endmodule 

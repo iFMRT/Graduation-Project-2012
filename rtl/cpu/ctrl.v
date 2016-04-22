@@ -21,11 +21,9 @@
 /********** module **********/
 module ctrl (
     /********* pipeline control signals ********/
-    // input                         rst,
     //  State of Pipeline
     input  wire                   if_busy,      // IF busy mark // miss stall of if_stage
     input  wire                   br_taken,    // branch hazard mark
-//  input  wire                   br_flag,      // branch instruction flag
     input  wire                   mem_busy,     // MEM busy mark // miss stall of mem_stage
 
     /********** Data Forward **********/
@@ -71,13 +69,8 @@ module ctrl (
 
     reg     ld_hazard;       // LOAD hazard
     wire    stall;
-    /********** pipeline control **********/
+    /********** pipeline control **********/    
     // stall
-    // assign if_stall  = ld_hazard;
-    // assign id_stall  = `DISABLE;
-    // assign ex_stall  = `DISABLE;
-    // assign mem_stall = `DISABLE;
-    
     assign stall     = if_busy | mem_busy;
     assign if_stall  = stall   | ld_hazard;
     assign id_stall  = stall;
@@ -89,25 +82,11 @@ module ctrl (
     assign id_flush  = ld_hazard | br_taken;
     assign ex_flush  = `DISABLE;
     assign mem_flush = `DISABLE;
-//  reg    flush;
-//  assign if_flush  = flush | br_taken;
-//  assign id_flush  = flush | ld_hazard | br_taken;
-//  assign ex_flush  = flush;
-//  assign mem_flush = flush;
 
     assign new_pc = `WORD_DATA_W'h0;
-//  always @(*) begin
-//     /* default */
-//     new_pc = `WORD_DATA_W'h0;
-
-//     flush  = `DISABLE;
-//  end
 
     /********** Forward **********/
     always @(*) begin
-        // if (rst == `ENABLE) begin
-        //     ld_hazard = `DISABLE;
-        // end
         /* Forward Ra */
         if( (id_en           == `ENABLE)  &&
             (id_gpr_we_      == `ENABLE_) &&
@@ -189,7 +168,7 @@ module ctrl (
 
     end
 
-    // /********** Check Load hazard **********/
+    /********** Check Load hazard **********/
     always @(*) begin
         if ((id_en        == `ENABLE)         &&
             (id_gpr_we_   == `ENABLE_)        &&   // load must enable id_gpr_we_

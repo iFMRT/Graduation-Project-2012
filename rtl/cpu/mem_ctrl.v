@@ -6,34 +6,32 @@
 
 /********** Memory Access Control Module **********/
 module mem_ctrl (
-    /********** EX/MEM Pipeline Register **********/
-    input wire                   ex_en,          // If Pipeline data enable
-    input wire  [`MEM_OP_BUS]    ex_mem_op,      // Memory operation
-    input wire  [`WORD_DATA_BUS] ex_mem_wr_data, // Memory write data
-    input wire  [`WORD_DATA_BUS] ex_out,         // EX stage operating result
-    /********** Memory Access Interface **********/
-    // input wire [`WORD_DATA_BUS]  rd_data,        // Read data
-    input wire  [`WORD_DATA_BUS] read_data_m,        // Read data
-    output wire [`WORD_DATA_BUS] addr,           // address
-    // output reg                   as_,            // Address strobe
-    output reg                   rw,             // Read/Write
-    output reg  [`WORD_DATA_BUS] wr_data,        // Write data
-    input wire                   hitway,         // path hit mark           
-    input wire  [127:0]          data0_rd,       // read data of data cache'path0     
-    input wire  [127:0]          data1_rd,       // read data of data cache'path1     
+    /***** EX/MEM Pipeline Register *****/
+    input  wire                   ex_en,          // If Pipeline data enable
+    input  wire  [`MEM_OP_BUS]    ex_mem_op,      // Memory operation
+    input  wire  [`WORD_DATA_BUS] ex_mem_wr_data, // Memory write data
+    input  wire  [`WORD_DATA_BUS] ex_out,         // EX stage operating result
+    /***** Memory Access Interface ******/
+    input  wire  [`WORD_DATA_BUS] read_data_m,    // Read data
+    output wire  [`WORD_DATA_BUS] addr,           // address
+    output reg                    rw,             // Read/Write
+    output reg   [`WORD_DATA_BUS] wr_data,        // Write data
+    input  wire                   hitway,         // path hit mark           
+    input  wire  [127:0]          data0_rd,       // read data of data cache'path0     
+    input  wire  [127:0]          data1_rd,       // read data of data cache'path1     
     /********** Memory Access  **********/
-    output reg [`WORD_DATA_BUS]  out ,           // Memory access result
-    output reg                   miss_align      // miss align
+    output reg  [`WORD_DATA_BUS]  out ,           // Memory access result
+    output reg                    miss_align      // miss align
 );
 
-    /********** Internal Signal **********/
-    wire [`BYTE_OFFSET_BUS]      offset;         // Byte offset
+    /********* Internal Signal **********/
+    wire [`BYTE_OFFSET_BUS]      offset;          // Byte offset
 
-    /********** Output Assignment **********/
+    /******** Output Assignment *********/
     assign addr    = ex_out;
     assign offset  = ex_out[`BYTE_OFFSET_LOC];
 
-    /********** Memory Access Control **********/
+    /****** Memory Access Control *******/
     always @(*) begin
         /* Default Value */
         miss_align = `DISABLE;
@@ -140,7 +138,6 @@ module mem_ctrl (
                     end
                 end
                 `MEM_OP_SB : begin                              // Write a byte
-                    // wr_data    = { rd_data[31:8], ex_mem_wr_data[7:0]};
                     case (hitway)
                         `WAY0:begin
                             case (offset)
@@ -176,7 +173,6 @@ module mem_ctrl (
                         end // hitway == 1
                     endcase
                     rw   = `WRITE;
-                    // as_        = `ENABLE_;
                 end
                 default : begin                             // No memory accessS
                     out  = ex_out;

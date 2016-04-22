@@ -14,32 +14,32 @@
 `include "ex_stage.h"
 
 module decoder (
-    /********** IF/ID Pipeline Register **********/
+    /**** IF/ID Pipeline Register *****/
     input wire [`WORD_DATA_BUS]  if_pc,          // Program counter
     input wire [`WORD_DATA_BUS]  pc,             // Jump and link return address
     input wire [`WORD_DATA_BUS]  if_insn,        // Instruction
     input wire                   if_en,          // Pipeline data enable
 
     
-    /********** Two Operand **********/
+    /********** Two Operand ***********/
     input wire [`WORD_DATA_BUS]  ra_data,        // The first operand
     input wire [`WORD_DATA_BUS]  rb_data,        // The two operand
-    /********** GPR Interface **********/
+    /********** GPR Interface *********/
     output wire [`REG_ADDR_BUS]  gpr_rd_addr_0,  // Read address 0
     output wire [`REG_ADDR_BUS]  gpr_rd_addr_1,  // Read address 1
 
-    /********** 解码结果 **********/
-    output reg [`ALU_OP_BUS]      alu_op,         // ALU 操作
-    output reg [`WORD_DATA_BUS]   alu_in_0,       // ALU 输入 0
-    output reg [`WORD_DATA_BUS]   alu_in_1,       // ALU 输入 1
-    output reg [`CMP_OP_BUS]      cmp_op,         // CMP 操作
-    output reg [`WORD_DATA_BUS]   cmp_in_0,       // CMP 输入 0
-    output reg [`WORD_DATA_BUS]   cmp_in_1,       // CMP 输入 1
-    output reg                    jump_taken,     // 跳转成立
-//  output reg                    br_flag,        // 分支标志位
+    /*********** Decode Result *************/
+    output reg [`ALU_OP_BUS]      alu_op,         // ALU opcode
+    output reg [`WORD_DATA_BUS]   alu_in_0,       // ALU input 0
+    output reg [`WORD_DATA_BUS]   alu_in_1,       // ALU input 1
+    output reg [`CMP_OP_BUS]      cmp_op,         // CMP opcode
+    output reg [`WORD_DATA_BUS]   cmp_in_0,       // CMP input 0
+    output reg [`WORD_DATA_BUS]   cmp_in_1,       // CMP input 1
+    output reg                    jump_taken,     // Jump enable signal
+//  output reg                    br_flag,        // Branch signal
    
     output reg [`MEM_OP_BUS]      mem_op,         // Mem operation
-    output wire [`WORD_DATA_BUS]  mem_wr_data,    // mem 写入数据
+    output wire [`WORD_DATA_BUS]  mem_wr_data,    // Mem write data
     output reg  [`EX_OUT_SEL_BUS] gpr_mux_ex,     // ex 阶段的 gpr 写入信号选通
     output reg [`WORD_DATA_BUS]   gpr_wr_data,    // ID 阶段输出的 gpr 输入信号选通
     output wire [`REG_ADDR_BUS]   dst_addr,       // 通用寄存器写入地址

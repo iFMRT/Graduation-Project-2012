@@ -42,7 +42,7 @@ module dcache_mem_test();
     wire     [8:0]   l2_index;
     wire     [1:0]   l2_offset;
     /*cache part*/
-    wire             dc_en;       // busy mark of L2C
+    wire             dc_en;         // busy mark of L2C
     wire     [127:0] rd_to_l2;
     wire             l2_block0_we;  // write signal of block0
     wire             l2_block1_we;  // write signal of block1
@@ -62,6 +62,7 @@ module dcache_mem_test();
     wire     [511:0] mem_wd;
     reg      [511:0] mem_rd;
     wire             mem_complete;
+    wire             clk_mem;
     // tag_ram part
     wire     [20:0]  tag0_rd;       // read data of tag0
     wire     [20:0]  tag1_rd;       // read data of tag1
@@ -97,24 +98,23 @@ module dcache_mem_test();
     wire             l2_dirty2;
     wire             l2_dirty3;
     wire             hitway;
-    reg              clk_tmp;        // temporary clock of L2C
-    reg              clk_mem;
+    wire             clk_l2;         // temporary clock of L2C
     /********* pipeline control signals ********/
     //  State of Pipeline
-    wire                   br_taken;    // branch hazard mark
-    reg                    if_busy;
+    wire                  br_taken;     // branch hazard mark
+    reg                   if_busy;
     /********** Data Forward **********/
-    wire     [1:0]         src_reg_used;
+    wire     [1:0]        src_reg_used;
     // LOAD Hazard
-    wire                   id_en;          // Pipeline Register enable
-    wire [`REG_ADDR_BUS]   id_dst_addr;    // GPR write address
-    wire                   id_gpr_we_;     // GPR write enable
-    wire [`INS_OP_BUS]     op; 
-    wire [`REG_ADDR_BUS]   ra_addr;
-    wire [`REG_ADDR_BUS]   rb_addr;
+    wire                  id_en;        // Pipeline Register enable
+    wire [`REG_ADDR_BUS]  id_dst_addr;  // GPR write address
+    wire                  id_gpr_we_;   // GPR write enable
+    wire [`INS_OP_BUS]    op; 
+    wire [`REG_ADDR_BUS]  ra_addr;
+    wire [`REG_ADDR_BUS]  rb_addr;
     // LOAD STORE Forward
-    wire [`REG_ADDR_BUS]   id_ra_addr;
-    wire [`REG_ADDR_BUS]   id_rb_addr;
+    wire [`REG_ADDR_BUS]  id_ra_addr;
+    wire [`REG_ADDR_BUS]  id_rb_addr;
     // Stall Signal
     wire                  if_stall;     // IF stage stall
     wire                  id_stall;     // ID stage stall
@@ -153,6 +153,12 @@ module dcache_mem_test();
     wire                  mem_gpr_we_;    // General purpose register enable
     wire [`WORD_DATA_BUS] mem_out;
     
+    clk_n clk_n(
+        .clk            (clk),           // clock
+        .rst            (rst),           // reset
+        .clk_2          (clk_l2),        // two divided-frequency clock
+        .clk_4          (clk_mem)        // four divided-frequency clock
+        );
     ctrl ctrl(
         /********* pipeline control signals ********/
         //  State of Pipeline
@@ -317,7 +323,7 @@ module dcache_mem_test();
         .mem_addr       (mem_addr),     // address of memory
         .mem_rw         (mem_rw)        // read / write signal of memory
     );
-     mem mem(
+    mem mem(
         .clk        (clk_mem),    // Clock
         .rst        (rst),    // Asynchronous reset active low
         .rw         (mem_rw),
@@ -356,7 +362,7 @@ module dcache_mem_test();
         .data1_rd       (data1_rd)       // read data of cache_data1
     );
     l2_data_ram l2_data_ram(
-        .clk            (clk_tmp),       // clock of L2C
+        .clk            (clk_l2),       // clock of L2C
         .l2_index       (l2_index),      // address of cache
         .mem_rd         (mem_rd),
         .offset         (l2_offset),
@@ -378,7 +384,7 @@ module dcache_mem_test();
         .l2_data3_rd    (l2_data3_rd)    // read data of cache_data3
     );
     l2_tag_ram l2_tag_ram(    
-        .clk            (clk_tmp),       // clock of L2C
+        .clk            (clk_l2),        // clock of L2C
         .l2_index       (l2_index),      // address of cache
         .l2_tag_wd      (l2_tag_wd),     // write data of tag
         .l2_block0_we   (l2_block0_we),  // write signal of block0
@@ -700,20 +706,11 @@ module dcache_mem_test();
     always #(STEP / 2)
         begin
             clk <= ~clk;  
-        end
-    always #STEP
-        begin
-            clk_tmp <= ~clk_tmp;  
-        end    
-    always #(2*STEP)
-        begin
-            clk_mem <= ~clk_mem;  
         end      
     /********** Testbench **********/
     initial begin
         #0 begin
             clk     <= `ENABLE;
-            clk_tmp <= `ENABLE;
             rst     <= `ENABLE;
         end
         #(STEP * 3/4)
@@ -866,6 +863,6 @@ module dcache_mem_test();
     /********** output wave **********/
     initial begin
         $dumpfile("dcache_mem_test.vcd");
-        $dumpvars(0,mem_stage,mem,dtag_ram,ddata_ram,l2_tag_ram,l2_data_ram,l2_cache_ctrl);
+        $dumpvars(0,mem_stage,clk_n,mem,dtag_ram,ddata_ram,l2_tag_ram,l2_data_ram,l2_cache_ctrl);
     end
 endmodule 

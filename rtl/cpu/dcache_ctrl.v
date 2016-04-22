@@ -59,7 +59,6 @@ module dcache_ctrl(
 
     reg                hitway0;             // the mark of choosing path0
     reg                hitway1;             // the mark of choosing path1
-    // reg                hitway;
     reg                choose_way;          // the way of L1 we choose to replace
     reg        [3:0]   state,nextstate;     // state of control
     reg                valid,dirty;         // valid signal of tag

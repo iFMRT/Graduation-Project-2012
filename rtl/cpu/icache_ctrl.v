@@ -17,7 +17,6 @@ module icache_ctrl(
     input              clk,           // clock
     input              rst,           // reset
     /* CPU part */
-    // input      [31:0]  if_addr,       // address of fetching instruction
     input      [29:0]  if_addr,       // address of fetching instruction
     input              rw,            // read / write signal of CPU
     output reg [31:0]  cpu_data,      // read data of CPU
@@ -31,7 +30,6 @@ module icache_ctrl(
     input      [127:0] data_wd_l2,     
     // output to L1_cache
     output     [20:0]  tag_wd,        // write data of L1_tag
-    // output reg         lru_re,
     output reg         block0_we,     // write signal of block0
     output reg         block1_we,     // write signal of block1
     output reg         block0_re,     // read signal of block0
@@ -44,7 +42,6 @@ module icache_ctrl(
     input              mem_wr_ic_en,
     output reg         irq,           // icache request
     output reg         ic_rw_en,      // enable signal of writing icache 
-    // output reg [31:0]  l2_addr,
     output     [27:0]  l2_addr,
     output             l2_cache_rw,
     /* if_reg part */
