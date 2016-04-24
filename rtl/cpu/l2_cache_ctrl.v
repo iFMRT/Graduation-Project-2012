@@ -474,10 +474,10 @@ module l2_cache_ctrl(
             end
             `WRITE_TO_L2_CLEAN:begin // write into l2_cache from memory 
                 if(l2_complete == `ENABLE)begin
-                    l2_block0_we  = `DISABLE;
-                    l2_block1_we  = `DISABLE; 
-                    l2_block2_we  = `DISABLE;
-                    l2_block3_we  = `DISABLE; 
+                    l2_block0_we   = `DISABLE;
+                    l2_block1_we   = `DISABLE; 
+                    l2_block2_we   = `DISABLE;
+                    l2_block3_we   = `DISABLE; 
                     wd_from_mem_en = `DISABLE;
                     mem_wr_dc_en   = `DISABLE;
                     mem_wr_ic_en   = `DISABLE;  
@@ -492,7 +492,7 @@ module l2_cache_ctrl(
                         nextstate  = `ACCESS_L2;
                         dc_en      = `ENABLE;
                     end else begin
-                        nextstate   = `L2_IDLE;
+                        nextstate  = `L2_IDLE;
                     end                                        
                 end else begin
                     nextstate  =  `WRITE_TO_L2_CLEAN;
@@ -520,7 +520,7 @@ module l2_cache_ctrl(
                         nextstate  = `ACCESS_L2;
                         dc_en      = `ENABLE;
                     end else begin
-                        nextstate   = `L2_IDLE;
+                        nextstate  = `L2_IDLE;
                     end                                         
                 end else begin
                     nextstate  =  `WRITE_TO_L2_DIRTY_R;

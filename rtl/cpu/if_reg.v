@@ -37,7 +37,7 @@ module if_reg(
         if (reset == `ENABLE) begin
             /******** Reset ********/
             pc      <=  `WORD_DATA_W'h0;
-            if_pc   <=  32'b0;
+            if_pc   <=  `WORD_DATA_W'h0;
             if_insn <=  `ISA_NOP;
             if_en   <=  `DISABLE;
         end else begin
@@ -61,9 +61,9 @@ module if_reg(
                         if_insn <=  insn; 
                         if_en   <=  `ENABLE;
                     end // else: !if(br_taken == `ENABLE)
+                end else begin
+                    if_en   <=  `DISABLE;
                 end 
-            end else begin 
-                if_en <= `DISABLE;
             end
         end // else: !if(reset == `ENABLE)
     end // always @ (posedge clk)

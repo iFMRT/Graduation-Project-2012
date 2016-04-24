@@ -863,6 +863,6 @@ module dcache_mem_test();
     /********** output wave **********/
     initial begin
         $dumpfile("dcache_mem_test.vcd");
-        $dumpvars(0,mem_stage,clk_n,mem,dtag_ram,ddata_ram,l2_tag_ram,l2_data_ram,l2_cache_ctrl);
+        $dumpvars(0,mem_stage,clk_n,ctrl,mem,dtag_ram,ddata_ram,l2_tag_ram,l2_data_ram,l2_cache_ctrl);
     end
 endmodule 

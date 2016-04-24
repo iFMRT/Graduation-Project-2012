@@ -44,29 +44,29 @@ module mem_reg (
             if (stall == `DISABLE) begin
                 /* Update Pipeline Register */
                 if (flush == `ENABLE) begin                // flush
-                    mem_en       <=  `DISABLE;
+                    mem_en       <=  #1 `DISABLE;
                     // mem_br_flag  <=  `DISABLE;
                     // mem_ctrl_op  <=  `CTRL_OP_NOP;
-                    mem_dst_addr <=  `REG_ADDR_W'h0;
-                    mem_gpr_we_  <=  `DISABLE_;
+                    mem_dst_addr <=  #1 `REG_ADDR_W'h0;
+                    mem_gpr_we_  <=  #1 `DISABLE_;
                     // mem_exp_code <=  `ISA_EXP_NO_EXP;
                     mem_out      <=  `WORD_DATA_W'h0;
                 end else if (miss_align == `ENABLE) begin  // Miss align
-                    mem_en       <=  ex_en;
+                    mem_en       <=  #1 ex_en;
                     // mem_br_flag  <=  ex_br_flag;
                     // mem_ctrl_op  <=  `CTRL_OP_NOP;
-                    mem_dst_addr <=  `REG_ADDR_W'h0;
-                    mem_gpr_we_  <=  `DISABLE_;
+                    mem_dst_addr <=  #1 `REG_ADDR_W'h0;
+                    mem_gpr_we_  <=  #1 `DISABLE_;
                     // mem_exp_code <=  `ISA_EXP_MISS_ALIGN;
-                    mem_out      <=  `WORD_DATA_W'h0;
+                    mem_out      <=  #1 `WORD_DATA_W'h0;
                 end else begin                             // Next data
-                    mem_en       <=  ex_en;
+                    mem_en       <=  #1 ex_en;
                     // mem_br_flag  <=  ex_br_flag;
                     // mem_ctrl_op  <=  ex_ctrl_op;
-                    mem_dst_addr <=  ex_dst_addr;
-                    mem_gpr_we_  <=  ex_gpr_we_;
+                    mem_dst_addr <=  #1 ex_dst_addr;
+                    mem_gpr_we_  <=  #1 ex_gpr_we_;
                     // mem_exp_code <=  ex_exp_code;
-                    mem_out      <=  out;
+                    mem_out      <=  #1 out;
                 end
             end
         end

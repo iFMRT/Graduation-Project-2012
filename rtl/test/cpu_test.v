@@ -538,7 +538,7 @@ module cpu_test;
             /******** LUI   r1, 4 IF Stage Test Output ********/
             if_tb(`WORD_DATA_W'h0,              // pc
                   `WORD_DATA_W'h4,              // if_pc
-                  `WORD_DATA_W'h40b7,         // if_insn
+                  `WORD_DATA_W'h40b7,           // if_insn
                   `ENABLE                       // if_en
                  );
 
