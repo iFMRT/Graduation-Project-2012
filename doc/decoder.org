@@ -1,0 +1,403 @@
+* 译码部件（Decoder）
+
+译码部件对输入的指令各个字段进行译码，生成控制信号，给其他流水线阶段提供数据。
+
+#+CAPTION: 信号线一览
+| 信号名       | 信号类型 | 数据类型 | 位宽 | 说明                   |
+|--------------+----------+----------+------+------------------------|
+| pc           | 输入端口 | wire     |   32 | 当前 PC                |
+| if_pc        | 输入端口 | wire     |   32 | 下一 PC                |
+| if_insn      | 输入端口 | wire     |   32 | 当前指令               |
+| if_en        | 输入端口 | wire     |    1 | IF/ID 流水线寄存器有效 |
+|--------------+----------+----------+------+------------------------|
+| ra_data      | 输入端口 | wire     |   32 | 第一个操作数           |
+| rb_data      | 输入端口 | wire     |   32 | 第二个操作数           |
+|--------------+----------+----------+------+------------------------|
+| gpr_ra_addr  | 输出端口 | wire     |    5 | GPR 读取地址 1         |
+| gpr_rb_addr  | 输出端口 | wire     |    5 | GPR 读取地址 2         |
+|--------------+----------+----------+------+------------------------|
+| csr_rd_data  | 输入端口 | wire     |   32 | 从 CSRs 读取数据       |
+| csr_op       | 输出端口 | reg      |    2 | CSRs 操作              |
+| csr_addr     | 输出端口 | wire     |   12 | 访问 CSRs 地址         |
+| csr_wr_data  | 输出端口 | reg      |   32 | 写入 CSRs 的数据       |
+| csr_we       | 输出端口 | reg      |    1 | CSRs 写入使能          |
+|--------------+----------+----------+------+------------------------|
+| alu_op       | 输出端口 | reg      |    4 | ALU 操作               |
+| alu_in_0     | 输出端口 | reg      |   32 | ALU 输入 1             |
+| alu_in_1     | 输出端口 | reg      |   32 | ALU 输入 2             |
+| cmp_op       | 输出端口 | reg      |    3 | CMP 操作               |
+| cmp_in_0     | 输出端口 | reg      |   32 | CMP 输入 1             |
+| cmp_in_1     | 输出端口 | reg      |   32 | CMP 输入 2             |
+| jump_taken   | 输出端口 | reg      |    1 | 无条件跳转是否发生     |
+| mem_op       | 输出端口 | reg      |    4 | 存储器操作             |
+| mem_wr_data  | 输出端口 | wire     |   32 | 写入存储器的数据       |
+| ex_out_sel   | 输出端口 | reg      |    2 | 选择 EX 阶段输出       |
+| gpr_wr_data  | 输出端口 | reg      |   32 | 写入 GPR 的数据        |
+| dst_addr     | 输出端口 | wire     |    5 | 目的寄存器地址         |
+| gpr_we_      | 输出端口 | reg      |    1 | GPR 写入使能           |
+| is_jalr      | 输出端口 | reg      |    1 | 当前指令是不是 JALR    |
+| exp_code     | 输出端口 | reg      |    6 | 异常原因代码           |
+| op           | 输出端口 | wire     |    7 | 当前指令的操作码       |
+| ra_addr      | 输出端口 | wire     |    5 | 第一个源寄存器的地址   |
+| rb_addr      | 输出端口 | wire     |    5 | 第二个源寄存器的地址   |
+| src_reg_used | 输出端口 | reg      |    2 | 两个源寄存器的使用情况 |
+| is_eret      | 输出端口 | reg      |    1 | 当前指令是不是 ERET    |
+
+** 指令字段的分解
+
+[[file:img/decoder-1.png]]
+
+- 操作码: 指令的 0~6 共7位
+- rd 目的寄存器地址：指令的 7~11 共 5 位
+- funct3 功能码3：指令的 12~14 共3位
+- rs1 源寄存器：指令的 15~19 共5位
+- rs2 源寄存器：指令的 20~24 共 5 位
+- funct7 功能码7：指令的 25~31 共 7 位
+
+[[file:img/decoder-2.png]]
+
+- funct12 功能码 12：指令的 20~31 共 12 位
+
+[[file:img/decoder-3.png]]
+
+- CSRs 访问地址：指令的 20~31 共 12 位
+
+#+BEGIN_SRC verilog
+    assign               op       = if_insn[6:0];
+    assign               ra_addr  = if_insn[19:15];  // Ra address
+    assign               rb_addr  = if_insn[24:20];  // Rb address
+    assign               dst_addr = if_insn[11:7];   // Rd address
+    wire [`INSN_F3_BUS]  funct3   = if_insn[14:12];  // funct3
+    wire [`INSN_F7_BUS]  funct7   = if_insn[31:25];  // funct7
+    wire [`INSN_F12_BUS] funct12  = if_insn[31:20];  // funct12
+    assign               csr_addr = if_insn[31:20];  // CSRs address
+#+END_SRC
+
+存储器的写入数据来自第二个源寄存器的值，读取 GPR（通用寄存器组）的地址分别来自指令 rs1 和 rs2 字段提供的地址。
+
+#+BEGIN_SRC verilog
+    /********** Source Register Used State **********/
+    assign mem_wr_data  = rs2_data;  // 
+    assign gpr_rs1_addr = rs1_addr;
+    assign gpr_rs2_addr = rs2_addr;
+ #+END_SRC
+
+** 立即数的扩展
+
+#+BEGIN_SRC verilog
+
+/********** Immediate **********/
+// U type
+wire [`WORD_DATA_BUS] imm_u  = {if_insn[31:12],12'b0};
+// I type
+wire [`WORD_DATA_BUS] imm_i  = {{20{if_insn[31]}},if_insn[31:20]};
+// I type shift right immediate
+wire [`WORD_DATA_BUS] imm_ir = {{26{if_insn[31]}},if_insn[24:20]};
+// S type
+wire [`WORD_DATA_BUS] imm_s  = {{20{if_insn[31]}},if_insn[31:25],if_insn[11:7]};
+// B type
+wire [`WORD_DATA_BUS] imm_b  = {{20{if_insn[31]}},if_insn[7],if_insn[30:25],if_insn[11:8],1'b0};
+// J type
+wire [`WORD_DATA_BUS] imm_j  = {{12{if_insn[31]}},if_insn[19:12],if_insn[20],if_insn[30:21],1'b0};
+// rs1 field is used as immediate, zero-extends
+wire [`WORD_DATA_BUS] rs1_zimm = {27'b0, if_insn[19:15]};
+
+#+END_SRC
+
+** 指令分析
+
+*** 信号默认值
+#+BEGIN_SRC verilog
+/* Default */
+src_reg_used = 2'b00;
+alu_op       = `ALU_OP_NOP;
+cmp_op       = `CMP_OP_NOP;
+alu_in_0     = rs1_data;
+alu_in_1     = rs2_data;
+cmp_in_0     = rs1_data;
+cmp_in_1     = rs2_data;
+jump_taken   = `DISABLE;
+mem_op       = `MEM_OP_NOP;
+gpr_we_      = `DISABLE_;
+is_jalr      = `DISABLE;
+ex_out_sel   = `EX_OUT_ALU;
+gpr_wr_data  = if_pc;
+
+exp_code     = `EXP_NO_EXP;
+is_eret      = `DISABLE;
+csr_we       = `ENABLE;
+csr_wr_data  = `WORD_DATA_W'h0;
+#+END_SRC
+
+*** 存储器访问类指令（LD/ST）
+
+- 取数操作（Load）
+
+#+BEGIN_SRC verilog
+/******** Load type ********/
+`OP_LD: begin
+    src_reg_used   = 2'b01; // do not use rs2
+    alu_op  = `ALU_OP_ADD;
+    alu_in_1 = imm_i;
+    gpr_we_ = `ENABLE_;
+    case(funct3)
+        `OP_LD_LB : mem_op = `MEM_OP_LB;  // Load byte
+        `OP_LD_LH : mem_op = `MEM_OP_LH;  // Load half word
+        `OP_LD_LW : mem_op = `MEM_OP_LW;  // Load word
+        `OP_LD_LBU: mem_op = `MEM_OP_LBU; // Load byte unsigned
+        `OP_LD_LHU: mem_op = `MEM_OP_LHU; // Load half word unsigned
+        default   : begin                 // Undefined LD type instruction
+            exp_code = `EXP_ILLEGAL_INSN;
+            $display("ISA LD OP error");
+        end
+    endcase
+end
+#+END_SRC
+
+- 存数操作（Store）
+
+#+BEGIN_SRC verilog
+/******** Store type ********/
+`OP_ST  : begin // SW instruction
+    src_reg_used   = 2'b11;       // use rs1 and rs2
+    alu_op         = `ALU_OP_ADD;
+    alu_in_1       = imm_s;
+    case(funct3)
+        `OP_ST_SB: mem_op = `MEM_OP_SB;
+        `OP_ST_SH: mem_op = `MEM_OP_SH;
+        `OP_ST_SW: mem_op = `MEM_OP_SW;
+        default      : begin      // Undefined instruction
+            exp_code = `EXP_ILLEGAL_INSN;
+            $display("OP_ST error");
+        end
+    endcase
+end
+#+END_SRC
+
+*** 控制流指令
+
+- JALR
+
+#+BEGIN_SRC verilog
+`OP_JALR      : begin       // Jump and Link Register
+    src_reg_used = 2'b01;       // do not use rs2
+    alu_op       = `ALU_OP_ADD;
+    alu_in_1     = imm_i;
+    gpr_we_      = `ENABLE_;
+    is_jalr      = `ENABLE;
+    jump_taken   = `ENABLE;
+    ex_out_sel   = `EX_OUT_PCN; // pc + 4
+    gpr_wr_data  = if_pc;
+end
+#+END_SRC
+  
+- JAL
+
+#+BEGIN_SRC verilog
+`OP_JAL  : begin            // Jump and link
+    src_reg_used = 2'b00;       // do not use rs1 and rs2
+    alu_op       = `ALU_OP_ADD;
+    alu_in_0     = pc;
+    alu_in_1     = imm_j;
+    jump_taken   = `ENABLE;
+    gpr_we_      = `ENABLE_;
+    ex_out_sel   = `EX_OUT_PCN;
+    gpr_wr_data  = if_pc;
+end
+#+END_SRC
+
+- 条件分支指令（Branch）
+
+#+BEGIN_SRC verilog
+`OP_BR    : begin
+    src_reg_used   = 2'b11;     // use rs1 and rs2
+    alu_op   = `ALU_OP_ADD;
+    alu_in_0 = pc;
+    alu_in_1 = imm_b;
+    case(funct3)
+        `OP_BR_BEQ : cmp_op = `CMP_OP_EQ;
+        `OP_BR_BNE : cmp_op = `CMP_OP_NE;
+        `OP_BR_BLT : cmp_op = `CMP_OP_LT;
+        `OP_BR_BGE : cmp_op = `CMP_OP_GE;
+        `OP_BR_BLTU: cmp_op = `CMP_OP_LTU;
+        `OP_BR_BGEU: cmp_op = `CMP_OP_GEU;
+        default    : begin      // Undefined instruction
+            exp_code = `EXP_ILLEGAL_INSN;
+            $display("error");
+        end
+    endcase
+end
+#+END_SRC
+
+*** 运算类指令（ALU）
+
+- Register-Immediate
+
+#+BEGIN_SRC verilog
+`OP_ALSI  : begin
+    src_reg_used = 2'b01;       // do not use rs2
+    gpr_we_      = `ENABLE_;
+    alu_in_1     = imm_i;
+    cmp_in_1     = imm_i;
+    case(funct3)
+        // ADDI instruction
+        `OP_ALSI_ADDI : alu_op = `ALU_OP_ADD;
+        // SLLI instruction
+        `OP_ALSI_SLLI : alu_op = `ALU_OP_SLL;
+        // XORI instruction
+        `OP_ALSI_XORI : alu_op = `ALU_OP_XOR;
+        // ORI instruction
+        `OP_ALSI_ORI  : alu_op = `ALU_OP_OR;
+        // ANDI instruction
+        `OP_ALSI_ANDI : alu_op = `ALU_OP_AND;
+        // SLTI instruction
+        `OP_ALSI_SLTI : begin
+            cmp_op     = `CMP_OP_LT;
+            ex_out_sel = `EX_OUT_CMP;
+        end
+        // SLTIU instruction
+        `OP_ALSI_SLTIU: begin
+            cmp_op     = `CMP_OP_LTU;
+            ex_out_sel = `EX_OUT_CMP;
+        end
+        `OP_ALSI_SRI  : begin
+            case(funct7)
+                //SRLI instruction
+                `OP_ALSI_SRI_SRLI: begin
+                    alu_op     = `ALU_OP_SRL;
+                    alu_in_1   = imm_ir;
+                end
+                //SRAI instruction
+                `OP_ALSI_SRI_SRAI: begin
+                    alu_op     = `ALU_OP_SRA;
+                    alu_in_1   = imm_ir;
+                end
+                // Undefined instruction
+                default          : begin
+                    exp_code = `EXP_ILLEGAL_INSN;
+                    $display("SRI error");
+                end
+            endcase
+        end
+        // undefined instruction
+        default       : begin
+            exp_code = `EXP_ILLEGAL_INSN;
+            $display("OP_ALSI error");
+        end
+    endcase
+end
+#+END_SRC
+
+- Register-Register
+
+#+BEGIN_SRC verilog
+/******** Arithmetic Logic Shift ********/
+`OP_ALS   : begin
+    src_reg_used   = 2'b11;     // use rs1 and rs2
+    gpr_we_        = `ENABLE_;
+    case(funct3)
+        `OP_ALS_AS  : begin
+            case (funct7)
+                //ADD instruction
+                `OP_ALS_AS_ADD: alu_op = `ALU_OP_ADD;
+                //SUB instruction
+                `OP_ALS_AS_SUB: alu_op = `ALU_OP_SUB;
+                // Undefined instruction
+                default       : begin
+                    exp_code = `EXP_ILLEGAL_INSN;
+                    $display("AS error");
+                end
+            endcase
+        end
+        `OP_ALS_SLL : alu_op = `ALU_OP_SLL;
+        `OP_ALS_SLT : begin
+            cmp_op     = `CMP_OP_LT;
+            ex_out_sel = `EX_OUT_CMP;
+        end
+        `OP_ALS_SLTU: begin
+            cmp_op     = `CMP_OP_LTU;
+            ex_out_sel = `EX_OUT_CMP;
+        end
+        `OP_ALS_XOR : alu_op = `ALU_OP_XOR;
+        `OP_ALS_SR  : begin
+            case (funct7)
+                `OP_ALS_SR_SRL: alu_op = `ALU_OP_SRL;
+                `OP_ALS_SR_SRA: alu_op = `ALU_OP_SRA;
+                // Undefined instruction
+                default       : begin
+                    exp_code = `EXP_ILLEGAL_INSN;
+                    $display("SR error");
+                end
+            endcase
+        end
+        `OP_ALS_OR  : alu_op = `ALU_OP_OR;
+        `OP_ALS_AND : alu_op = `ALU_OP_AND;
+        default     : begin // Undefined instruction
+            exp_code = `EXP_ILLEGAL_INSN;
+            $display("AS error");
+        end
+   endcase
+end
+#+END_SRC
+
+- LUI 指令
+
+#+BEGIN_SRC verilog
+/******** LUI instruction ********/
+`OP_LUI  : begin
+    src_reg_used = 2'b00;       // do not use rs1 and rs2
+    gpr_we_      = `ENABLE_;
+    gpr_wr_data  = imm_u;
+    ex_out_sel   = `EX_OUT_PCN;
+end
+#+END_SRC
+
+- LUIPC 指令
+
+#+BEGIN_SRC verilog
+`OP_AUIPC  : begin
+    src_reg_used = 2'b00;       // do not use rs1 and rs2
+    alu_op       = `ALU_OP_ADD;
+    alu_in_0     = pc;
+    alu_in_1     = imm_u;
+    gpr_we_      = `ENABLE_;
+end
+#+END_SRC
+
+*** 特权指令（SPECIAL）
+
+#+BEGIN_SRC verilog
+`OP_SYSTEM: begin
+    if (funct3 == 3'b000) begin
+    // non CSR related SYSTEM instructions
+    case(funct12)
+        `OP_ERET : is_eret = `ENABLE;
+        default  : begin
+            exp_code = `EXP_ILLEGAL_INSN;
+            $display("system instruction error");
+        end
+    endcase
+    end else begin
+        // instruction to read/modify CSR
+        src_reg_used = 2'b01;       // do not use rs2
+        csr_we       = `ENABLE;
+        gpr_we_      = `ENABLE_;
+        ex_out_sel   = `EX_OUT_PCN; // ex output gpr_wr_data
+        gpr_wr_data  = csr_rd_data;
+        
+        if (funct3[2] == 1'b1) begin
+            // rs1 field is used as immediate, zero-extend
+            csr_wr_data = rs1_zimm;
+        end else begin
+            csr_wr_data = rs1_data;
+        end
+        
+        if (funct3[1:0] == 2'b00) begin
+            exp_code = `EXP_ILLEGAL_INSN;
+            $display("CSR OP error");
+        end else begin
+            csr_op   = funct3[1:0];
+        end
+    end
+end
+#+END_SRC
