@@ -101,22 +101,11 @@ module dcache_write_test();
     wire             l2_dirty1;
     wire             l2_dirty2;
     wire             l2_dirty3;
-    wire             clk_l2;         // temporary clock of L2C
-    wire             clk_mem;        // temporary clock of L2C
     wire             mem_wr_dc_en;
     wire             mem_wr_ic_en;
-    clk_2 clk_2(
-        .clk            (clk),           // clock
-        .rst            (rst),           // reset
-        .clk_2          (clk_l2)         // two divided-frequency clock
-        );
-    clk_4 clk_4(
-        .clk_2          (clk_l2),        // clock
-        .rst            (rst),           // reset
-        .clk_4          (clk_mem)        // four divided-frequency clock
-        );
+
     mem mem(
-        .clk            (clk_mem),       // clock
+        .clk            (clk),       // clock
         .rst            (rst),           // reset active  
         .rw             (mem_rw),
         .complete       (mem_complete)
@@ -259,7 +248,7 @@ module dcache_write_test();
         .data1_rd       (data1_rd)            // read data of cache_data1
     );
     l2_data_ram l2_data_ram(
-        .clk            (clk_l2),            // clock of L2C
+        .clk            (clk),                // clock of L2C
         .l2_index       (l2_index),
         .mem_rd         (mem_rd),
         .offset         (l2_offset),
@@ -281,7 +270,8 @@ module dcache_write_test();
         .l2_data3_rd    (l2_data3_rd)         // read data of cache_data3
     );
     l2_tag_ram l2_tag_ram(    
-        .clk            (clk_l2),            // clock of L2C
+        .clk            (clk),                // clock of L2C
+        .rst            (rst),
         .l2_index       (l2_index),
         .l2_block0_we   (l2_block0_we),       // write signal of block0
         .l2_block1_we   (l2_block1_we),       // write signal of block1
@@ -819,9 +809,6 @@ module dcache_write_test();
                 28'b1110_0_110_0001_00_00,                 // l2_addr
                 1'b1                                       // dirty_wd
                 ); 
-        end
-        #STEP begin // WRITE_HIT & WRITE_TO_L2        
-            $display("\n========= Clock 8 ========");
             l2_cache_ctrl_tb(     
                 `DISABLE,                                  // dc_en 
                 128'h0876547A_00000000_ABF00000_00000000,  // data_wd_l2 to L1_IC
@@ -849,6 +836,9 @@ module dcache_write_test();
                 512'bx,                                    // read data of cache_data2
                 512'bx                                     // read data of cache_data3
              );
+        end
+        #STEP begin // WRITE_HIT & L2_IDLE        
+            $display("\n========= Clock 8 ========");                        
             dcache_ctrl_tb(
                 32'bx,                                     // read data of CPU
                 `DISABLE,                                  // the signal of stall caused by cache miss
@@ -1110,7 +1100,7 @@ module dcache_write_test();
     /********** output wave **********/
     initial begin
         $dumpfile("dcache_write_test.vcd");
-        $dumpvars(0,dcache_ctrl,clk_2,clk_4,mem,dtag_ram,ddata_ram,l2_tag_ram,l2_data_ram,l2_cache_ctrl);
+        $dumpvars(0,dcache_ctrl,mem,dtag_ram,ddata_ram,l2_tag_ram,l2_data_ram,l2_cache_ctrl);
     end
 
 endmodule 

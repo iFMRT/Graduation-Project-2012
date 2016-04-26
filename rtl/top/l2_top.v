@@ -13,7 +13,6 @@
 
 module l2_top(
     input            clk,           // Clock
-    input            clk_2,         // clock of L2C
     input            rst,           // Asynchronous Reset
     /*l2_cache part*/
     input    [27:0]  l2_addr_ic,  
@@ -142,7 +141,7 @@ l2_cache_ctrl l2_cache_ctrl(
         .mem_rw         (mem_rw)        // read / write signal of memory
     );
     l2_data_ram l2_data_ram(
-        .clk            (clk_2),        // clock of L2C
+        .clk            (clk),        // clock of L2C
         .l2_index       (l2_index),     // address of cache
         .mem_rd         (mem_rd),
         .offset         (l2_offset),
@@ -164,7 +163,8 @@ l2_cache_ctrl l2_cache_ctrl(
         .l2_data3_rd    (l2_data3_rd)    // read data of cache_data3
     );
     l2_tag_ram l2_tag_ram(    
-        .clk            (clk_2),         // clock of L2C
+        .clk            (clk),         // clock of L2C
+        .rst            (rst),   
         .l2_index       (l2_index),      // address of cache
         .l2_tag_wd      (l2_tag_wd),     // write data of tag
         .l2_block0_we   (l2_block0_we),  // write signal of block0

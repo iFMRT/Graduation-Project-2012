@@ -147,7 +147,6 @@ module dtag_ram(
     reg                 lru_we;         // read / write signal of lru_field
     reg                 lru_wd;         // write data of lru_field
     reg                 lru_re;
-
     always @(*) begin
         if (block0_we == `ENABLE) begin 
             lru_wd   <= 1'b1;
@@ -482,6 +481,7 @@ endmodule
 
 module l2_tag_ram(    
     input               clk,               // clock
+    input               rst,               // clock
     input               l2_block0_we,      // write signal of block0
     input               l2_block1_we,      // write signal of block1
     input               l2_block2_we,      // write signal of block2
@@ -507,7 +507,7 @@ module l2_tag_ram(
     reg                 plru_re; 
     reg                 plru_we;           // read / write signal of plru_field
     reg         [2:0]   plru_wd;           // write data of plru_field
-
+    reg                 i,next_i;
     always @(*) begin
         if (l2_block0_we == `ENABLE) begin
             plru_wd[1:0] <= 2'b11;
@@ -532,11 +532,22 @@ module l2_tag_ram(
         end else begin
             plru_re      <= `DISABLE;
         end
+        if (i == 1'b1) begin
+            next_i = 1'b0;
+        end else begin
+            next_i = 1'b1;
+        end
     end
 
     always @(posedge clk) begin
-        if (l2_block0_we == `ENABLE || l2_block1_we == `ENABLE 
-            || l2_block2_we == `ENABLE || l2_block3_we == `ENABLE) begin
+        if (rst == `ENABLE) begin
+            i <= 1'b0;
+        end else begin
+            i <= next_i;
+        end                
+        if ( i == 1'b0 &&
+            (l2_block0_we == `ENABLE || l2_block1_we == `ENABLE || l2_block2_we == `ENABLE || l2_block3_we == `ENABLE)
+             ) begin
             l2_complete <= `ENABLE;     
         end else begin
             l2_complete <= `DISABLE;

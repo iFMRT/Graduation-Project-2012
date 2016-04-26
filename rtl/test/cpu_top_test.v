@@ -25,7 +25,6 @@ module cpu_top_test;
     wire                   mem_rw;        // read / write signal of memory
     /********** memory part **********/
     wire                   mem_complete;
-    wire                   clk_mem;
     /**********  Pipeline  Register **********/
     // IF/ID
     wire [`WORD_DATA_BUS]  if_pc;          // Next Program count
@@ -103,7 +102,6 @@ module cpu_top_test;
     wire [`WORD_DATA_BUS]  ex_fwd_data;     // EX Stage
     wire [`WORD_DATA_BUS]  mem_fwd_data;    // MEM Stage
     /* cach part */ 
-    wire                   clk_l2;
     wire [27:0]            l2_addr_ic;  
     wire [27:0]            l2_addr_dc; 
     wire                   l2_cache_rw_ic;
@@ -194,17 +192,6 @@ module cpu_top_test;
     wire                   mem_wr_dc_en;
     wire                   mem_wr_ic_en;
     
-    /*********** Clock ************/
-    clk_2 clk_2(
-        .clk            (clk),           // clock
-        .rst            (rst),           // reset
-        .clk_2          (clk_l2)         // two divided-frequency clock
-        );
-    clk_4 clk_4(
-        .clk_2          (clk_l2),        // clock
-        .rst            (rst),           // reset
-        .clk_4          (clk_mem)        // four divided-frequency clock
-        );
     /********** IF Stage **********/
     if_stage if_stage(
         .clk            (clk),              // clock
@@ -517,7 +504,7 @@ module cpu_top_test;
         );
     /**********   Cache Ram   **********/
     mem mem(
-        .clk        (clk_mem),           // Clock
+        .clk        (clk),               // Clock
         .rst        (rst),               // Reset active low
         .rw         (mem_rw),
         .complete   (mem_complete)
@@ -579,7 +566,7 @@ module cpu_top_test;
         .data1_rd       (data1_rd_ic)    // read data of cache_data1
     );
     l2_data_ram l2_data_ram(
-        .clk            (clk_l2),        // clock of L2C
+        .clk            (clk),           // clock of L2C
         .l2_index       (l2_index),      // address of cache
         .mem_rd         (mem_rd),
         .offset         (l2_offset),
@@ -601,7 +588,8 @@ module cpu_top_test;
         .l2_data3_rd    (l2_data3_rd)    // read data of cache_data3
     );
     l2_tag_ram l2_tag_ram(    
-        .clk            (clk_l2),        // clock of L2C
+        .clk            (clk),           // clock of L2C
+        .rst            (rst),              // reset
         .l2_index       (l2_index),      // address of cache
         .l2_tag_wd      (l2_tag_wd),     // write data of tag
         .l2_block0_we   (l2_block0_we),  // write signal of block0
@@ -1587,7 +1575,7 @@ module cpu_top_test;
                );
         end 
         /* First instruction into ID stage*/         
-        #STEP begin // IC_ACCESS(READ HIT third insn) & WRITE_TO_L2_CLEAN & access l2_ram
+        #STEP begin // IC_ACCESS(READ HIT third insn) & l2_IDLE & access l2_ram
             $display("\n========= Clock 4 ========");            
             l2_tag_ram_tb(   
                 18'b1_0000_0000_0000_0000_0,              // read data of tag0
@@ -1595,7 +1583,7 @@ module cpu_top_test;
                 18'bx,                                    // read data of tag2
                 18'bx,                                    // read data of tag3
                 3'bx11,                                   // read data of tag
-                `ENABLE                                   // complete write from L2 to L1
+                `DISABLE                                  // complete write from L2 to L1
                 );
             l2_data_ram_tb(
                 // read data of cache_data0
@@ -2750,7 +2738,7 @@ module cpu_top_test;
   /******** Output Waveform ********/
     initial begin
        $dumpfile("cpu_top_test.vcd");
-       $dumpvars(0,clk_2,clk_4,mem,ctrl,gpr,l2_cache_ctrl,
+       $dumpvars(0,mem,ctrl,gpr,l2_cache_ctrl,
                 dtag_ram,ddata_ram,itag_ram,idata_ram,l2_tag_ram,l2_data_ram,
                 if_stage,id_stage,ex_stage,mem_stage);
     end

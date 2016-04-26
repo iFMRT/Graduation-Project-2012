@@ -100,22 +100,11 @@ module dcache_test();
     wire             l2_dirty2;
     wire             l2_dirty3;
     wire             hitway;
-    wire             clk_l2;         // temporary clock of L2C
-    wire             clk_mem;        // temporary clock of L2C
     wire             mem_wr_dc_en;
     wire             mem_wr_ic_en;
-    clk_2 clk_2(
-        .clk            (clk),           // clock
-        .rst            (rst),           // reset
-        .clk_2          (clk_l2)         // two divided-frequency clock
-        );
-    clk_4 clk_4(
-        .clk_2          (clk_l2),        // clock
-        .rst            (rst),           // reset
-        .clk_4          (clk_mem)        // four divided-frequency clock
-        );
+
     mem mem(
-        .clk            (clk_mem),       // clock
+        .clk            (clk),           // clock
         .rst            (rst),           // reset active  
         .rw             (mem_rw),
         .complete       (mem_complete)
@@ -259,14 +248,14 @@ module dcache_test();
         .data1_rd       (data1_rd)       // read data of cache_data1
     );
     l2_data_ram l2_data_ram(
-        .clk            (clk_l2),       // clock of L2C
+        .clk            (clk),           // clock of L2C
         .l2_index       (l2_index),
         .mem_rd         (mem_rd),
         .offset         (l2_offset),
         .rd_to_l2       (rd_to_l2),
         .wd_from_mem_en (wd_from_mem_en),
         .wd_from_l1_en  (wd_from_l1_en),
-        .tagcomp_hit    (l2_tagcomp_hit),// +++++++++
+        .tagcomp_hit    (l2_tagcomp_hit), 
         .l2_block0_we   (l2_block0_we),  // write signal of block0
         .l2_block1_we   (l2_block1_we),  // write signal of block1
         .l2_block2_we   (l2_block2_we),  // write signal of block2
@@ -281,7 +270,8 @@ module dcache_test();
         .l2_data3_rd    (l2_data3_rd)    // read data of cache_data3
     );
     l2_tag_ram l2_tag_ram(    
-        .clk            (clk_l2),       // clock of L2C
+        .clk            (clk),           // clock of L2C
+        .rst            (rst),
         .l2_index       (l2_index),
         .l2_block0_we   (l2_block0_we),  // write signal of block0
         .l2_block1_we   (l2_block1_we),  // write signal of block1
@@ -730,6 +720,6 @@ module dcache_test();
     /********** output wave **********/
     initial begin
         $dumpfile("dcache.vcd");
-        $dumpvars(0,dcache_ctrl,clk_2,clk_4,mem,dtag_ram,ddata_ram,l2_tag_ram,l2_data_ram,l2_cache_ctrl);
+        $dumpvars(0,dcache_ctrl,mem,dtag_ram,ddata_ram,l2_tag_ram,l2_data_ram,l2_cache_ctrl);
     end
 endmodule 

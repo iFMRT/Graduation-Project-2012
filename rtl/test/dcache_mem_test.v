@@ -62,7 +62,6 @@ module dcache_mem_test();
     wire     [511:0] mem_wd;
     reg      [511:0] mem_rd;
     wire             mem_complete;
-    wire             clk_mem;
     // tag_ram part
     wire     [20:0]  tag0_rd;       // read data of tag0
     wire     [20:0]  tag1_rd;       // read data of tag1
@@ -98,7 +97,6 @@ module dcache_mem_test();
     wire             l2_dirty2;
     wire             l2_dirty3;
     wire             hitway;
-    wire             clk_l2;         // temporary clock of L2C
     /********* pipeline control signals ********/
     //  State of Pipeline
     wire                  br_taken;     // branch hazard mark
@@ -153,16 +151,6 @@ module dcache_mem_test();
     wire                  mem_gpr_we_;    // General purpose register enable
     wire [`WORD_DATA_BUS] mem_out;
     
-    clk_2 clk_2(
-        .clk            (clk),           // clock
-        .rst            (rst),           // reset
-        .clk_2          (clk_l2)         // two divided-frequency clock
-        );
-    clk_4 clk_4(
-        .clk_2          (clk_l2),        // clock
-        .rst            (rst),           // reset
-        .clk_4          (clk_mem)        // four divided-frequency clock
-        );
     ctrl ctrl(
         /********* pipeline control signals ********/
         //  State of Pipeline
@@ -327,8 +315,8 @@ module dcache_mem_test();
         .mem_rw         (mem_rw)        // read / write signal of memory
     );
     mem mem(
-        .clk        (clk_mem),    // Clock
-        .rst        (rst),    // Asynchronous reset active low
+        .clk        (clk_mem),          // Clock
+        .rst        (rst),              // Asynchronous reset active low
         .rw         (mem_rw),
         .complete   (mem_complete)
       );
@@ -351,7 +339,7 @@ module dcache_mem_test();
     data_ram ddata_ram(
         .clk            (clk),           // clock
         .index          (index),         // address of cache
-        .tagcomp_hit    (tagcomp_hit),   // +++++++++
+        .tagcomp_hit    (tagcomp_hit),    
         .block0_we      (block0_we),     // write signal of block0
         .block1_we      (block1_we),     // write signal of block1
         .block0_re      (block0_re),     // read signal of block0
@@ -365,7 +353,7 @@ module dcache_mem_test();
         .data1_rd       (data1_rd)       // read data of cache_data1
     );
     l2_data_ram l2_data_ram(
-        .clk            (clk_l2),       // clock of L2C
+        .clk            (clk),           // clock of L2C
         .l2_index       (l2_index),      // address of cache
         .mem_rd         (mem_rd),
         .offset         (l2_offset),
@@ -387,7 +375,8 @@ module dcache_mem_test();
         .l2_data3_rd    (l2_data3_rd)    // read data of cache_data3
     );
     l2_tag_ram l2_tag_ram(    
-        .clk            (clk_l2),        // clock of L2C
+        .clk            (clk),        // clock of L2C
+        .rst            (rst),
         .l2_index       (l2_index),      // address of cache
         .l2_tag_wd      (l2_tag_wd),     // write data of tag
         .l2_block0_we   (l2_block0_we),  // write signal of block0
@@ -866,6 +855,6 @@ module dcache_mem_test();
     /********** output wave **********/
     initial begin
         $dumpfile("dcache_mem_test.vcd");
-        $dumpvars(0,mem_stage,clk_2,clk_4,ctrl,mem,dtag_ram,ddata_ram,l2_tag_ram,l2_data_ram,l2_cache_ctrl);
+        $dumpvars(0,mem_stage,ctrl,mem,dtag_ram,ddata_ram,l2_tag_ram,l2_data_ram,l2_cache_ctrl);
     end
 endmodule 

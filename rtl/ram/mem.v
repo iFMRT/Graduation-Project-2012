@@ -17,10 +17,31 @@ module mem(
   input      rw,
   output reg complete
 );
+reg  [1:0] i,next_i;
+    always @(*) begin
+      case(i)
+          `CLOCK0:begin
+            next_i = `CLOCK1;
+          end
+          `CLOCK1:begin
+            next_i = `CLOCK2;
+          end
+          `CLOCK2:begin
+            next_i = `CLOCK3;
+          end
+          `CLOCK3:begin
+            next_i = `CLOCK0;
+          end
+      endcase
+    end
     always @(posedge clk) begin
         if(rst == `ENABLE) begin
             complete <= `DISABLE;
-        end else if (rw == `WRITE) begin
+            i        <= `CLOCK0;
+        end else begin
+            i        <= next_i;
+        end 
+        if (i == `CLOCK1 && rw == `WRITE) begin
             complete <= `ENABLE;      
         end else begin
             complete <= `DISABLE;

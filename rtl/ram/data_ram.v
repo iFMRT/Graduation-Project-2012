@@ -21,7 +21,7 @@ module data_ram(
     input      [127:0] data_wd_l2,      // read data of l2_cache
     input              data_wd_l2_en,
     input              data_wd_dc_en,    
-    input      [31:0]  wr_data_m,       
+    input      [31:0]  dc_wd,       
     input      [1:0]   offset,          
     output     [127:0] data0_rd,        // read data of cache_data0
     output     [127:0] data1_rd         // read data of cache_data1
@@ -99,16 +99,16 @@ module data_ram(
         if (data_wd_dc_en == `ENABLE) begin
             case(offset)
                 `WORD0:begin
-                    data_wd[31:0]  = wr_data_m;
+                    data_wd[31:0]  = dc_wd;
                 end
                 `WORD1:begin
-                    data_wd[63:32]  = wr_data_m;
+                    data_wd[63:32]  = dc_wd;
                 end
                 `WORD2:begin
-                    data_wd[95:64]  = wr_data_m;
+                    data_wd[95:64]  = dc_wd;
                 end
                 `WORD3:begin
-                    data_wd[127:96] = wr_data_m;
+                    data_wd[127:96] = dc_wd;
                 end
             endcase
         end
