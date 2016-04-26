@@ -2,7 +2,7 @@
 
 `include "stddef.h"
 
-module clk_n(
+module clk_2(
     input        clk,    // clock
     input        rst,    // reset
     output reg   clk_2,  // two divided-frequency clock
@@ -15,12 +15,6 @@ module clk_n(
 			clk_4 = `LOW;
 		end else begin
 			clk_2 = ~clk_2;
-		end
-	end
-
-	always @(posedge clk_2) begin
-		if (rst != `ENABLE) begin
-			clk_4 = ~clk_4;
 		end
 	end
 endmodule

@@ -96,10 +96,14 @@ module icache_test();
     wire             mem_wr_dc_en;
     wire             mem_wr_ic_en;
     
-    clk_n clk_n(
+    clk_2 clk_2(
         .clk            (clk),           // clock
         .rst            (rst),           // reset
-        .clk_2          (clk_l2),        // two divided-frequency clock
+        .clk_2          (clk_l2)         // two divided-frequency clock
+        );
+    clk_4 clk_4(
+        .clk_2          (clk_l2),        // clock
+        .rst            (rst),           // reset
         .clk_4          (clk_mem)        // four divided-frequency clock
         );
     mem mem(
@@ -691,6 +695,6 @@ module icache_test();
     /********** output wave **********/
     initial begin
         $dumpfile("icache.vcd");
-        $dumpvars(0,icache_ctrl,clk_n,mem,itag_ram,idata_ram,l2_tag_ram,l2_data_ram,l2_cache_ctrl);
+        $dumpvars(0,icache_ctrl,clk_2,clk_4,mem,itag_ram,idata_ram,l2_tag_ram,l2_data_ram,l2_cache_ctrl);
     end
 endmodule 

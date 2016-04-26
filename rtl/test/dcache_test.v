@@ -18,7 +18,8 @@ module dcache_test();
     reg              rst;           // reset
     /* CPU part */
     reg      [29:0]  addr;          // address of fetching instruction
-    reg      [31:0]  wr_data_m;
+    reg      [31:0]  wr_data;
+    wire     [31:0]  dc_wd;
     reg              memwrite_m;    // read / write signal of CPU
     reg              access_mem;
     reg              access_mem_ex;
@@ -103,10 +104,14 @@ module dcache_test();
     wire             clk_mem;        // temporary clock of L2C
     wire             mem_wr_dc_en;
     wire             mem_wr_ic_en;
-    clk_n clk_n(
+    clk_2 clk_2(
         .clk            (clk),           // clock
         .rst            (rst),           // reset
-        .clk_2          (clk_l2),        // two divided-frequency clock
+        .clk_2          (clk_l2)         // two divided-frequency clock
+        );
+    clk_4 clk_4(
+        .clk_2          (clk_l2),        // clock
+        .rst            (rst),           // reset
         .clk_4          (clk_mem)        // four divided-frequency clock
         );
     mem mem(
@@ -122,7 +127,8 @@ module dcache_test();
         .addr           (addr),       // address of fetching instruction
         .memwrite_m     (memwrite_m),            // read / write signal of CPU
         .access_mem     (access_mem), 
-        .access_mem_ex  (access_mem_ex), 
+        .wr_data        (wr_data), 
+        .dc_wd          (dc_wd),
         .read_data_m    (read_data_m),      // read data of CPU
         .miss_stall     (miss_stall),    // the signal of stall caused by cache miss
         /* L1_cache part */
@@ -247,7 +253,7 @@ module dcache_test();
         // .data_wd_dc     (data_wd_dc),    // write data of l2_cache
         .data_wd_l2_en  (data_wd_l2_en), // write data of l2_cache
         .data_wd_dc_en  (data_wd_dc_en), // write data of l2_cache
-        .wr_data_m      (wr_data_m),
+        .dc_wd          (dc_wd),
         .offset         (offset), 
         .data0_rd       (data0_rd),      // read data of cache_data0
         .data1_rd       (data1_rd)       // read data of cache_data1
@@ -724,6 +730,6 @@ module dcache_test();
     /********** output wave **********/
     initial begin
         $dumpfile("dcache.vcd");
-        $dumpvars(0,dcache_ctrl,clk_n,mem,dtag_ram,ddata_ram,l2_tag_ram,l2_data_ram,l2_cache_ctrl);
+        $dumpvars(0,dcache_ctrl,clk_2,clk_4,mem,dtag_ram,ddata_ram,l2_tag_ram,l2_data_ram,l2_cache_ctrl);
     end
 endmodule 

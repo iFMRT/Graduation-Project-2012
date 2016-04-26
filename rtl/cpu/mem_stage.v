@@ -35,7 +35,7 @@ module mem_stage (
     output                       data_wd_dc_en, // choose signal of data_wd           
     input                        mem_wr_dc_en,
     output     [7:0]             index,         // address of L1_cache
-    output     [`WORD_DATA_BUS]  wr_data_m,     // Write data
+    output     [`WORD_DATA_BUS]  dc_wd,         // Write data
     /* L2_cache part */
     input                        dc_en,         // busy signal of L2_cache
     input                        l2_rdy,        // ready signal of L2_cache
@@ -48,7 +48,7 @@ module mem_stage (
    /********** EX/MEM Pipeline Register **********/
     input                        ex_en,          // If Pipeline data enable
     input      [`MEM_OP_BUS]     ex_mem_op,      // Memory operation
-    input      [`MEM_OP_BUS]     id_mem_op,
+    // input      [`MEM_OP_BUS]     id_mem_op,
     input      [`WORD_DATA_BUS]  ex_mem_wr_data, // Memory write data
     input      [`REG_ADDR_BUS]   ex_dst_addr,    // General purpose register write address
     input                        ex_gpr_we_,     // General purpose register enable
@@ -61,13 +61,14 @@ module mem_stage (
 );
         
     /********** Internal signals **********/
+    wire [`WORD_DATA_BUS]        wr_data;         // Write data
     wire [`WORD_DATA_BUS]        read_data_m;     // Read data
     wire [`WORD_DATA_BUS]        addr;            // Address
     wire                         memwrite_m;      // Read/Write
     wire [`WORD_DATA_BUS]        out;             // Memory Access Result
     wire                         miss_align;
     reg                          access_mem;
-    reg                          access_mem_ex;
+    // reg                          access_mem_ex;
     wire                         hitway;
     assign fwd_data  = out;
 
@@ -76,11 +77,6 @@ module mem_stage (
             access_mem = `DISABLE;
         end else begin
             access_mem = `ENABLE;
-        end
-        if (id_mem_op[3:2] == 2'b00) begin
-            access_mem_ex = `DISABLE;
-        end else begin
-            access_mem_ex = `ENABLE;
         end
     end
     // /********** Memory Access Control Module **********/
@@ -94,7 +90,7 @@ module mem_stage (
         .read_data_m      (read_data_m),    // Read data
         .addr             (addr),           // Address
         .rw               (memwrite_m),     // Read/Write                
-        .wr_data          (wr_data_m),      // Write data
+        .wr_data          (wr_data),        // Write data
         .hitway           (hitway),         // Address Strobe
         .data0_rd         (data0_rd),       // Read/Write
         .data1_rd         (data1_rd),       // Write data
@@ -109,9 +105,9 @@ module mem_stage (
         .rst            (reset),         // reset
         /* CPU part */
         .addr           (addr[31:2]),    // address of fetching instruction
-        .memwrite_m     (memwrite_m),    // read / write signal of CPU
+        .memwrite_m     (memwrite_m),    // Read/Write 
+        .wr_data        (wr_data),       // read / write signal of CPU
         .access_mem     (access_mem), 
-        .access_mem_ex  (access_mem_ex), 
         .read_data_m    (read_data_m),   // read data of CPU
         .miss_stall     (miss_stall),    // the signal of stall caused by cache miss
         /* L1_cache part */
@@ -131,15 +127,16 @@ module mem_stage (
         .tagcomp_hit    (tagcomp_hit),  
         .tag_wd         (tag_wd),        // write data of L1_tag
         .data_wd_dc_en  (data_wd_dc_en),
+        .dc_wd          (dc_wd),
         .hitway         (hitway),
         .index          (index),         // address of L1_cache
         .rd_to_l2       (rd_to_l2),
         /* l2_cache part */
         .l2_complete    (l2_complete),   // complete signal of l2_cache
-        .dc_en        (dc_en),       // busy signal of l2_cache
+        .dc_en          (dc_en),         // busy signal of l2_cache
         .l2_rdy         (l2_rdy),        // ready signal of l2_cache
         .mem_wr_dc_en   (mem_wr_dc_en), 
-        .complete       (complete),   // complete op writing to L1
+        .complete       (complete),      // complete op writing to L1
         .data_wd_l2     (data_wd_l2), 
         .drq            (drq),      
         .dc_rw_en       (dc_rw_en), 

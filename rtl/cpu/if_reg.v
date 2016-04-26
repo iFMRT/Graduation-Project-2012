@@ -61,9 +61,7 @@ module if_reg(
                         if_insn <=  insn; 
                         if_en   <=  `ENABLE;
                     end // else: !if(br_taken == `ENABLE)
-                end else begin
-                    if_en   <=  `DISABLE;
-                end 
+                end  
             end
         end // else: !if(reset == `ENABLE)
     end // always @ (posedge clk)

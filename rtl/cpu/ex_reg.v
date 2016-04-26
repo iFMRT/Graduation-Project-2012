@@ -60,7 +60,7 @@ module ex_reg (
 					    ex_mem_op      <= #1 id_mem_op;
 					    ex_mem_wr_data <= #1 id_mem_wr_data;
 		    		end
-		    	end
+		    	end 
 
 		    end
 	  end

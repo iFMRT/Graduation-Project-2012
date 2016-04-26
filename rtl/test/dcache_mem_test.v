@@ -70,7 +70,7 @@ module dcache_mem_test();
     wire             complete_ic;   // complete write from L2 to L1
     wire             complete_dc;   // complete write from L2 to L1
     // data_ram part 
-    wire     [31:0]  wr_data_m;
+    wire     [31:0]  dc_wd;
     wire     [127:0] data0_rd;      // read data of cache_data0
     wire     [127:0] data1_rd;      // read data of cache_data1
     wire     [127:0] data_wd_l2;
@@ -153,10 +153,14 @@ module dcache_mem_test();
     wire                  mem_gpr_we_;    // General purpose register enable
     wire [`WORD_DATA_BUS] mem_out;
     
-    clk_n clk_n(
+    clk_2 clk_2(
         .clk            (clk),           // clock
         .rst            (rst),           // reset
-        .clk_2          (clk_l2),        // two divided-frequency clock
+        .clk_2          (clk_l2)         // two divided-frequency clock
+        );
+    clk_4 clk_4(
+        .clk_2          (clk_l2),        // clock
+        .rst            (rst),           // reset
         .clk_4          (clk_mem)        // four divided-frequency clock
         );
     ctrl ctrl(
@@ -236,9 +240,9 @@ module dcache_mem_test();
         .data_wd_dc_en  (data_wd_dc_en),
         .mem_wr_dc_en   (mem_wr_dc_en), 
         .index          (index),         // address of L1_cache
-        .wr_data_m      (wr_data_m),
+        .dc_wd          (dc_wd),
         /* l2_cache part */
-        .dc_en        (dc_en),           // busy signal of l2_cache
+        .dc_en          (dc_en),           // busy signal of l2_cache
         .l2_rdy         (l2_rdy),        // ready signal of l2_cache
         .complete       (complete_dc),   // complete op writing to L1
         .l2_complete    (l2_complete),
@@ -250,7 +254,6 @@ module dcache_mem_test();
         /********** EX/MEM Pipeline Register **********/
         .ex_en          (ex_en),          // busy signal of l2_cache
         .ex_mem_op      (ex_mem_op),      // ready signal of l2_cache
-        .id_mem_op      (id_mem_op),      // complete op writing to L1
         .ex_mem_wr_data (ex_mem_wr_data),      
         .ex_dst_addr    (ex_dst_addr), 
         .ex_gpr_we_     (ex_gpr_we_),       
@@ -356,7 +359,7 @@ module dcache_mem_test();
         .data_wd_l2     (data_wd_l2),    // write data of l2_cache
         .data_wd_l2_en  (data_wd_l2_en), // write data of l2_cache
         .data_wd_dc_en  (data_wd_dc_en), // write data of l2_cache
-        .wr_data_m      (wr_data_m),
+        .dc_wd          (dc_wd),
         .offset         (offset), 
         .data0_rd       (data0_rd),      // read data of cache_data0
         .data1_rd       (data1_rd)       // read data of cache_data1
@@ -742,12 +745,12 @@ module dcache_mem_test();
         #STEP begin // DC_ACCESS_L2 & ACCESS_L2 
             $display("\n========= Clock 2 ========");
             mem_stage_tb(
-                32'b0,                                    // read data of CPU
+                32'bx,                                    // read data of CPU
                 `ENABLE,                                  // the signal of stall caused by cache miss
                 21'b1_0000_0000_0000_0000_1110,           // write data of L1_tag
                 8'b0001_0000,                             // address of L1_cache
                 128'hx,                                   // data_rd choosing from data_rd1~data_rd3
-                `ENABLE,                                  // icache request
+                `ENABLE,                                  // drq
                 28'b1110_0001_0000,                       // l2_addr
                 1'b0,                                     // dirty_wd
                 `WRITE,                                   // dirty0_rw
@@ -794,7 +797,7 @@ module dcache_mem_test();
         #STEP begin // WRITE_DC_R & WRITE_TO_L2_CLEAN 
             $display("\n========= Clock 3 ========");
             mem_stage_tb(
-                32'b0,                                     // read data of CPU
+                32'hx,                                     // read data of CPU
                 `DISABLE,                                  // the signal of stall caused by cache miss
                 21'b1_0000_0000_0000_0000_1110,            // write data of L1_tag
                 8'b0001_0000,                              // address of L1_cache
@@ -863,6 +866,6 @@ module dcache_mem_test();
     /********** output wave **********/
     initial begin
         $dumpfile("dcache_mem_test.vcd");
-        $dumpvars(0,mem_stage,clk_n,ctrl,mem,dtag_ram,ddata_ram,l2_tag_ram,l2_data_ram,l2_cache_ctrl);
+        $dumpvars(0,mem_stage,clk_2,clk_4,ctrl,mem,dtag_ram,ddata_ram,l2_tag_ram,l2_data_ram,l2_cache_ctrl);
     end
 endmodule 

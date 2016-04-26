@@ -142,7 +142,7 @@ module cpu_top(
     wire [7:0]             index_dc;         // address of L1_cache
     wire [1:0]             offset; 
     wire                   tagcomp_hit;
-    wire [31:0]            wr_data_m;
+    wire [31:0]            dc_wd;
     wire [20:0]            tag0_rd_dc;       // read data of tag0
     wire [20:0]            tag1_rd_dc;       // read data of tag1
     wire [20:0]            tag_wd_dc; 
@@ -194,10 +194,14 @@ module cpu_top(
     wire                   mem_wr_ic_en;
     
     /*********** Clock ************/
-    clk_n clk_n(
+    clk_2 clk_2(
         .clk            (clk),           // clock
         .rst            (rst),           // reset
-        .clk_2          (clk_l2),        // two divided-frequency clock
+        .clk_2          (clk_l2)         // two divided-frequency clock
+        );
+    clk_4 clk_4(
+        .clk_2          (clk_l2),        // clock
+        .rst            (rst),           // reset
         .clk_4          (clk_mem)        // four divided-frequency clock
         );
     /********** IF Stage **********/
@@ -375,7 +379,7 @@ module cpu_top(
         .tag_wd         (tag_wd_dc),     // write data of L1_tag
         .data_wd_dc_en  (data_wd_dc_en),
         .index          (index_dc),      // address of L1_cache
-        .wr_data_m      (wr_data_m),
+        .dc_wd          (dc_wd),
         /* l2_cache part */
         .dc_en          (dc_en),         // busy signal of l2_cache
         .l2_rdy         (l2_rdy),        // ready signal of l2_cache
@@ -389,7 +393,7 @@ module cpu_top(
         /********** EX/MEM Pipeline Register **********/
         .ex_en          (ex_en),         // busy signal of l2_cache
         .ex_mem_op      (ex_mem_op),     // ready signal of l2_cache
-        .id_mem_op      (id_mem_op),     // complete op writing to L1
+        // .id_mem_op      (id_mem_op),     // complete op writing to L1
         .ex_mem_wr_data (ex_mem_wr_data),      
         .ex_dst_addr    (ex_dst_addr), 
         .ex_gpr_we_     (ex_gpr_we_),       
@@ -458,7 +462,7 @@ module cpu_top(
         .l2_dirty3      (l2_dirty3),         
         /*memory part*/
         .mem_complete   (mem_complete),
-        .mem_rd         (mem_rd),
+        .mem_rd         (mem_rd), 
         .mem_wd         (mem_wd), 
         .mem_addr       (mem_addr),       // address of memory
         .mem_rw         (mem_rw)          // read / write signal of memory
@@ -544,7 +548,7 @@ module cpu_top(
         .data_wd_l2     (data_wd_l2),    // write data of l2_cache
         .data_wd_l2_en  (data_wd_l2_en), // write data of l2_cache
         .data_wd_dc_en  (data_wd_dc_en), // write data of l2_cache
-        .wr_data_m      (wr_data_m),
+        .dc_wd          (dc_wd),
         .offset         (offset), 
         .data0_rd       (data0_rd_dc),   // read data of cache_data0
         .data1_rd       (data1_rd_dc)    // read data of cache_data1

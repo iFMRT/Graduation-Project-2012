@@ -153,11 +153,15 @@ module icache_if_test();
     wire                  if_en;        // Effective mark of pipeline
     wire [`WORD_DATA_BUS] br_addr;      // Branch target
     
-    clk_n clk_n(
-        .clk            (clk),          // clock
-        .rst            (rst),          // reset
-        .clk_2          (clk_l2),       // two divided-frequency clock
-        .clk_4          (clk_mem)       // four divided-frequency clock
+    clk_2 clk_2(
+        .clk            (clk),           // clock
+        .rst            (rst),           // reset
+        .clk_2          (clk_l2)         // two divided-frequency clock
+        );
+    clk_4 clk_4(
+        .clk_2          (clk_l2),        // clock
+        .rst            (rst),           // reset
+        .clk_4          (clk_mem)        // four divided-frequency clock
         );
     mem mem(
         .clk            (clk_mem),      // clock
@@ -914,7 +918,7 @@ module icache_if_test();
                 `ENABLE,                                  // icache request
                 28'b1,
                 32'b1100,
-                `DISABLE
+                `ENABLE
                 );
             tag_ram_tb(
                 21'bx,                                    // read data of tag0
@@ -1015,6 +1019,6 @@ module icache_if_test();
     /********** output wave **********/
     initial begin
         $dumpfile("icache_if_test.vcd");
-        $dumpvars(0,if_stage,clk_n,mem,ctrl,itag_ram,idata_ram,l2_tag_ram,l2_data_ram,l2_cache_ctrl);
+        $dumpvars(0,if_stage,clk_2,clk_4,mem,ctrl,itag_ram,idata_ram,l2_tag_ram,l2_data_ram,l2_cache_ctrl);
     end
 endmodule 

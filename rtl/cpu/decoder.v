@@ -382,7 +382,7 @@ module decoder (
                 end
                 /* 其它命令 */
                 default       : begin // 未定义命令
-                    $display("OP error");
+                    $display("OP error",op);
                 end
             endcase
         end

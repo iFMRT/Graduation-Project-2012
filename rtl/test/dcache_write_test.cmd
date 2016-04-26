@@ -1,2 +1,2 @@
-iverilog -s dcache_write_test -o dcache_write_test.out -I include dcache_write_test.v dcache_ctrl.v l2_cache_ctrl.v cache_ram.v
+iverilog -s dcache_write_test -o dcache_write_test.out -I include dcache_write_test.v dcache_ctrl.v l2_cache_ctrl.v cache_ram.v clk_2.v clk_4.v mem.v
 vvp dcache_write_test.out

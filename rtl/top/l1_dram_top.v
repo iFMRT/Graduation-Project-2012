@@ -29,8 +29,8 @@ module l1_dram_top(
     output          lru_dc,            // read data of lru_field
     output          complete_dc,       // complete write from L2 to L1
     /*ddata*/
-    input      [31:0]  wr_data_m,    
-    input      [1:0]   offset, 
+    input   [31:0]  dc_wd,    
+    input   [1:0]   offset, 
     input   [127:0] data_wd_l2,        // write data of l2_cache
     input           data_wd_l2_en,
     input           data_wd_dc_en,
@@ -64,7 +64,7 @@ module l1_dram_top(
         .data_wd_l2     (data_wd_l2),   // write data of l2_cache
         .data_wd_l2_en  (data_wd_l2_en),// write data of l2_cache
         .data_wd_dc_en  (data_wd_dc_en),// write data of l2_cache
-        .wr_data_m      (wr_data_m),
+        .dc_wd      (dc_wd),
         .offset         (offset), 
         .data0_rd       (data0_rd_dc),  // read data of cache_data0
         .data1_rd       (data1_rd_dc)   // read data of cache_data1
