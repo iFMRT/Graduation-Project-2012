@@ -1,0 +1,104 @@
+*  指令译码阶段（ID Stage）
+
+ID 阶段对指令进行译码。
+
+#+CAPTION: 表 1-1 ID 阶段模块一览
+| 模块名   | 文件名     | 说明                |
+| id_stage | id_stage.v | ID 阶段顶层模块     |
+| decoder  | decoder.v  | 指令译码器          |
+| id_reg   | id_reg.v   | ID 阶段流水线寄存器 |
+
+#+CPATION: ID 阶段信号一览
+| 信号名         | 信号类型 | 数据类型 | 位宽 | 说明                   |
+|----------------+----------+----------+------+------------------------|
+| clk            | 输入信号 | wire     |    1 | 时钟信号               |
+| reset          | 输入信号 | wire     |    1 | 复位信号               |
+|----------------+----------+----------+------+------------------------|
+| gpr_rs1_data   | 输入信号 | wire     |   32 | 从 GPR 读取 rs1 的值   |
+| gpr_rs2_data   | 输入信号 | wire     |   32 | 从 GPR 读取 rs2 的值   |
+| gpr_rs1_addr   | 输出信号 | wire     |    5 | 读取 GPR rs1 的地址    |
+| gpr_rs2_addr   | 输出信号 | wire     |    5 | 读取 GPR rs2 的地址    |
+|----------------+----------+----------+------+------------------------|
+| ex_fwd_data    | 输入信号 | wire     |   32 | 从 EX 阶段转发的数据   |
+| em_fwd_data    | 输入信号 | wire     |   32 | 从 MEM 阶段转发的数据  |
+|----------------+----------+----------+------+------------------------|
+| csr_rd_data    | 输入信号 | wire     |   32 | 从 CSRs 读取的数据     |
+| csr_op         | 输出信号 | wire     |    2 | 对 CSRs 进行的操作     |
+| csr_addr       | 输出信号 | wire     |   12 | 访问 CSRs 的地址       |
+| csr_wr_data    | 输出信号 | wire     |   32 | 写入 CSRs 的数据       |
+| csr_we         | 输出信号 | wire     |    1 | 写入 CSRs 有效         |
+|----------------+----------+----------+------+------------------------|
+| stall          | 输入信号 | wire     |    1 | 停顿                   |
+| flush          | 输入信号 | wire     |    1 | 刷新                   |
+|----------------+----------+----------+------+------------------------|
+| rs1_fwd_ctrl   | 输入信号 | wire     |    2 | 转发 rs1 控制信号      |
+| rs2_fwd_ctrl   | 输入信号 | wire     |    2 | 转发 rs2 控制信号      |
+|----------------+----------+----------+------+------------------------|
+| pc             | 输入信号 | wire     |   32 | 当前 PC                |
+| if_pc          | 输入信号 | wire     |   32 | 下个 PC                |
+| if_insn        | 输入信号 | wire     |   21 | 当前指令               |
+| if_en          | 输入信号 | wire     |    1 | IF/ID 流水线寄存器有效 |
+|----------------+----------+----------+------+------------------------|
+| id_is_jalr     | 输出信号 | wire     |    1 | 指令是否为 JALR        |
+| id_exp_code    | 输出信号 | wire     |    6 | 异常原因代码           |
+| id_pc          | 输出信号 | wire     |   32 | 程序计数器             |
+| id_en          | 输出信号 | wire     |    1 | ID/EX 流水线寄存器有效 |
+| id_alu_op      | 输出信号 | wire     |    4 | ALU 操作               |
+| id_alu_in_0    | 输出信号 | wire     |   32 | ALU 操作数 1           |
+| id_alu_in_1    | 输出信号 | wire     |   32 | ALU 操作数 2           |
+| id_cmp_op      | 输出信号 | wire     |    3 | CMP 操作               |
+| id_cmp_in_0    | 输出信号 | wire     |   32 | CMP 操作数 1           |
+| id_cmp_in_1    | 输出信号 | wire     |   32 | CMP 操作数 2           |
+| id_rs1_addr    | 输出信号 | wire     |    5 | 用来判断是否需要转发   |
+| id_rs2_addr    | 输出信号 | wire     |    5 | 用来判断是否需要转发   |
+| id_jump_taken  | 输出信号 | wire     |    1 | 是否发生了无条件跳转   |
+| id_mem_op      | 输出信号 | wire     |    4 | 存储器操作             |
+| id_mem_wr_data | 输出信号 | wire     |   32 | 写入存储器的数据       |
+| id_rd_addr     | 输出信号 | wire     |    5 | 目的寄存器地址         |
+| id_gpr_we_     | 输出信号 | wire     |    1 | 通用寄存器写入有效     |
+| id_ex_out_sel  | 输出信号 | wire     |    2 | 选择 EX 阶段输出的来源 |
+| id_gpr_wr_data | 输出信号 | wire     |   32 | 写入目的寄存器的数据   |
+|----------------+----------+----------+------+------------------------|
+| is_eret        | 输出信号 | wire     |    1 | 是否为 ERET 指令       |
+| op             | 输出信号 | wire     |    7 | 当前指令的操作码       |
+| rs1_addr       | 输出信号 | wire     |    5 | 读取 GPR rs1 的地址    |
+| rs2_addr       | 输出信号 | wire     |    5 | 读取 GPR rs2 的地址    |
+| src_reg_used   | 输出信号 | wire     |    3 | rs1 和 rs2 的使用情况  |
+|----------------+----------+----------+------+------------------------|
+
+** 转发
+
+从 ID 阶段输出到 EX 阶段的 rs1 和 rs2 的来源有三个：
+    1. 从 EX 阶段转发的数据
+    2. 从 MEM 阶段转发的数据
+    3. 来自通用寄存器（GPR）
+
+#+BEGIN_SRC verilog
+always @(*) begin
+    /* Forward Rs1 */
+    case (rs1_fwd_ctrl)
+        `FWD_CTRL_EX : begin
+            rs1_data = ex_fwd_data;   // Forward from EX stage
+        end
+        `FWD_CTRL_MEM: begin
+            rs1_data = mem_fwd_data;  // Forward from MEM stage
+        end
+        default      : begin
+            rs1_data = gpr_rs1_data;  // Don't need forward
+        end
+    endcase
+         
+    /* Forward Rs2 */
+    case (rs2_fwd_ctrl)
+        `FWD_CTRL_EX : begin
+            rs2_data = ex_fwd_data;   // Forward from EX stage
+        end
+        `FWD_CTRL_MEM: begin
+            rs2_data = mem_fwd_data;  // Forward from MEM stage
+        end
+        default      : begin
+            rs2_data = gpr_rs2_data;  // Don't need forward
+        end
+    endcase
+end
+#+END_SRC

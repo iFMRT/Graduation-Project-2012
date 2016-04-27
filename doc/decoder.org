@@ -10,11 +10,11 @@
 | if_insn      | 输入端口 | wire     |   32 | 当前指令               |
 | if_en        | 输入端口 | wire     |    1 | IF/ID 流水线寄存器有效 |
 |--------------+----------+----------+------+------------------------|
-| ra_data      | 输入端口 | wire     |   32 | 第一个操作数           |
-| rb_data      | 输入端口 | wire     |   32 | 第二个操作数           |
+| rs1_data      | 输入端口 | wire     |   32 | 第一个操作数           |
+| rs2_data      | 输入端口 | wire     |   32 | 第二个操作数           |
 |--------------+----------+----------+------+------------------------|
-| gpr_ra_addr  | 输出端口 | wire     |    5 | GPR 读取地址 1         |
-| gpr_rb_addr  | 输出端口 | wire     |    5 | GPR 读取地址 2         |
+| gpr_rs1_addr  | 输出端口 | wire     |    5 | GPR 读取地址 1         |
+| gpr_rs2_addr  | 输出端口 | wire     |    5 | GPR 读取地址 2         |
 |--------------+----------+----------+------+------------------------|
 | csr_rd_data  | 输入端口 | wire     |   32 | 从 CSRs 读取数据       |
 | csr_op       | 输出端口 | reg      |    2 | CSRs 操作              |
@@ -33,13 +33,13 @@
 | mem_wr_data  | 输出端口 | wire     |   32 | 写入存储器的数据       |
 | ex_out_sel   | 输出端口 | reg      |    2 | 选择 EX 阶段输出       |
 | gpr_wr_data  | 输出端口 | reg      |   32 | 写入 GPR 的数据        |
-| dst_addr     | 输出端口 | wire     |    5 | 目的寄存器地址         |
+| rd_addr     | 输出端口 | wire     |    5 | 目的寄存器地址         |
 | gpr_we_      | 输出端口 | reg      |    1 | GPR 写入使能           |
 | is_jalr      | 输出端口 | reg      |    1 | 当前指令是不是 JALR    |
 | exp_code     | 输出端口 | reg      |    6 | 异常原因代码           |
 | op           | 输出端口 | wire     |    7 | 当前指令的操作码       |
-| ra_addr      | 输出端口 | wire     |    5 | 第一个源寄存器的地址   |
-| rb_addr      | 输出端口 | wire     |    5 | 第二个源寄存器的地址   |
+| rs1_addr      | 输出端口 | wire     |    5 | 第一个源寄存器的地址   |
+| rs2_addr      | 输出端口 | wire     |    5 | 第二个源寄存器的地址   |
 | src_reg_used | 输出端口 | reg      |    2 | 两个源寄存器的使用情况 |
 | is_eret      | 输出端口 | reg      |    1 | 当前指令是不是 ERET    |
 
@@ -64,9 +64,9 @@
 
 #+BEGIN_SRC verilog
     assign               op       = if_insn[6:0];
-    assign               ra_addr  = if_insn[19:15];  // Ra address
-    assign               rb_addr  = if_insn[24:20];  // Rb address
-    assign               dst_addr = if_insn[11:7];   // Rd address
+    assign               rs1_addr = if_insn[19:15];  // Rs1 address
+    assign               rs2_addr = if_insn[24:20];  // Rs2 address
+    assign               rd_addr  = if_insn[11:7];   // Rd address
     wire [`INSN_F3_BUS]  funct3   = if_insn[14:12];  // funct3
     wire [`INSN_F7_BUS]  funct7   = if_insn[31:25];  // funct7
     wire [`INSN_F12_BUS] funct12  = if_insn[31:20];  // funct12

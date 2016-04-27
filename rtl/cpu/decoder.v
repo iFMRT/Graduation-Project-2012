@@ -21,18 +21,18 @@ module decoder (
     /********** IF/ID Pipeline Register **********/
     input wire [`WORD_DATA_BUS]  pc,            // Current PC
     input wire [`WORD_DATA_BUS]  if_pc,         // Next PC
-    input wire [`WORD_DATA_BUS]  if_insn,       // Instruction
+    input wire [`WORD_DATA_BUS]  if_insn,       // Current Instruction
     input wire                   if_en,         // Pipeline data enable
     /********** Two Operand **********/
-    input wire [`WORD_DATA_BUS]  rs1_data,       // The first operand
-    input wire [`WORD_DATA_BUS]  rs2_data,       // The second operand
+    input wire [`WORD_DATA_BUS]  rs1_data,      // The first operand
+    input wire [`WORD_DATA_BUS]  rs2_data,      // The second operand
     /********** GPR Interface **********/
-    output wire [`REG_ADDR_BUS]  gpr_rs1_addr, // Read address 0
-    output wire [`REG_ADDR_BUS]  gpr_rs2_addr, // Read address 1
+    output wire [`REG_ADDR_BUS]  gpr_rs1_addr,  // Read rs1 address
+    output wire [`REG_ADDR_BUS]  gpr_rs2_addr,  // Read rs2 address
     /********** CSRs Interface **********/
     input wire [`WORD_DATA_BUS]  csr_rd_data,   // Read from CSRs
     output reg [`CSR_OP_BUS]     csr_op,        // CSRs operation
-    output wire [`CSR_ADDR_BUS]  csr_addr,      // CSRs address
+    output wire [`CSR_ADDR_BUS]  csr_addr,      // Access CSRs address
     output reg [`WORD_DATA_BUS]  csr_wr_data,   // Write to CSRs
     output reg                   csr_we,        // CSRs write enable
     /********** Decoder Result **********/
@@ -44,21 +44,20 @@ module decoder (
     output reg [`WORD_DATA_BUS]  cmp_in_1,      // CMP input 1
     output reg                   jump_taken,    // Jump taken
 
-    output reg [`MEM_OP_BUS]     mem_op,        // MEM operation
-    output wire [`WORD_DATA_BUS] mem_wr_data,   // MEM write data
-    output reg [`EX_OUT_SEL_BUS] ex_out_sel,    // Select EX stage which to output
-    output reg [`WORD_DATA_BUS]  gpr_wr_data,   //  The data write to GPR
-    output wire [`REG_ADDR_BUS]  rd_addr,      // Destination
+    output reg [`MEM_OP_BUS]     mem_op,        // Memory operation
+    output wire [`WORD_DATA_BUS] mem_wr_data,   // Memory write data
+    output reg [`EX_OUT_SEL_BUS] ex_out_sel,    // Select EX stage outputs
+    output reg [`WORD_DATA_BUS]  gpr_wr_data,   // The data write to GPR
+    output wire [`REG_ADDR_BUS]  rd_addr,       // GPR write address
     output reg                   gpr_we_,       // GPR write enable
-    output reg                   is_jalr,
+    output reg                   is_jalr,       // is JALR instruction
     output reg [`EXP_CODE_BUS]   exp_code,      // Exception code
 
     output wire [`INSN_OP_BUS]   op,            // OpCode
     output wire [`REG_ADDR_BUS]  rs1_addr,
     output wire [`REG_ADDR_BUS]  rs2_addr,
     output reg [1:0]             src_reg_used,  // which source registers used
-
-    output reg                   is_eret
+    output reg                   is_eret        // is ERET instruction
 );
 
     /********** Instruction Field **********/

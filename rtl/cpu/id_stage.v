@@ -1,42 +1,56 @@
-`include "isa.h"
-`include "alu.h"
-`include "cmp.h"
-`include "ctrl.h"
-`include "stddef.h"
-`include "cpu.h"
-`include "mem.h"
-`include "ex_stage.h"
+////////////////////////////////////////////////////////////////////
+// Engineer:       Leway Colin - colin4124@gmail.com              //
+//                                                                //
+// Additional contributions by:                                   //
+//                 Beyond Sky - fan-dave@163.com                  //
+//                 Junhao Chen                                    //
+//                 Kippy Chen - 799182081@qq.com                  //
+//                                                                //
+// Design Name:    ID Pipeline Stage                              //
+// Project Name:   FMRT Mini Core                                 //
+// Language:       Verilog                                        //
+//                                                                //
+// Description:    ID Pipeline Stage.                             //
+//                                                                //
+////////////////////////////////////////////////////////////////////
+
+`include "common_defines.v"
+`include "base_core_defines.v"
 
 module id_stage (
     /********** Clock & Reset **********/
     input                    clk,           // Clock
-    input                    reset,         // Asynchronous Reset
+    input                    reset,         // Reset
     /********** GPR Interface **********/
-    input  [`WORD_DATA_BUS]  gpr_rd_data_0, // Read data 0
-    input  [`WORD_DATA_BUS]  gpr_rd_data_1, // Read data 1
-    output [`REG_ADDR_BUS]   gpr_rd_addr_0, // Read address 0
-    output [`REG_ADDR_BUS]   gpr_rd_addr_1, // Read address 1
-
-    input                    ex_en,      
-    input  [`WORD_DATA_BUS]  ex_fwd_data,
-    input  [`REG_ADDR_BUS]   ex_dst_addr,
-    input                    ex_gpr_we_,
-
-    input  [`WORD_DATA_BUS]  mem_fwd_data,
-
-    input                    stall,
-    input                    flush,
-
+    input  [`WORD_DATA_BUS]  gpr_rs1_data,  // Read rs1 data
+    input  [`WORD_DATA_BUS]  gpr_rs2_data,  // Read rs2 data
+    output [`REG_ADDR_BUS]   gpr_rs1_addr,  // Read rs1 address
+    output [`REG_ADDR_BUS]   gpr_rs2_addr,  // Read rs2 address
+    /********** Forward **********/
+    input  [`WORD_DATA_BUS]  ex_fwd_data,   // Forward data from EX Stage
+    // Forward from MEM Stage
+    input  [`WORD_DATA_BUS]  mem_fwd_data,  // Forward data from MEM Stage
+    /********** CSRs Interface **********/
+    input  [`WORD_DATA_BUS]  csr_rd_data,   // Read from CSRs
+    output [`CSR_OP_BUS]     csr_op,        // CSRs operation
+    output [`CSR_ADDR_BUS]   csr_addr,      // Access CSRs address
+    output [`WORD_DATA_BUS]  csr_wr_data,   // Write to CSRs
+    output                   csr_we,        // CSRs write enable
+    /********** Pipeline Control Signal **********/
+    input                    stall,         // Stall
+    input                    flush,         // Flush
     /********** Forward Signal **********/
-    input [`FWD_CTRL_BUS]    ra_fwd_ctrl,
-    input [`FWD_CTRL_BUS]    rb_fwd_ctrl,
-
+    input [`FWD_CTRL_BUS]    rs1_fwd_ctrl,
+    input [`FWD_CTRL_BUS]    rs2_fwd_ctrl,
     /********** IF/ID Pipeline Register **********/
     input [`WORD_DATA_BUS]   pc,            // Current PC
     input [`WORD_DATA_BUS]   if_pc,         // Next PC
     input [`WORD_DATA_BUS]   if_insn,       // Instruction
     input                    if_en,         // Pipeline data enable
     /********** ID/EXPipeline  Register  **********/
+    output                   id_is_jalr,    // is JALR instruction
+    output [`EXP_CODE_BUS]   id_exp_code,   // Exception code
+    output [`WORD_DATA_BUS]  id_pc,
     output                   id_en,         // Pipeline data enable
     output [`ALU_OP_BUS]     id_alu_op,     // ALU Operation
     output [`WORD_DATA_BUS]  id_alu_in_0,   // ALU input 0
@@ -44,84 +58,92 @@ module id_stage (
     output [`CMP_OP_BUS]     id_cmp_op,     // CMP Operation
     output [`WORD_DATA_BUS]  id_cmp_in_0,   // CMP input 0
     output [`WORD_DATA_BUS]  id_cmp_in_1,   // CMP input 1
-    output [`REG_ADDR_BUS]   id_ra_addr,
-    output [`REG_ADDR_BUS]   id_rb_addr,
+    output [`REG_ADDR_BUS]   id_rs1_addr,
+    output [`REG_ADDR_BUS]   id_rs2_addr,
     output                   id_jump_taken,
     output [`MEM_OP_BUS]     id_mem_op,     // Memory Operation
     output [`WORD_DATA_BUS]  id_mem_wr_data,// Memory write data
-    output [`REG_ADDR_BUS]   id_dst_addr,   // GPRwrite address
-    output                   id_gpr_we_,    // GPRwrite enable
-    output [`EX_OUT_SEL_BUS] id_gpr_mux_ex,
+    output [`REG_ADDR_BUS]   id_rd_addr,    // GPR write address
+    output                   id_gpr_we_,    // GPR write enable
+    output [`EX_OUT_SEL_BUS] id_ex_out_sel,
     output [`WORD_DATA_BUS]  id_gpr_wr_data,
-
-    output [`INS_OP_BUS]     op,
-    output [`REG_ADDR_BUS]   ra_addr,
-    output [`REG_ADDR_BUS]   rb_addr,
-    output [1:0]             src_reg_used  // How many source registers instruction used
+    // output to Control Unit
+    output                   is_eret,       // is ERET instruction
+    output [`INSN_OP_BUS]    op,
+    output [`REG_ADDR_BUS]   rs1_addr,
+    output [`REG_ADDR_BUS]   rs2_addr,
+    output [1:0]             src_reg_used   // How many source registers instruction used
 );
 
-    wire [`ALU_OP_BUS]     alu_op;         // ALU Operation
-    wire [`WORD_DATA_BUS]  alu_in_0;       // ALU input 0
-    wire [`WORD_DATA_BUS]  alu_in_1;       // ALU input 1
-    wire [`CMP_OP_BUS]     cmp_op;         // CMP Operation
-    wire [`WORD_DATA_BUS]  cmp_in_0;       // CMP input 0
-    wire [`WORD_DATA_BUS]  cmp_in_1;       // CMP input 1
+    wire [`ALU_OP_BUS]     alu_op;          // ALU Operation
+    wire [`WORD_DATA_BUS]  alu_in_0;        // ALU input 0
+    wire [`WORD_DATA_BUS]  alu_in_1;        // ALU input 1
+    wire [`CMP_OP_BUS]     cmp_op;          // CMP Operation
+    wire [`WORD_DATA_BUS]  cmp_in_0;        // CMP input 0
+    wire [`WORD_DATA_BUS]  cmp_in_1;        // CMP input 1
 
     wire                   jump_taken;
-   
-    wire [`MEM_OP_BUS]     mem_op;         // Memory operation
-    wire [`WORD_DATA_BUS]  mem_wr_data;    // Memory write data
-    wire [`EX_OUT_SEL_BUS] gpr_mux_ex;     // EX stage gpr write multiplexer
-    wire [`WORD_DATA_BUS]  gpr_wr_data;    // ID stage output gpr write data
-    wire [`REG_ADDR_BUS]   dst_addr;       // GPR write address
-    wire                   gpr_we_;        // GPR write enable
+
+    wire [`MEM_OP_BUS]     mem_op;          // Memory operation
+    wire [`WORD_DATA_BUS]  mem_wr_data;     // Memory write data
+    wire [`EX_OUT_SEL_BUS] ex_out_sel;      // EX stage gpr write multiplexer
+    wire [`WORD_DATA_BUS]  gpr_wr_data;     // ID stage output gpr write data
+    wire [`REG_ADDR_BUS]   rd_addr;         // GPR write address
+    wire                   gpr_we_;         // GPR write enable
+    wire                   is_jalr;         // is JALR instruction
+    wire [`EXP_CODE_BUS]   exp_code;
 
     /********** Two Operand **********/
-    reg  [`WORD_DATA_BUS] ra_data;         // The first operand
-    reg  [`WORD_DATA_BUS] rb_data;         // The two operand
+    reg  [`WORD_DATA_BUS] rs1_data;         // The first operand
+    reg  [`WORD_DATA_BUS] rs2_data;         // The second operand
 
     /********** Forward **********/
     always @(*) begin
-        /* Forward Ra */
-        case (ra_fwd_ctrl)
+        /* Forward Rs1 */
+        case (rs1_fwd_ctrl)
             `FWD_CTRL_EX : begin
-                ra_data = ex_fwd_data;   // Forward from EX stage
+                rs1_data = ex_fwd_data;   // Forward from EX stage
             end
             `FWD_CTRL_MEM: begin
-                ra_data = mem_fwd_data;  // Forward from MEM stage
+                rs1_data = mem_fwd_data;  // Forward from MEM stage
             end
             default      : begin
-                ra_data = gpr_rd_data_0; // Don't need forward
+                rs1_data = gpr_rs1_data;  // Don't need forward
             end
         endcase
 
-        /* Forward Rb */
-        case (rb_fwd_ctrl)
+        /* Forward Rs2 */
+        case (rs2_fwd_ctrl)
             `FWD_CTRL_EX : begin
-                rb_data = ex_fwd_data;   // Forward from EX stage
+                rs2_data = ex_fwd_data;   // Forward from EX stage
             end
             `FWD_CTRL_MEM: begin
-                rb_data = mem_fwd_data;  // Forward from MEM stage
+                rs2_data = mem_fwd_data;  // Forward from MEM stage
             end
             default      : begin
-                rb_data = gpr_rd_data_1; // Don't need forward
+                rs2_data = gpr_rs2_data; // Don't need forward
             end
         endcase
     end
 
     decoder decoder (
         /********** IF/ID Pipeline Register **********/
-        .if_pc          (if_pc),          // Next PC
         .pc             (pc),             // Current PC
-        .if_insn        (if_insn),        // Instruction
+        .if_pc          (if_pc),          // Next PC
+        .if_insn        (if_insn),        // Current Instruction
         .if_en          (if_en),          // Pipeline data enable
-        
-        .ra_data        (ra_data),        // Read data 0
-        .rb_data        (rb_data),        // Read data 1
+        /********** Two Operand **********/
+        .rs1_data       (rs1_data),       // Read data 0
+        .rs2_data       (rs2_data),       // Read data 1
         /********** GPR Interface **********/
-        .gpr_rd_addr_0  (gpr_rd_addr_0),  // Read address 0
-        .gpr_rd_addr_1  (gpr_rd_addr_1),  // Read address 1
-
+        .gpr_rs1_addr   (gpr_rs1_addr),   // Read address 0
+        .gpr_rs2_addr   (gpr_rs2_addr),   // Read address 1
+        /********** CSRs Interface **********/
+        .csr_rd_data    (csr_rd_data),    // Read from CSRs
+        .csr_op         (csr_op),         // CSRs operation
+        .csr_addr       (csr_addr),       // CSRs address
+        .csr_wr_data    (csr_wr_data),    // Write to CSRs
+        .csr_we         (csr_we),         // CSRs write enable
         /********** Decoder Result **********/
         .alu_op         (alu_op),         // ALU Operation
         .alu_in_0       (alu_in_0),       // ALU input 0
@@ -133,17 +155,21 @@ module id_stage (
 
         .mem_op         (mem_op),         // Memory operation
         .mem_wr_data    (mem_wr_data),    // Memory write data
-        .gpr_mux_ex     (gpr_mux_ex),     // ex stage gpr write multiplexer
-        .gpr_wr_data    (gpr_wr_data),    // ID stage output gpr write data
-        .dst_addr       (dst_addr),       // General purpose Register write address
-        .gpr_we_        (gpr_we_),        // General purpose Register write enable
-        
-        .op             (op),
-        .ra_addr        (ra_addr),
-        .rb_addr        (rb_addr), 
-        .src_reg_used   (src_reg_used)     
+        .ex_out_sel     (ex_out_sel),     // Select EX stage outputs
+
+        .gpr_wr_data    (gpr_wr_data),    // The data write to GPR
+        .rd_addr        (rd_addr),        // GPR write address
+        .gpr_we_        (gpr_we_),        // GPR write enable
+        .is_jalr        (is_jalr),        // is JALR instruction
+        .is_eret        (is_eret),        // is ERET instruction
+        .exp_code       (exp_code),       // Exception code
+
+        .op             (op),             // OpCode
+        .rs1_addr       (rs1_addr),
+        .rs2_addr       (rs2_addr),
+        .src_reg_used   (src_reg_used)    // which source registers used
     );
-        
+
     id_reg id_reg (
         /********** Clock & Reset **********/
         .clk            (clk),            // Clock
@@ -155,22 +181,29 @@ module id_stage (
         .cmp_op         (cmp_op),
         .cmp_in_0       (cmp_in_0),
         .cmp_in_1       (cmp_in_1),
-        .ra_addr        (ra_addr),
-        .rb_addr        (rb_addr),
-        .jump_taken     (jump_taken),     // Branch taken enable
+        .rs1_addr       (rs1_addr),
+        .rs2_addr       (rs2_addr),
 
+        .jump_taken     (jump_taken),     // Branch taken enable
         .mem_op         (mem_op),         // Memory operation
         .mem_wr_data    (mem_wr_data),    // Memory write data
-        .dst_addr       (dst_addr),       // General purpose Register write address
+        .rd_addr        (rd_addr),        // General purpose Register write address
         .gpr_we_        (gpr_we_),        // General purpose Register write enable
-        .gpr_mux_ex     (gpr_mux_ex),
+        .ex_out_sel     (ex_out_sel),
         .gpr_wr_data    (gpr_wr_data),    // ID stage output gpr write data
+        .is_jalr        (is_jalr),        // is JALR instruction
+        .exp_code       (exp_code),       // Exception code
 
         .stall          (stall),          // Stall
         .flush          (flush),          // Flush
+
         /********** IF/ID Pipeline  Register  **********/
+        .pc             (pc),             // Current program counter
         .if_en          (if_en),          // Pipeline data enable
         /********** ID/EX Pipeline  Register  **********/
+        .id_is_jalr     (id_is_jalr),     // is JALR instruction
+        .id_exp_code    (id_exp_code),    // Exception code
+        .id_pc          (id_pc),
         .id_en          (id_en),          // Pipeline data enable
         .id_alu_op      (id_alu_op),      // ALU Operation
         .id_alu_in_0    (id_alu_in_0),    // ALU input 0
@@ -178,16 +211,16 @@ module id_stage (
         .id_cmp_op      (id_cmp_op),
         .id_cmp_in_0    (id_cmp_in_0),
         .id_cmp_in_1    (id_cmp_in_1),
-        .id_ra_addr     (id_ra_addr),
-        .id_rb_addr     (id_rb_addr),
+        .id_ex_out_sel  (id_ex_out_sel),
+        .id_rs1_addr    (id_rs1_addr),
+        .id_rs2_addr    (id_rs2_addr),
         .id_jump_taken  (id_jump_taken),  // Branch taken enable
 
         .id_mem_op      (id_mem_op),      // Memory operation
         .id_mem_wr_data (id_mem_wr_data), // Memory write data
-        .id_dst_addr    (id_dst_addr),    // General purpose Register write address
+        .id_rd_addr     (id_rd_addr),     // General purpose Register write address
         .id_gpr_we_     (id_gpr_we_),     // General purpose Register write enable
-        .id_gpr_mux_ex  (id_gpr_mux_ex),
         .id_gpr_wr_data (id_gpr_wr_data)
     );
-    
+
 endmodule
