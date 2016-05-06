@@ -254,6 +254,12 @@
 `define MEM_OP_LBU		4'b1011
 `define MEM_OP_LHU		4'b1100
 
+`define WORD_ADDR_LOC           31:2  // Address location
+
+`define BYTE_OFFSET_BUS         1:0   // Byte offset bus
+`define BYTE_OFFSET_LOC         1:0   // Byte offset location
+`define BYTE_OFFSET_WORD        2'b00 // Word offset
+
 // byte choose
 `define BYTE0 			  2'b00
 `define BYTE1			    2'b01
