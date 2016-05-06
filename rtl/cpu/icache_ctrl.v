@@ -17,6 +17,7 @@ module icache_ctrl(
     input              clk,           // clock
     input              rst,           // reset
     /* CPU part */
+
     input      [29:0]  if_addr,       // address of fetching instruction
     input              rw,            // read / write signal of CPU
     output reg [31:0]  cpu_data,      // read data of CPU
@@ -60,11 +61,9 @@ module icache_ctrl(
         hitway1 = (tag1_rd[19:0] == if_addr[29:10]) & tag1_rd[20];
         if(hitway0 == `ENABLE)begin
             tagcomp_hit = `ENABLE;
-        end
-        else if(hitway1 == `ENABLE)begin
+        end else if(hitway1 == `ENABLE)begin
             tagcomp_hit = `ENABLE;
-        end
-        else begin
+        end else begin
             tagcomp_hit = `DISABLE;
         end
 
@@ -80,7 +79,7 @@ module icache_ctrl(
             end
         end else begin
             choose_way = `WAY0;
-        end          
+        end           
     end
 
     always @(*) begin 
@@ -91,20 +90,20 @@ module icache_ctrl(
                 data_rdy    = `DISABLE;
                 block0_re   = `ENABLE;
                 block1_re   = `ENABLE;
-                nextstate   = `IC_ACCESS;
                 index       = if_addr[9:2];
                 l2_addr     = if_addr[29:2];
                 tag_wd      = {1'b1,if_addr[29:10]};
+                nextstate   = `IC_ACCESS;
             end
             `IC_ACCESS:begin                
-                index       = if_addr[9:2];
-                l2_addr     = if_addr[29:2];
-                tag_wd      = {1'b1,if_addr[29:10]};
                 data_rdy    = `DISABLE;
                 if (tagcomp_hit == `ENABLE) begin // cache hit
                     // read l1_block ,write to cpu
                     miss_stall  = `DISABLE;
                     nextstate   = `IC_ACCESS;
+                    index       = if_addr[9:2];
+                    l2_addr     = if_addr[29:2];
+                    tag_wd      = {1'b1,if_addr[29:10]};
                     data_rdy    = `ENABLE;
                     if (hitway0 == `ENABLE) begin
                         case(if_addr[1:0])

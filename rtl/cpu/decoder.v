@@ -4,6 +4,8 @@
 // AUTHOR:cjh
 // DETA:2015-12-14 17:03:57
 //-------------------------------------------------------------
+`timescale 1ns/1ps
+
 `include "isa.h"
 `include "alu.h"
 `include "cmp.h"

@@ -1,3 +1,5 @@
+`timescale 1ns/1ps
+
 `include "stddef.h"
 `include "cpu.h"
 
@@ -33,7 +35,7 @@ module mem_reg (
     always @(posedge clk) begin
         if (reset == `ENABLE) begin
             /* Asynchronous Reset */
-            // mem_en       <=  `DISABLE;
+            mem_en       <=  `DISABLE;
             // mem_br_flag  <=  `DISABLE;
             // mem_ctrl_op  <=  `CTRL_OP_NOP;
             mem_dst_addr <=  `REG_ADDR_W'h0;

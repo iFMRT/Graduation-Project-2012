@@ -21,6 +21,7 @@
 /********** module **********/
 module ctrl (
     /********* pipeline control signals ********/
+    input                         rst,
     //  State of Pipeline
     input  wire                   if_busy,      // IF busy mark // miss stall of if_stage
     input  wire                   br_taken,    // branch hazard mark
@@ -170,23 +171,26 @@ module ctrl (
 
     /********** Check Load hazard **********/
     always @(*) begin
-        if ((id_en        == `ENABLE)         &&
-            (id_gpr_we_   == `ENABLE_)        &&   // load must enable id_gpr_we_
-            (id_mem_op[3] == 1'b1)            &&   // Check load in EX
-            (
-                (op != `ISA_OP_ST) || 
-                ( (op  == `ISA_OP_ST)  && (id_dst_addr == ra_addr) )         
-            )                                 &&   // store in ID may need stall
-            (
-                ( (src_reg_used[0] == 1'b1) && (id_dst_addr == ra_addr) ) ||
-                ( (src_reg_used[1] == 1'b1) && (id_dst_addr == rb_addr) ) 
-            )
-                  
-        ) begin 
-            ld_hazard = `ENABLE;  // Need Load hazard
-        end else begin
+        if (rst == `ENABLE) begin
             ld_hazard = `DISABLE; // Don't nedd Load hazard
+        end else begin
+            if ((id_en        == `ENABLE)         &&
+                (id_gpr_we_   == `ENABLE_)        &&   // load must enable id_gpr_we_
+                (id_mem_op[3] == 1'b1)            &&   // Check load in EX
+                (
+                    (op != `ISA_OP_ST) || 
+                    ( (op  == `ISA_OP_ST)  && (id_dst_addr == ra_addr) )         
+                )                                 &&   // store in ID may need stall
+                (
+                    ( (src_reg_used[0] == 1'b1) && (id_dst_addr == ra_addr) ) ||
+                    ( (src_reg_used[1] == 1'b1) && (id_dst_addr == rb_addr) ) 
+                )
+                      
+                ) begin 
+                    ld_hazard = `ENABLE;  // Need Load hazard
+            end else begin
+                ld_hazard = `DISABLE;  // Need Load hazard
+            end
         end
     end
-
 endmodule

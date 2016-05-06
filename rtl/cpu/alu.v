@@ -3,6 +3,8 @@
  * author  : besky
  * time    : 2015-12-14 20:07:54
  */
+`timescale 1ns/1ps
+ 
 `include "stddef.h"
 `include "isa.h"
 `include "alu.h"

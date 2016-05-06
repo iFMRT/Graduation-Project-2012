@@ -439,7 +439,7 @@ module l2_cache_ctrl(
                             l2_block3_we = `ENABLE;
                         end
                     endcase
-                    // decide if write into l1 meanwhile or not.
+                    // decide whether write into l1 meanwhile or not.
                     if (l2_cache_rw == `READ) begin
                         /* write l1 part */ 
                         nextstate    = `WRITE_TO_L2_DIRTY_R;

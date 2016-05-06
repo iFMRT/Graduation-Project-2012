@@ -1,3 +1,5 @@
+`timescale 1ns/1ps
+
 `include "stddef.h"
 `include "cpu.h"
 `include "mem.h"

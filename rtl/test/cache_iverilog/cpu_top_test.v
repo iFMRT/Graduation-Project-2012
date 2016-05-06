@@ -1,6 +1,5 @@
 /******** Time scale ********/
 `timescale 1ns/1ps
-`timescale 1ns/1ps
 
 `include "stddef.h"
 `include "cpu.h"
@@ -33,7 +32,7 @@ module cpu_top_test;
     wire                   if_en;          // Pipeline data enable
     // ID/EX Pipeline  Register
     wire [1:0]             src_reg_used;
-    wire [`WORD_DATA_BUS]  id_pc;          // Program count
+    // wire [`WORD_DATA_BUS]  id_pc;          // Program count
     wire                   id_en;          //  Pipeline data enable
     wire [`ALU_OP_BUS]     id_alu_op;      // ALU operation
     wire [`WORD_DATA_BUS]  id_alu_in_0;    // ALU input 0
@@ -81,7 +80,6 @@ module cpu_top_test;
     wire [`WORD_DATA_BUS]  new_pc;         // New PC
     wire [`WORD_DATA_BUS]  br_addr;        // Branch  address
     wire                   br_taken;       // Branch taken
-    wire                   ld_hazard;      // Hazard
     wire                   if_busy;
     wire                   mem_busy;
     /********** Forward Control **********/
@@ -110,9 +108,7 @@ module cpu_top_test;
     wire                   drq;
     wire                   ic_rw_en;         // write enable signal
     wire                   dc_rw_en;
-    wire                   l2_busy;          // busy mark of L2C
     wire [127:0]           data_wd_l2;       // write data to L1 from L2
-    wire [127:0]           data_wd_dc;       // write data to L1 from CPU
     wire                   data_wd_l2_en;    // enable signal of writing data to L1 from L2
     wire                   data_wd_dc_en;    // enable signal of writing data to L1 from L2
     wire [127:0]           rd_to_l2;
@@ -169,7 +165,6 @@ module cpu_top_test;
     // l2_data_ram
     wire                   wd_from_mem_en;   
     wire                   wd_from_l1_en;
-    wire [511:0]           l2_data_wd;        // write data of l2_cache
     wire [511:0]           l2_data0_rd;       // read data of cache_data0
     wire [511:0]           l2_data1_rd;       // read data of cache_data1
     wire [511:0]           l2_data2_rd;       // read data of cache_data2
@@ -188,7 +183,6 @@ module cpu_top_test;
     wire                   l2_dirty1;
     wire                   l2_dirty2;
     wire                   l2_dirty3;
-    wire                   data_rdy;
     wire                   mem_wr_dc_en;
     wire                   mem_wr_ic_en;
     
@@ -458,6 +452,7 @@ module cpu_top_test;
      /********** Control Module **********/
     ctrl ctrl(
         /********* pipeline control signals ********/
+        .rst            (rst),           // reset
         //  State of Pipeline
         .if_busy        (if_busy),        // IF busy mark // miss stall of if_stage
         .br_taken       (br_taken),       // branch hazard mark
@@ -1792,7 +1787,7 @@ module cpu_top_test;
                 `READ                                     // read / write signal of memory                
                 );  
         end
-        # STEP begin // IC_ACCESS_L2 & ACCESS_L2(read hit) 
+        # STEP begin // IC_ACCESS_L2(first insn) & ACCESS_L2(read hit) 
             $display("\n========= Clock 7 ========");
             /******** SW   r1, r0(1024) IF Stage Test Output ********/
             if_tb(
@@ -2002,7 +1997,7 @@ module cpu_top_test;
                 `DISABLE                                  // ex_rb_fwd_en
                 );
         end
-        # STEP begin  // DC_ACCESS & L2_IDLE (drq == `ENABLE)
+        # STEP begin  // IC_ACCESS & DC_ACCESS & L2_IDLE (drq == `ENABLE)
             $display("\n========= Clock 10 ========");
             /******** LW   r5, r0(1028) IF Stage Test Output ********/
             if_tb(`WORD_DATA_W'h18,
@@ -2062,7 +2057,7 @@ module cpu_top_test;
                 );
             mem_rd = 512'bx;                              // addr = 1024
         end
-        # STEP begin // DC_ACCESS_L2 & ACCESS_L2 
+        # STEP begin // IC_ACCESS(miss) & DC_ACCESS_L2(miss) & ACCESS_L2 
             $display("\n========= Clock 11 ========");
             if_stage_tb(
                 32'h40402283,                             // if_insn
@@ -2103,7 +2098,7 @@ module cpu_top_test;
                 1'bx                                      // dirty1_rw
                 );
         end  
-        # STEP begin // WRITE_DC_W & WRITE_TO_L2_CLEAN 
+        # STEP begin // IC_ACCESS_L2 & WRITE_DC_W & WRITE_TO_L2_CLEAN 
             $display("\n========= Clock 12 ========");
             l2_cache_ctrl_tb(         
                 `DISABLE,                                 // ic_en

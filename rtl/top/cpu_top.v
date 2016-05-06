@@ -457,6 +457,7 @@ module cpu_top(
      /********** Control Module **********/
     ctrl ctrl(
         /********* pipeline control signals ********/
+        .rst            (rst),           // reset
         //  State of Pipeline
         .if_busy        (if_busy),        // IF busy mark // miss stall of if_stage
         .br_taken       (br_taken),       // branch hazard mark

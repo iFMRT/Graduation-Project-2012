@@ -3,6 +3,8 @@
  * author  : besky
  * time    : 2015-12-15 21:34:41
  */
+`timescale 1ns/1ps
+
 `include "stddef.h"
 `include "isa.h"
 `include "cmp.h"

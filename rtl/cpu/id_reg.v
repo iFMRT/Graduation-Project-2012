@@ -4,6 +4,8 @@
 // AUTHOR: cjh
 // DETA: 2015-12-18 08:35:48
 //---------------------------------------------------------
+`timescale 1ns/1ps
+
 `include "alu.h"
 `include "cmp.h"
 `include "ctrl.h"
@@ -34,7 +36,7 @@ module id_reg (
     input [`REG_ADDR_BUS]        dst_addr,    // 寄存器写入地址
     input                        gpr_we_,     // 寄存器写入有效
     input [`EX_OUT_SEL_BUS]      gpr_mux_ex,
-    input                        gpr_mux_mem, // 通用寄存器输入选通信号
+    // input                        gpr_mux_mem, // 通用寄存器输入选通信号
     input [`WORD_DATA_BUS]       gpr_wr_data, // ID 阶段输出的 gpr 输入值
     //input  [`IsaExpBus]  exp_code,         // 异常代码
     /********** 寄存器控制信号 **********/
@@ -60,7 +62,7 @@ module id_reg (
     output reg [`REG_ADDR_BUS]   id_dst_addr, // 寄存器写入地址
     output reg                   id_gpr_we_, // 寄存器写入信号
     output reg [`EX_OUT_SEL_BUS] id_gpr_mux_ex,
-    output reg                   id_gpr_mux_mem,
+    // output reg                   id_gpr_mux_mem,
     output reg [`WORD_DATA_BUS]  id_gpr_wr_data   // ID 阶段输出的 gpr 输入值6
     //output reg  [`IsaExpBus]  id_exp_code     // 异常代码
 );
@@ -85,7 +87,7 @@ module id_reg (
             id_gpr_we_     <= #1 `DISABLE_;
             id_dst_addr    <= #1 5'h0;
             id_gpr_mux_ex  <= #1 `DISABLE;
-            id_gpr_mux_mem <= #1 `DISABLE;
+            // id_gpr_mux_mem <= #1 `DISABLE;
             id_gpr_wr_data <= #1 `WORD_DATA_W'h0;
 
         end else begin
@@ -108,7 +110,7 @@ module id_reg (
                     id_gpr_we_     <= #1 `DISABLE_;
                     id_dst_addr    <= #1 5'h0;
                     id_gpr_mux_ex  <= #1 `DISABLE;
-                    id_gpr_mux_mem <= #1 `DISABLE;
+                    // id_gpr_mux_mem <= #1 `DISABLE;
                     id_gpr_wr_data <= #1 `WORD_DATA_W'h0;
                 end else begin              // 给寄存器赋值
                     id_en          <= #1 if_en;
@@ -127,7 +129,7 @@ module id_reg (
                     id_gpr_we_     <= #1 gpr_we_;
                     id_dst_addr    <= #1 dst_addr;
                     id_gpr_mux_ex  <= #1 gpr_mux_ex;
-                    id_gpr_mux_mem <= #1 gpr_mux_mem;
+                    // id_gpr_mux_mem <= #1 gpr_mux_mem;
                     id_gpr_wr_data <= #1 gpr_wr_data;
                 end
             end

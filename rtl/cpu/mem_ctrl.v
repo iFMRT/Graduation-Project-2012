@@ -1,3 +1,5 @@
+`timescale 1ns/1ps
+
 /******** Head files ********/
 `include "stddef.h"
 `include "cpu.h"
@@ -20,7 +22,7 @@ module mem_ctrl (
     input  wire  [127:0]          data0_rd,       // read data of data cache'path0     
     input  wire  [127:0]          data1_rd,       // read data of data cache'path1     
     /********** Memory Access  **********/
-    output reg  [`WORD_DATA_BUS]  out ,           // Memory access result
+    output reg  [`WORD_DATA_BUS]  out,            // Memory access result
     output reg                    miss_align      // miss align
 );
 

@@ -313,7 +313,7 @@ module data_ram(
         if (data_wd_dc_en == `ENABLE) begin
             case(offset)
                 `WORD0:begin
-                    data_wd[31:0]  = dc_wd;
+                    data_wd[31:0]   = dc_wd;
                 end
                 `WORD1:begin
                     data_wd[63:32]  = dc_wd;
@@ -510,27 +510,27 @@ module l2_tag_ram(
     reg                 i,next_i;
     always @(*) begin
         if (l2_block0_we == `ENABLE) begin
-            plru_wd[1:0] <= 2'b11;
-            plru_we      <= `ENABLE;    
+            plru_wd[1:0] = 2'b11;
+            plru_we      = `ENABLE;    
         end else if (l2_block1_we == `ENABLE) begin 
-            plru_wd[1:0] <= 2'b01;
-            plru_we      <= `ENABLE;    
+            plru_wd[1:0] = 2'b01;
+            plru_we      = `ENABLE;    
         end else if (l2_block2_we == `ENABLE) begin  
-            plru_wd[2]   <= 1'b1;
-            plru_wd[0]   <= 1'b0;
-            plru_we      <= `ENABLE;    
+            plru_wd[2]   = 1'b1;
+            plru_wd[0]   = 1'b0;
+            plru_we      = `ENABLE;    
         end else if (l2_block3_we == `ENABLE) begin
-            plru_wd[2]   <= 1'b0;
-            plru_wd[0]   <= 1'b0; 
-            plru_we      <= `ENABLE;    
+            plru_wd[2]   = 1'b0;
+            plru_wd[0]   = 1'b0; 
+            plru_we      = `ENABLE;    
         end else begin
-            plru_we      <= `DISABLE;
+            plru_we      = `DISABLE;
         end
         if (l2_block0_re == `ENABLE || l2_block1_re == `ENABLE 
             || l2_block2_re == `ENABLE || l2_block3_re == `ENABLE) begin
-            plru_re      <= `ENABLE;
+            plru_re      = `ENABLE;
         end else begin
-            plru_re      <= `DISABLE;
+            plru_re      = `DISABLE;
         end
         if (i == 1'b1) begin
             next_i = 1'b0;
@@ -542,16 +542,18 @@ module l2_tag_ram(
     always @(posedge clk) begin
         if (rst == `ENABLE) begin
             i <= 1'b0;
+            l2_complete <= `DISABLE;
         end else begin
             i <= next_i;
+            if (next_i == 1'b1) begin
+                if (l2_block0_we == `ENABLE || l2_block1_we == `ENABLE 
+                    || l2_block2_we == `ENABLE || l2_block3_we == `ENABLE) begin
+                    l2_complete <= `ENABLE;
+                end
+            end else begin
+                l2_complete <= `DISABLE;
+            end 
         end                
-        if ( i == 1'b0 &&
-            (l2_block0_we == `ENABLE || l2_block1_we == `ENABLE || l2_block2_we == `ENABLE || l2_block3_we == `ENABLE)
-             ) begin
-            l2_complete <= `ENABLE;     
-        end else begin
-            l2_complete <= `DISABLE;
-        end
     end
     // sram_256x1
     sram_512 #(1) dirty0_field(        

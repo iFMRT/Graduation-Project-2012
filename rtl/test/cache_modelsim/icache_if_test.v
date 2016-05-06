@@ -19,7 +19,7 @@
 `include "cpu.h"
 `include "mem.h"
 `include "ex_stage.h"
-
+// data_rdy
 module icache_if_test();
     // icache part
     reg              clk;           // clock
@@ -47,7 +47,7 @@ module icache_if_test();
     wire             l2_cache_rw_dc;
     wire     [8:0]   l2_index;
     wire     [1:0]   l2_offset;
-    wire     [8:0]   l2_index_ic;   // address of cache
+    // wire     [8:0]   l2_index_ic;   // address of cache
     /*cache part*/
     wire             ic_en;         // busy mark of L2C
     wire     [127:0] data_wd_l2;    // write data to L1 from L2
@@ -97,8 +97,6 @@ module icache_if_test();
     wire             l2_dirty1;
     wire             l2_dirty2;
     wire             l2_dirty3;
-    wire             data_rdy;
-    wire       [1:0] offset;
     wire             mem_wr_dc_en;
     wire             mem_wr_ic_en;
     
@@ -159,7 +157,7 @@ module icache_if_test();
         );
     ctrl ctrl(
         /********* pipeline control signals ********/
-        // .rst            (rst), 
+        .rst            (rst), 
         //  State of Pipeline
         .if_busy        (miss_stall),   // IF busy mark // miss stall of if_stage
         .br_taken       (br_taken),     // branch hazard mark
@@ -697,9 +695,9 @@ module icache_if_test();
                 18'b1_0000_0000_0000_0000_0,             // write data of tag
                 1'bx,                                    // ready signal of l2_cache
                 `ENABLE,                                 // the mark of cache_data0 write signal 
-                1'bx,                                    // the mark of cache_data1 write signal 
-                1'bx,                                    // the mark of cache_data2 write signal 
-                1'bx,                                    // the mark of cache_data3 write signal 
+                `DISABLE,                                // the mark of cache_data1 write signal 
+                `DISABLE,                                // the mark of cache_data2 write signal 
+                `DISABLE,                                // the mark of cache_data3 write signal 
                 1'b0,
                 26'b0,                                   // address of memory
                 `READ                                    // read / write signal of memory                
@@ -832,9 +830,9 @@ module icache_if_test();
                 `DISABLE,                                 // read / write signal of L1_tag0
                 `DISABLE,                                 // read / write signal of L1_tag1
                 21'b1_0000_0000_0000_0000_0000,           // write data of L1_tag
-                8'b0000_0000,                             // address of L1_cache
+                8'b0000_0001,                             // address of L1_cache
                 `DISABLE,                                 // icache request
-                28'b0,                                    // l2_addr
+                28'b1,                                    // l2_addr
                 32'b1000,                                 // pc
                 `ENABLE                                   // if_en
                 );   

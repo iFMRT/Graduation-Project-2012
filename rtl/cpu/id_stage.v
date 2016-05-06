@@ -1,3 +1,5 @@
+`timescale 1ns/1ps
+
 `include "isa.h"
 `include "alu.h"
 `include "cmp.h"
