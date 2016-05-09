@@ -34,7 +34,6 @@ module decoder (
     output reg [`CSR_OP_BUS]     csr_op,        // CSRs operation
     output wire [`CSR_ADDR_BUS]  csr_addr,      // Access CSRs address
     output reg [`WORD_DATA_BUS]  csr_wr_data,   // Write to CSRs
-    output reg                   csr_we,        // CSRs write enable
     /********** Decoder Result **********/
     output reg [`ALU_OP_BUS]     alu_op,        // ALU Operation
     output reg [`WORD_DATA_BUS]  alu_in_0,      // ALU input 0
@@ -113,7 +112,6 @@ module decoder (
 
         exp_code     = `EXP_NO_EXP;
         is_eret      = `DISABLE;
-        csr_we       = `ENABLE;
         csr_wr_data  = `WORD_DATA_W'h0;
 
         /* Decode instruction type */
@@ -372,7 +370,6 @@ module decoder (
                     end else begin
                         // instruction to read/modify CSR
                         src_reg_used = 2'b01;       // do not use rs2
-                        csr_we       = `ENABLE;
                         gpr_we_      = `ENABLE_;
                         ex_out_sel   = `EX_OUT_PCN; // ex output gpr_wr_data
                         gpr_wr_data  = csr_rd_data;
