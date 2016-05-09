@@ -129,8 +129,6 @@ module dcache_ctrl(
                 offset     = addr[1:0];
                 tag_wd     = {1'b1,addr[29:10]};
                 dc_wd      = wr_data;
-                // dc_rw      =  memwrite_m;
-                // if (access_mem == `ENABLE || access_mem_ex == `ENABLE) begin 
                 if (access_mem == `ENABLE) begin 
                     block0_re  =  `ENABLE;
                     block1_re  =  `ENABLE;
@@ -145,13 +143,11 @@ module dcache_ctrl(
                     if(memwrite_m == `READ) begin // read hit
                         // read l1_block ,write to cpu
                         miss_stall  =  `DISABLE;
-                        // if(access_mem_ex == `ENABLE) begin
                         if(access_mem == `ENABLE) begin
                             dc_rw_en   = `DISABLE;
                             index      = addr[9:2];
                             offset     = addr[1:0];
                             dc_wd      = wr_data;
-                            // dc_rw      =  memwrite_m;
                             tag_wd     = {1'b1,addr[29:10]};
                             nextstate  =  `DC_ACCESS;
                         end else begin
@@ -194,7 +190,6 @@ module dcache_ctrl(
                     end else if (memwrite_m == `WRITE) begin  // begin: write hit
                         // cpu data write to l1
                         miss_stall     =  `ENABLE;
-                        // nextstate      =  `WRITE_HIT;
                         dirty_wd       =  1'b1;
                         data_wd_dc_en  =  `ENABLE;
                         case(hitway)
@@ -215,7 +210,6 @@ module dcache_ctrl(
                                 index      = addr[9:2];
                                 offset     = addr[1:0];
                                 dc_wd      = wr_data;
-                                // dc_rw      =  memwrite_m;
                                 tag_wd     = {1'b1,addr[29:10]};
                                 nextstate  =  `DC_ACCESS;
                             end else begin
@@ -312,7 +306,7 @@ module dcache_ctrl(
                     nextstate   =  `WAIT_L2_BUSY_DIRTY;
                 end
             end
-            `WRITE_DC_R:begin // Write to L1,read from L2
+            `WRITE_DC_R:begin // Read from L2.Write to L1 & CPU
                 if(complete == `ENABLE)begin
                     miss_stall  =  `DISABLE;
                     block0_we   =  `DISABLE;
@@ -332,7 +326,7 @@ module dcache_ctrl(
                     nextstate  =  `WRITE_DC_R;
                 end        
             end
-            `WRITE_DC_W:begin // Read from L2,Write to L1
+            `WRITE_DC_W:begin // Read from L2. Write to L1
                 if(complete == `ENABLE)begin
                     drq            = `DISABLE;
                     block0_we      = `DISABLE;
@@ -352,21 +346,20 @@ module dcache_ctrl(
                     nextstate  =  `WRITE_DC_W;
                 end        
             end
-             `WRITE_HIT:begin // Write to L1,read from CPU
+             `WRITE_HIT:begin // Read from CPU. Write to L1
                 if(complete == `ENABLE)begin
                     data_wd_dc_en =  `DISABLE;
                     miss_stall    =  `DISABLE;  
                     block0_we     =  `DISABLE;
                     block1_we     =  `DISABLE;
                     if(access_mem == `ENABLE) begin
-                        index      = addr[9:2];
-                        offset     = addr[1:0];
-                        dc_wd      = wr_data;
-                        // dc_rw      =  memwrite_m;
-                        tag_wd     = {1'b1,addr[29:10]};
-                        nextstate  =  `DC_ACCESS;
+                        index     = addr[9:2];
+                        offset    = addr[1:0];
+                        dc_wd     = wr_data;
+                        tag_wd    = {1'b1,addr[29:10]};
+                        nextstate =  `DC_ACCESS;
                     end else begin
-                        nextstate  =  `DC_IDLE;
+                        nextstate =  `DC_IDLE;
                     end
                 end else begin
                     nextstate  =  `WRITE_HIT;

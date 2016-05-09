@@ -213,7 +213,7 @@ module l2_cache_ctrl(
     end
 
     always @(*) begin
-        /*state control part*/
+        /*State Control Part*/
         case(state)
             `L2_IDLE:begin
                 l2_block0_re  = `ENABLE;
@@ -232,9 +232,9 @@ module l2_cache_ctrl(
             end
             `ACCESS_L2:begin
                 // l2_busy = `ENABLE;
-                // read hit
+                // Read hit
                 if ( l2_cache_rw == `READ && tagcomp_hit == `ENABLE) begin 
-                    // read l2_block ,write to l1
+                    // Read l2_block ,write to l1
                     l2_rdy        = `ENABLE;
                     data_wd_l2_en = `ENABLE;
                     case(hitway)
@@ -322,10 +322,11 @@ module l2_cache_ctrl(
                         nextstate   = `ACCESS_L2;
                     end
                 end else if( l2_cache_rw == `WRITE && tagcomp_hit == `ENABLE) begin // write hit
-                    // write dirty block of l1 into l2_cache
+                    // Write dirty block of l1 into l2_cache
                     nextstate     = `L2_WRITE_HIT;
                     l2_dirty_wd   = 1'b1;
                     wd_from_l1_en = `ENABLE;
+                    // Protect write enable correctly.
                     l2_block0_we  = `DISABLE;
                     l2_block1_we  = `DISABLE; 
                     l2_block2_we  = `DISABLE;
@@ -345,14 +346,15 @@ module l2_cache_ctrl(
                         end // hitway == 11
                     endcase // case(hitway) 
                 end else begin // cache miss
-                    // read mem_block ,write to l1 and l2
+                    // Read mem_block ,write to l1 and l2
                     if (valid == `DISABLE || dirty == `DISABLE) begin
-                        /* write l2 part */ 
+                        /* Write l2 part */ 
                         mem_rw         = `READ;
                         mem_addr       = l2_addr[27:2];
                         nextstate      = `WRITE_TO_L2_CLEAN;
                         l2_dirty_wd    = 1'b0;
                         wd_from_mem_en = `ENABLE;
+                        // Protect write enable correctly.
                         l2_block0_we   = `DISABLE;
                         l2_block1_we   = `DISABLE; 
                         l2_block2_we   = `DISABLE;
@@ -371,7 +373,7 @@ module l2_cache_ctrl(
                                 l2_block3_we = `ENABLE;
                             end
                         endcase
-                        /* write l1 part */ 
+                        /* Write l1 part */ 
                         data_wd_l2_en = `ENABLE;
                         case(offset)
                             `WORD0:begin
@@ -394,7 +396,7 @@ module l2_cache_ctrl(
                             mem_wr_ic_en = `ENABLE; 
                         end
                     end else if(valid == `ENABLE && dirty == `ENABLE) begin 
-                        // dirty block of l2, write to mem
+                        // Write dirty block of l2 to mem
                         nextstate  = `WRITE_MEM;
                         mem_rw     = `WRITE; 
                         case(choose_way)
@@ -425,6 +427,7 @@ module l2_cache_ctrl(
                     mem_rw         = `READ; 
                     l2_dirty_wd    = 1'b0;
                     wd_from_mem_en = `ENABLE;
+                    // Protect write enable correctly.
                     l2_block0_we   = `DISABLE;
                     l2_block1_we   = `DISABLE; 
                     l2_block2_we   = `DISABLE;
@@ -478,6 +481,7 @@ module l2_cache_ctrl(
             end
             `WRITE_TO_L2_CLEAN:begin // write into l2_cache from memory 
                 if(l2_complete == `ENABLE)begin
+                    //Initial signal after using
                     l2_block0_we   = `DISABLE;
                     l2_block1_we   = `DISABLE; 
                     l2_block2_we   = `DISABLE;
@@ -504,6 +508,7 @@ module l2_cache_ctrl(
             end
             `WRITE_TO_L2_DIRTY_R:begin // write into l2_cache from memory 
                 if(l2_complete == `ENABLE)begin
+                    //Initial signal after using
                     wd_from_mem_en = `DISABLE;  
                     // l2_busy        = `DISABLE; 
                     ic_en          = `DISABLE;
@@ -537,6 +542,11 @@ module l2_cache_ctrl(
                     nextstate      = `L2_WRITE_HIT;
                     l2_dirty_wd    = 1'b1;
                     wd_from_l1_en  = `ENABLE;
+                    // Protect write enable correctly.
+                    l2_block0_we   = `DISABLE;
+                    l2_block1_we   = `DISABLE;
+                    l2_block2_we   = `DISABLE;
+                    l2_block3_we   = `DISABLE;
                     case(hitway)
                         `L2_WAY0:begin
                             l2_block0_we = `ENABLE;
@@ -555,9 +565,10 @@ module l2_cache_ctrl(
                     nextstate  =  `WRITE_TO_L2_DIRTY_W;
                 end
             end
-            `L2_WRITE_HIT:begin // write into l2_cache from L1 
+            `L2_WRITE_HIT:begin // write L1 into l2_cache
                 if(l2_complete == `ENABLE)begin
-                    // read l2 to l1
+                    // Read l2 to l1
+                    // Initial signal after using
                     wd_from_l1_en = `DISABLE;  
                     nextstate     = `ACCESS_L2;  
                     l2_block0_we  = `DISABLE;
