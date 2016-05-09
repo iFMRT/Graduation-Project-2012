@@ -18,6 +18,11 @@
 `ifndef __COMMON_DEFINES__
 `define __COMMON_DEFINES__
 
+/********** Default Net Type **********/
+`default_nettype none	   // none (Recommended)
+//	`default_nettype wire	   // wire (Verilog Standard)
+
+
 // -----------------------------------------------------------------------
 // Signal Values
 // -----------------------------------------------------------------------
