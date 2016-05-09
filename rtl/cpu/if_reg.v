@@ -1,18 +1,18 @@
-////////////////////////////////////////////////////////////////////////
-// Engineer:       Kippy Chen - 799182081@qq.com                      //
-//                                                                    //
-// Additional contributions by:                                       //
-//                 Beyond Sky - fan-dave@163.com                      //
-//                 Leway Colin - colin4124@gmail.com                  //
-//                 Junhao Chen                                        //
-//                                                                    //
-// Design Name:    IF/ID Pipeline Register                            //
-// Project Name:   FMRT Mini Core                                     //
-// Language:       Verilog                                            //
-//                                                                    //
-// Description:    IF/ID Pipeline Register.                           //
-//                                                                    //
-////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+// Engineer:       Kippy Chen - 799182081@qq.com                    //
+//                                                                  //
+// Additional contributions by:                                     //
+//                 Beyond Sky - fan-dave@163.com                    //
+//                 Leway Colin - colin4124@gmail.com                //
+//                 Junhao Chen                                      //
+//                                                                  //
+// Design Name:    IF/ID Pipeline Register                          //
+// Project Name:   FMRT Mini Core                                   //
+// Language:       Verilog                                          //
+//                                                                  //
+// Description:    IF/ID Pipeline Register.                         //
+//                                                                  //
+//////////////////////////////////////////////////////////////////////
 
 `include "common_defines.v"
 `include "base_core_defines.v"
@@ -41,7 +41,7 @@ module if_reg (
             /******** Reset ********/
             pc      <= #1 `WORD_DATA_W'h0;
             if_pc   <= #1 `WORD_DATA_W'h0;
-            if_insn <= #1 `ISA_NOP;
+            if_insn <= #1 `OP_NOP;
             if_en   <= #1 `DISABLE;
         end else begin
             /******** Update pipeline ********/
@@ -49,12 +49,12 @@ module if_reg (
                 if (flush == `ENABLE) begin
                     /* Flush */
                     if_pc   <= #1 new_pc;
-                    if_insn <= #1 `ISA_NOP;
+                    if_insn <= #1 `OP_NOP;
                     if_en   <= #1 `DISABLE;
                 end else if (br_taken == `ENABLE) begin
                     /* Branch taken */
                     if_pc   <= #1 br_addr;
-                    if_insn <= #1 `ISA_NOP;
+                    if_insn <= #1 `OP_NOP;
                     if_en   <= #1 `DISABLE;
                 end else begin
                     /* Next PC */

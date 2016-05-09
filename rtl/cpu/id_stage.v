@@ -28,14 +28,12 @@ module id_stage (
     output [`REG_ADDR_BUS]   gpr_rs2_addr,  // Read rs2 address
     /********** Forward **********/
     input  [`WORD_DATA_BUS]  ex_fwd_data,   // Forward data from EX Stage
-    // Forward from MEM Stage
     input  [`WORD_DATA_BUS]  mem_fwd_data,  // Forward data from MEM Stage
     /********** CSRs Interface **********/
     input  [`WORD_DATA_BUS]  csr_rd_data,   // Read from CSRs
     output [`CSR_OP_BUS]     csr_op,        // CSRs operation
     output [`CSR_ADDR_BUS]   csr_addr,      // Access CSRs address
     output [`WORD_DATA_BUS]  csr_wr_data,   // Write to CSRs
-    output                   csr_we,        // CSRs write enable
     /********** Pipeline Control Signal **********/
     input                    stall,         // Stall
     input                    flush,         // Flush
@@ -47,7 +45,7 @@ module id_stage (
     input [`WORD_DATA_BUS]   if_pc,         // Next PC
     input [`WORD_DATA_BUS]   if_insn,       // Instruction
     input                    if_en,         // Pipeline data enable
-    /********** ID/EXPipeline  Register  **********/
+    /********** ID/EX Pipeline Register  **********/
     output                   id_is_jalr,    // is JALR instruction
     output [`EXP_CODE_BUS]   id_exp_code,   // Exception code
     output [`WORD_DATA_BUS]  id_pc,
@@ -58,8 +56,6 @@ module id_stage (
     output [`CMP_OP_BUS]     id_cmp_op,     // CMP Operation
     output [`WORD_DATA_BUS]  id_cmp_in_0,   // CMP input 0
     output [`WORD_DATA_BUS]  id_cmp_in_1,   // CMP input 1
-    output [`REG_ADDR_BUS]   id_rs1_addr,
-    output [`REG_ADDR_BUS]   id_rs2_addr,
     output                   id_jump_taken,
     output [`MEM_OP_BUS]     id_mem_op,     // Memory Operation
     output [`WORD_DATA_BUS]  id_mem_wr_data,// Memory write data
@@ -70,6 +66,8 @@ module id_stage (
     // output to Control Unit
     output                   is_eret,       // is ERET instruction
     output [`INSN_OP_BUS]    op,
+    output [`REG_ADDR_BUS]   id_rs1_addr,
+    output [`REG_ADDR_BUS]   id_rs2_addr,
     output [`REG_ADDR_BUS]   rs1_addr,
     output [`REG_ADDR_BUS]   rs2_addr,
     output [1:0]             src_reg_used   // How many source registers instruction used
@@ -143,7 +141,6 @@ module id_stage (
         .csr_op         (csr_op),         // CSRs operation
         .csr_addr       (csr_addr),       // CSRs address
         .csr_wr_data    (csr_wr_data),    // Write to CSRs
-        .csr_we         (csr_we),         // CSRs write enable
         /********** Decoder Result **********/
         .alu_op         (alu_op),         // ALU Operation
         .alu_in_0       (alu_in_0),       // ALU input 0
@@ -167,7 +164,7 @@ module id_stage (
         .op             (op),             // OpCode
         .rs1_addr       (rs1_addr),
         .rs2_addr       (rs2_addr),
-        .src_reg_used   (src_reg_used)    // which source registers used
+        .src_reg_used   (src_reg_used)   // which source registers used
     );
 
     id_reg id_reg (
