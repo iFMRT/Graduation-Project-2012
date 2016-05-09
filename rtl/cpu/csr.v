@@ -20,10 +20,10 @@
 module cs_registers (
     input                       clk,
     input                       reset,
+    input [`CSR_OP_BUS]         csr_op,
     input [`CSR_ADDR_BUS]       csr_addr,
     output reg [`WORD_DATA_BUS] csr_rd_data,
     input [`WORD_DATA_BUS]      csr_wr_data_i,
-    input [`CSR_OP_BUS]         csr_op,
     input [`WORD_DATA_BUS]      mepc_i,
     input [`EXP_CODE_BUS]       exp_code_i,
     input                       save_exp_code,
@@ -41,15 +41,6 @@ module cs_registers (
     /******** CSR Update Logic ********/
     reg [`WORD_DATA_BUS] csr_wr_data;
     reg                  csr_we;
-
-    ////////////////////////////////////////////
-    //   ____ ____  ____    ____              //
-    //  / ___/ ___||  _ \  |  _ \ ___  __ _   //
-    // | |   \___ \| |_) | | |_) / _ \/ _` |  //
-    // | |___ ___) |  _ <  |  _ <  __/ (_| |  //
-    //  \____|____/|_| \_\ |_| \_\___|\__, |  //
-    //                                |___/   //
-    ////////////////////////////////////////////
 
     /******** Read Logic ********/
     always @ (*) begin
@@ -81,10 +72,10 @@ module cs_registers (
 
         case (csr_op)
             `CSR_OP_WRITE: csr_wr_data = csr_wr_data_i;
-            `CSR_OP_SET:   csr_wr_data = csr_wr_data_i | csr_rd_data;
+            `CSR_OP_SET  : csr_wr_data = csr_wr_data_i | csr_rd_data;
             `CSR_OP_CLEAR: csr_wr_data = (~csr_wr_data_i) & csr_rd_data;
 
-            `CSR_OP_NONE: begin
+            `CSR_OP_NOP  : begin
                 csr_wr_data = csr_wr_data_i;
                 csr_we      = `DISABLE;
             end
@@ -114,13 +105,10 @@ module cs_registers (
                 mestatus_ie_n <= #1 csr_wr_data[0];
         endcase
 
-        // save exception cause
-        if (save_exp_code)
-            exp_code_n = exp_code_i;
-
         // save exception
         if (save_exp) begin
-            mepc_n = mepc_i;
+            exp_code_n    = exp_code_i;
+            mepc_n        = mepc_i;
             mestatus_ie_n = mstatus_ie_q;
             mstatus_ie_n  = 1'b0;
         end
