@@ -14,17 +14,21 @@ MEM_REG_OBJS = mem_reg_test.v ../cpu/mem_reg.v
 MEM_CTRL_OBJS = mem_ctrl_test.v ../cpu/mem_ctrl.v
 
 # MEM_STAGE_OBJS specifies which files to compile as part of mem stage testbench
-MEM_STAGE_OBJS = mem_stage_test.v ../cpu/mem_stage.v ../cpu/bus_if.v   ../cpu/mem_ctrl.v / ../cpu/mem_reg.v
+MEM_STAGE_OBJS = mem_stage_test.v ../cpu/mem_stage.v ../cpu/bus_if.v  ../cpu/mem_ctrl.v / ../cpu/mem_reg.v
 
 # GPIO_OBJS specifies which files to compile as part of GPIO testbench
 GPIO_OBJS = gpio_test.v ../io/gpio.v
 
-# CPU_OBJS specifies which files to compile as part of mem stage testbench
-CPU_OBJS = cpu_test.v ../cpu/if_stage.v ../cpu/if_reg.v ../cpu/bus_if.v ../cpu/spm.v     \
-					  ../cpu/dpram_sim.v ../cpu/gpr.v ../cpu/id_stage.v ../cpu/id_reg.v  \
-					  ../cpu/decoder.v ../cpu/ex_stage.v ../cpu/ex_reg.v ../cpu/alu.v    \
-					  ../cpu/cmp.v ../cpu/mem_stage.v ../cpu/mem_reg.v ../cpu/mem_ctrl.v \
-					  ../cpu/ctrl.v
+# UNITS_OBJS specifies which files to combine a CPU
+UNITS_OBJS = ../cpu/if_stage.v ../cpu/if_reg.v ../cpu/bus_if.v      \
+						../cpu/id_stage.v ../cpu/id_reg.v ../cpu/decoder.v               \
+						../cpu/ex_stage.v ../cpu/ex_reg.v ../cpu/alu.v  ../cpu/cmp.v     \
+						../cpu/mem_stage.v ../cpu/mem_reg.v ../cpu/mem_ctrl.v            \
+						../cpu/ctrl.v                                                    \
+						../cpu/spm.v ../cpu/dpram_sim.v ../cpu/gpr.v ../cpu/csr.v
+
+CPU_OBJS =  cpu_test.v $(UNITS_OBJS)
+CPU_TOP_OBJS =  cpu_top/cpu_top_test.v ../cpu/cpu_top.v $(UNITS_OBJS)
 
 # CC specifies which compiler we're using
 CC = iverilog
@@ -41,7 +45,8 @@ MEM_STAGE_OBJ_NAME = mem_stage.out
 
 GPIO_OBJ_NAME      = gpio.out
 
-CPU_OBJ_NAME 	     = cpu.out
+CPU_OBJ_NAME       = cpu.out
+CPU_TOP_OBJ_NAME   = cpu_top/cpu_top.out
 
 bus_if : $(BUS_IF_OBJS)
 	$(CC) $(INCLUDE_PATHS) $(BUS_IF_OBJS)  -o $(BUS_IF_OBJ_NAME) -s bus_if_test
@@ -75,3 +80,28 @@ cpu : $(CPU_OBJS)
 	$(CC) $(INCLUDE_PATHS) $(CPU_OBJS)  -o $(CPU_OBJ_NAME) -s cpu_test
 	vvp $(CPU_OBJ_NAME)
 
+cpu_top : $(CPU_TOP_OBJS)
+	$(CC) $(INCLUDE_PATHS) $(CPU_TOP_OBJS)  -o $(CPU_TOP_OBJ_NAME) -s cpu_top_test
+	vvp $(CPU_TOP_OBJ_NAME)
+
+# Testcase Generator
+TCGEN = ../../utils/tbgen/tcgen.py
+
+# Testcase Template
+TC_TEMPLATE = template/testcase.v
+
+# Component directory
+IF_DIR = if_stage
+ID_DIR = id_stage
+
+# IF Stage ALU Testcase
+IF_TC_ALU = if_stage/if_stage.alu.yaml
+
+# ID Stage ALU Testcase
+ID_TC_ALU = id_stage/id_stage.alu.yaml
+
+testcase_if_alu : $(IF_TC_ALU)
+	$(TCGEN) $(IF_TC_ALU) -t $(TC_TEMPLATE) -o $(IF_DIR)/testcase_alu.v
+
+testcase_id_alu : $(ID_TC_ALU)
+	$(TCGEN) $(ID_TC_ALU) -t $(TC_TEMPLATE) -o $(ID_DIR)/testcase_alu.v
