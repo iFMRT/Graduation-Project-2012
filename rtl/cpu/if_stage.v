@@ -1,24 +1,31 @@
-/* 
- -- ============================================================================
- -- FILE NAME : if_stage.v
- -- DESCRIPTION : IF Stage Implementation
- -- ----------------------------------------------------------------------------
- -- Date : 2015/12/25
- -- ============================================================================
-*/
+////////////////////////////////////////////////////////////////////
+// Engineer:       Kippy Chen - 799182081@qq.com                  //
+//                                                                //
+// Additional contributions by:                                   //
+//                 Beyond Sky - fan-dave@163.com                  //
+//                 Junhao Chang                                   //
+//                 Leway Colin - colin4124@gmail.com              //
+//                                                                //
+// Design Name:    if_stage                                       //
+// Project Name:   FMRT Mini Core                                 //
+// Language:       Verilog                                        //
+//                                                                //
+// Description:    IF STAGE.                                      //
+//                                                                //
+////////////////////////////////////////////////////////////////////
+ 
 `timescale 1ns/1ps
 
 /* General header file */
 `include "stddef.h"
 
 module if_stage(
-    /********** clock & reset *********/
+    /********** Clock & Reset *********/
     input                   clk,           // Clk
     input                   reset,         // Reset
-    /************* Icache ************/
     /* CPU part */ 
     output                  miss_stall,    // the signal of stall caused by cache miss
-    /* L1_cache part */
+    /************* I_Cache ************/
     input                   lru,           // mark of replacing
     input  [20:0]           tag0_rd,       // read data of tag0
     input  [20:0]           tag1_rd,       // read data of tag1
@@ -32,7 +39,7 @@ module if_stage(
     output                  block0_re,     // read signal of block0
     output                  block1_re,     // read signal of block1
     output [7:0]            index,         // address of L1_cache
-    /* L2_cache part */
+    /************* L2_Cache ************/
     input                   ic_en,         // busy signal of L2_cache
     input                   l2_rdy,        // ready signal of L2_cache
     input                   mem_wr_ic_en,

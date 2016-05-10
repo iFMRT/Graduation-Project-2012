@@ -1,11 +1,18 @@
-/*
- -- ============================================================================
- -- FILE NAME   : l2_cache_ctrl.v
- -- DESCRIPTION : 二级指令高速缓存器控制 
- -- ----------------------------------------------------------------------------
- -- Date:2016/1/16         Coding_by:kippy
- -- ============================================================================
-*/
+////////////////////////////////////////////////////////////////////
+// Engineer:       Kippy Chen - 799182081@qq.com                  //
+//                                                                //
+// Additional contributions by:                                   //
+//                 Beyond Sky - fan-dave@163.com                  //
+//                 Junhao Chang                                   //
+//                 Leway Colin - colin4124@gmail.com              //
+//                                                                //
+// Design Name:    l2_cache_ctrl                                  //
+// Project Name:   FMRT Mini Core                                 //
+// Language:       Verilog                                        //
+//                                                                //
+// Description:    Control part of I-Cache.                       //
+//                                                                //
+////////////////////////////////////////////////////////////////////
 
 `timescale 1ns/1ps
 
@@ -14,82 +21,83 @@
 `include "l2_cache.h"
 
 module l2_cache_ctrl(
-    // read
+    /*********** Clk & Reset *********/
     input               clk,                // clock
     input               rst,                // reset
-    /* CPU part */
-    input       [27:0]  l2_addr_ic,         // address of fetching instruction
-    input               l2_cache_rw_ic,     // read / write signal of CPU
-    input       [27:0]  l2_addr_dc,         // address of accessing memory
-    input               l2_cache_rw_dc,     // read / write signal of CPU
-    output      [8:0]   l2_index,
-    output      [1:0]   offset,             // offset of block
-    output reg          tagcomp_hit,
-    /*cache part*/
-    input               irq,                // icache request
-    input               drq,
-    input               ic_rw_en,           // icache request
-    input               dc_rw_en,
-    input               complete_ic,        // complete mark of writing into L1C
-    input               complete_dc,     
-    output reg  [127:0] data_wd_l2,         // write data to L1    
-    output reg          data_wd_l2_en,
-    output reg          wd_from_l1_en,      
-    output reg          wd_from_mem_en,     
-    output reg          mem_wr_dc_en,       
-    output reg          mem_wr_ic_en,       
-    /*l2_cache part*/
-    input               l2_complete,        // complete mark of writing into L2C 
-    output reg          l2_rdy,
-    // output reg          l2_busy,
-    output reg          ic_en,
-    output reg          dc_en,
+    /********* L2_Cache part *********/
+    output      [8:0]   l2_index,           // l2_index of l2_cache
+    output      [1:0]   offset,             // l2_offset of block
+    output reg          tagcomp_hit,        // hit mark
+    output reg          l2_rdy,             // ready mark
+    // output reg          l2_busy,            // busy mark
+    output reg          l2_block0_we,       // write signal mark of cache_block0
+    output reg          l2_block1_we,       // write signal mark of cache_block1 
+    output reg          l2_block2_we,       // write signal mark of cache_block2 
+    output reg          l2_block3_we,       // write signal mark of cache_block3
+    output reg          l2_block0_re,       // read signal mark of cache_block0 
+    output reg          l2_block1_re,       // read signal mark of cache_block1 
+    output reg          l2_block2_re,       // read signal mark of cache_block2 
+    output reg          l2_block3_re,       // read signal mark of cache_block3 
     // l2_tag part
-    output reg          l2_block0_we,        // the mark of cache_block0 write signal 
-    output reg          l2_block1_we,        // the mark of cache_block1 write signal 
-    output reg          l2_block2_we,        // the mark of cache_block2 write signal 
-    output reg          l2_block3_we,        // the mark of cache_block3 write signal 
-    output reg          l2_block0_re,        // the mark of cache_block0 read signal 
-    output reg          l2_block1_re,        // the mark of cache_block1 read signal 
-    output reg          l2_block2_re,        // the mark of cache_block2 read signal 
-    output reg          l2_block3_re,        // the mark of cache_block3 read signal 
+    input               l2_complete,        // complete mark of writing into l2_cache 
     input       [2:0]   plru,               // the number of replacing mark
     input       [17:0]  l2_tag0_rd,         // read data of tag0
     input       [17:0]  l2_tag1_rd,         // read data of tag1
     input       [17:0]  l2_tag2_rd,         // read data of tag2
     input       [17:0]  l2_tag3_rd,         // read data of tag3
-    output      [17:0]  l2_tag_wd,          // write data of tag0    
+    output      [17:0]  l2_tag_wd,          // write data of tag    
     // l2_data part
     input       [511:0] l2_data0_rd,        // read data of cache_data0
     input       [511:0] l2_data1_rd,        // read data of cache_data1
     input       [511:0] l2_data2_rd,        // read data of cache_data2
     input       [511:0] l2_data3_rd,        // read data of cache_data3
+    output reg          wd_from_l1_en,      // write data from L1 enable mark 
+    output reg          wd_from_mem_en,     // write data from MEM enable mark 
     // l2_dirty part
-    output reg          l2_dirty_wd,
-    input               l2_dirty0,
-    input               l2_dirty1,
-    input               l2_dirty2,
-    input               l2_dirty3,
-    /*memory part*/
-    input               mem_complete,  
-    input       [511:0] mem_rd,
-    output reg  [511:0] mem_wd,
+    input               l2_dirty0,          // read data of dirty0
+    input               l2_dirty1,          // read data of dirty1
+    input               l2_dirty2,          // read data of dirty2
+    input               l2_dirty3,          // read data of dirty3
+    output reg          l2_dirty_wd,        // write data of dirty
+    /********* I_Cache part **********/
+    input               irq,                // icache request
+    input               ic_rw_en,           // icache write enable mark
+    input               complete_ic,        // complete mark of writing into icache
+    input       [27:0]  l2_addr_ic,         // address of fetching instruction
+    input               l2_cache_rw_ic,     // read / write signal of CPU
+    output reg          mem_wr_ic_en,       // mem write icache mark
+    output reg          ic_en,              // icache request enable mark
+    /********* D_Cache part **********/
+    input               drq,                // dcache request
+    input               dc_rw_en,           // dcache write enable mark
+    input               complete_dc,        // complete mark of writing into dcache
+    input       [27:0]  l2_addr_dc,         // address of accessing memory
+    input               l2_cache_rw_dc,     // read / write signal of CPU    
+    output reg          mem_wr_dc_en,       // mem write dcache mark
+    output reg          dc_en,              // dcache request enable mark
+    /************* L1 part ***********/
+    output reg  [127:0] data_wd_l2,         // write data to L1 from L2   
+    output reg          data_wd_l2_en,      // write data to L1 from L2 enable mark 
+    /********** memory part **********/
+    input               mem_complete,       // complete mark of writing into MEM
+    input       [511:0] mem_rd,             // read data of MEM
+    output reg  [511:0] mem_wd,             // write data of MEM
     output reg  [25:0]  mem_addr,           // address of memory
     output reg          mem_rw              // read / write signal of memory
     );
 
-    reg         [1:0]   hitway;
+    reg         [1:0]   hitway;             // hit mark
     reg                 hitway0;            // the mark of choosing path0 
     reg                 hitway1;            // the mark of choosing path1
     reg                 hitway2;            // the mark of choosing path0 
     reg                 hitway3;            // the mark of choosing path1
-    reg         [2:0]   nextstate,state;              // state of l2_icache
-    reg         [1:0]   choose_way;
-    reg                 valid;
-    reg                 dirty;
+    reg         [2:0]   nextstate,state;    // state of l2_icache
+    reg         [1:0]   choose_way;         // the number of choosing way 
+    reg                 valid;              // valid mark
+    reg                 dirty;              // dirty mark
     reg        [27:0]   l2_addr;            // address of accessing L2
     reg                 l2_cache_rw;        // read / write signal of CPU      
-    reg                 complete;
+    reg                 complete;           // complete mark of L1
 
     assign l2_index  = l2_addr[10:2];
     assign offset    = l2_addr[1:0];

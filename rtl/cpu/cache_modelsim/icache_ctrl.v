@@ -1,11 +1,18 @@
-/*
- -- ============================================================================
- -- FILE NAME   : 
- -- DESCRIPTION : 指令高速缓存器控制
- -- ----------------------------------------------------------------------------
- -- Date:2016/1/15         Coding_by:kippy
- -- ============================================================================
-*/
+////////////////////////////////////////////////////////////////////
+// Engineer:       Kippy Chen - 799182081@qq.com                  //
+//                                                                //
+// Additional contributions by:                                   //
+//                 Beyond Sky - fan-dave@163.com                  //
+//                 Junhao Chang                                   //
+//                 Leway Colin - colin4124@gmail.com              //
+//                                                                //
+// Design Name:    icache_ctrl                                    //
+// Project Name:   FMRT Mini Core                                 //
+// Language:       Verilog                                        //
+//                                                                //
+// Description:    Control part of I-Cache.                       //
+//                                                                //
+////////////////////////////////////////////////////////////////////
 
 `timescale 1ns/1ps
 
@@ -14,39 +21,38 @@
 `include "icache.h"
 
 module icache_ctrl(
-    input              clk,           // clock
-    input              rst,           // reset
-    /* CPU part */
-
-    input      [29:0]  if_addr,       // address of fetching instruction
-    input              rw,            // read / write signal of CPU
-    output reg [31:0]  cpu_data,      // read data of CPU
-    output reg         miss_stall,    // the signal of stall caused by cache miss
-    /* L1_cache part */
-    input              lru,           // mark of replacing
-    input      [20:0]  tag0_rd,       // read data of tag0
-    input      [20:0]  tag1_rd,       // read data of tag1
-    input      [127:0] data0_rd,      // read data of data0
-    input      [127:0] data1_rd,      // read data of data1
-    input      [127:0] data_wd_l2,     
-    // output to L1_cache
-    output reg [20:0]  tag_wd,        // write data of L1_tag
-    output reg         block0_we,     // write signal of block0
-    output reg         block1_we,     // write signal of block1
-    output reg         block0_re,     // read signal of block0
-    output reg         block1_re,     // read signal of block1
-    output reg [7:0]   index,         // address of L1_cache
-    /* L2_cache part */
-    input              ic_en,         // icache enable signal of accessing L2_cache
-    input              l2_rdy,        // ready signal of L2_cache
-    input              complete,      // complete op writing to L1
-    input              mem_wr_ic_en,
-    output reg         irq,           // icache request
-    output reg         ic_rw_en,      // enable signal of writing icache 
-    output reg [27:0]  l2_addr,
-    output             l2_cache_rw,
-    /* if_reg part */
-    output reg         data_rdy       // tag hit mark
+    /********* Clk & Reset ********/
+    input              clk,              // clock
+    input              rst,              // reset
+    /********** CPU part **********/
+    input      [29:0]  if_addr,          // address of fetching instruction
+    input              rw,               // read / write signal of CPU
+    output reg [31:0]  cpu_data,         // read data of CPU
+    output reg         miss_stall,       // the signal of stall caused by cache miss
+    /******** I_Cache part ********/
+    input              lru,              // mark of replacing
+    input      [20:0]  tag0_rd,          // read data of tag0
+    input      [20:0]  tag1_rd,          // read data of tag1
+    input      [127:0] data0_rd,         // read data of data0
+    input      [127:0] data1_rd,         // read data of data1
+    input      [127:0] data_wd_l2,       // wr_data from L2
+    output reg [20:0]  tag_wd,           // L1_tag's wr_data  
+    output reg         block0_we,        // write signal of block0
+    output reg         block1_we,        // write signal of block1
+    output reg         block0_re,        // read signal of block0
+    output reg         block1_re,        // read signal of block1
+    output reg [7:0]   index,            // address of L1_cache
+    /******* L2_Cache part *******/
+    input              ic_en,            // I_Cache enable signal of accessing L2_cache
+    input              l2_rdy,           // ready signal of L2_cache
+    input              complete,         // complete op writing to L1
+    input              mem_wr_ic_en,     // enable signal that MEM write I_Cache  
+    output reg         irq,              // I_Cache request
+    output reg         ic_rw_en,         // enable signal of writing I_Cache 
+    output reg [27:0]  l2_addr,          // L2 address
+    output             l2_cache_rw,      // L2 write/read signal
+    /****** IF Reg module ********/
+    output reg         data_rdy          // data to CPU ready mark
     );
     reg                tagcomp_hit;
     reg                hitway0;          // the mark of choosing path0 

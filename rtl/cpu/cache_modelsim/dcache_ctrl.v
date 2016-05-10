@@ -1,11 +1,18 @@
-/*
- -- ============================================================================
- -- FILE NAME   : dcache_ctrl.v
- -- DESCRIPTION : data_cache 
- -- ----------------------------------------------------------------------------
- -- Date:2016/3/17         Coding_by:kippy
- -- ============================================================================
-*/
+////////////////////////////////////////////////////////////////////
+// Engineer:       Kippy Chen - 799182081@qq.com                  //
+//                                                                //
+// Additional contributions by:                                   //
+//                 Beyond Sky - fan-dave@163.com                  //
+//                 Junhao Chang                                   //
+//                 Leway Colin - colin4124@gmail.com              //
+//                                                                //
+// Design Name:    dcache_ctrl                                    //
+// Project Name:   FMRT Mini Core                                 //
+// Language:       Verilog                                        //
+//                                                                //
+// Description:    Control part of D-Cache.                       //
+//                                                                //
+////////////////////////////////////////////////////////////////////
 
 `timescale 1ns/1ps
 
@@ -14,50 +21,51 @@
 `include "dcache.h"
 
 module dcache_ctrl(
+    /********* Clk & Reset ********/
     input              clk,           // clock
     input              rst,           // reset
-    /* CPU part */
+    /********** CPU part **********/
     input      [29:0]  addr,          // address of accessing memory
     input              memwrite_m,    // read / write signal of CPU
-    input              access_mem,
-    input      [31:0]  wr_data,
+    input              access_mem,    // access MEM mark
+    input      [31:0]  wr_data,       // write data from CPU
     output reg [31:0]  read_data_m,   // read data of CPU
     output reg         miss_stall,    // the signal of stall caused by cache miss
-    /* L1_cache part */
+    /******** D_Cache part ********/
+    output reg         block0_we,     // write mark of block0
+    output reg         block1_we,     // write mark of block1
+    output reg         block0_re,     // read mark of block0
+    output reg         block1_re,     // read mark of block1
+    output reg [1:0]   offset,        // offset of dcache
+    output reg         tagcomp_hit,   // hit mark of dcache
+    output reg         hitway,        // path hit mark            
+    output reg [7:0]   index,         // address of L1_cache
+    output reg         drq,           // dcache request
+    output reg         dc_rw_en,      // enable signal of writing dcache 
+    // d_tag
     input              lru,           // mark of replacing
     input      [20:0]  tag0_rd,       // read data of tag0
     input      [20:0]  tag1_rd,       // read data of tag1
     input      [127:0] data0_rd,      // read data of data0
     input      [127:0] data1_rd,      // read data of data1
-    input              dirty0,
-    input              dirty1,
-    // output to L1_cache  
-    output reg         dirty_wd,
-    output reg         block0_we,
-    output reg         block1_we,
-    output reg         block0_re,
-    output reg         block1_re,
-    output reg [1:0]   offset,  
-    output reg         tagcomp_hit,        
-    output reg [20:0]  tag_wd,        // write data of L1_tag
+    input              dirty0,        // read data of dirty0 
+    input              dirty1,        // read data of dirty1       
+    output reg         dirty_wd,      // write data of dirty     
+    output reg [20:0]  tag_wd,        // write data of dtag
+    // d_data
     output reg         data_wd_dc_en, // choose signal of data_wd
-    output reg [31:0]  dc_wd,
-    output reg         hitway,        // path hit mark            
-    output reg [7:0]   index,         // address of L1_cache
+    output reg [31:0]  dc_wd,    
     output reg [127:0] rd_to_l2,      // read data of L1_cache's data
-    /* L2_cache part */
+    /******* L2_Cache part *******/
     input              l2_complete,
     input              dc_en,         // busy signal of L2_cache
     input              l2_rdy,        // ready signal of L2_cache
     input              mem_wr_dc_en,
     input              complete,      // complete op writing to L1
     input      [127:0] data_wd_l2,     
-    output reg         drq,           // dcache request
-    output reg         dc_rw_en,      // enable signal of writing dcache 
     output reg [27:0]  l2_addr,
     output reg         l2_cache_rw    // l2_cache read/write signal
     );
-    // reg                dc_rw;
     reg                hitway0;             // the mark of choosing path0
     reg                hitway1;             // the mark of choosing path1
     reg                choose_way;          // the way of L1 we choose to replace
