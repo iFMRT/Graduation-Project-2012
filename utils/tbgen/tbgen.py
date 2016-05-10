@@ -78,6 +78,10 @@ class TestbenchGenerator(object):
     def parser_header(self, module_src):
         module_header = ''
         for line in module_src:
+            # ignore when the line is comment
+            if '/*' in line:
+                continue;
+
             if 'input' in line or 'output' in line or 'inout' in line:
                 self.__parse_ports(line)
 
