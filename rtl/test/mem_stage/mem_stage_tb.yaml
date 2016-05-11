@@ -1,0 +1,28 @@
+# Input Ports
+clk:             "placeholder" 
+reset:           "placeholder" 
+stall:           "placeholder" 
+flush:           "placeholder" 
+spm_rd_data:     "placeholder" 
+ex_exp_code:     "placeholder" 
+ex_pc:           "placeholder" 
+ex_en:           "placeholder" 
+ex_mem_op:       "placeholder" 
+ex_mem_wr_data:  "placeholder" 
+ex_rd_addr:      "placeholder" 
+ex_gpr_we_:      "placeholder" 
+ex_out:          "placeholder" 
+---
+# Output Ports
+display: something you want to display
+fwd_data:        "placeholder" 
+spm_addr:        "placeholder" 
+spm_as_:         "placeholder" 
+spm_rw:          "placeholder" 
+spm_wr_data:     "placeholder" 
+mem_exp_code:    "placeholder" 
+mem_pc:          "placeholder" 
+mem_en:          "placeholder" 
+mem_rd_addr:     "placeholder" 
+mem_gpr_we_:     "placeholder" 
+mem_out:         "placeholder" 
