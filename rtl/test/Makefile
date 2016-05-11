@@ -91,17 +91,21 @@ TCGEN = ../../utils/tbgen/tcgen.py
 TC_TEMPLATE = template/testcase.v
 
 # Component directory
-IF_DIR = if_stage
-ID_DIR = id_stage
+IF_DIR      = if_stage
+ID_DIR      = id_stage
+CPU_TOP_DIR = cpu_top
 
 # IF Stage ALU Testcase
-IF_TC_ALU = if_stage/if_stage.alu.yaml
-
+IF_TC_ALU   = if_stage/if_stage.alu.yaml
 # ID Stage ALU Testcase
-ID_TC_ALU = id_stage/id_stage.alu.yaml
+ID_TC_ALU   = id_stage/id_stage.alu.yaml
+# CPU Top ALU Testcase
+CPU_TOP_TC_ALU = cpu_top/cpu_top.alu.yaml
 
 testcase_if_alu : $(IF_TC_ALU)
 	$(TCGEN) $(IF_TC_ALU) -t $(TC_TEMPLATE) -o $(IF_DIR)/testcase_alu.v
 
 testcase_id_alu : $(ID_TC_ALU)
 	$(TCGEN) $(ID_TC_ALU) -t $(TC_TEMPLATE) -o $(ID_DIR)/testcase_alu.v
+testcase_cpu_top_alu : $(ID_TC_ALU)
+	$(TCGEN) $(CPU_TOP_TC_ALU) -t $(TC_TEMPLATE) -o $(CPU_TOP_DIR)/testcase_alu.v
