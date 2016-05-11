@@ -1,4 +1,21 @@
-`include "stddef.h"
+////////////////////////////////////////////////////////////////////
+// Engineer:       Leway Colin - colin4124@gmail.com              //
+//                                                                //
+// Additional contributions by:                                   //
+//                 Beyond Sky - fan-dave@163.com                  //
+//                 Junhao Chen                                    //
+//                 Kippy Chen - 799182081@qq.com                  //
+//                                                                //
+// Design Name:    Scratch Pad Memory                             //
+// Project Name:   FMRT Mini Core                                 //
+// Language:       Verilog                                        //
+//                                                                //
+// Description:    Dual Port RAM for instructions and Data.       //
+//                                                                //
+////////////////////////////////////////////////////////////////////
+
+`include "common_defines.v"
+`include "base_core_defines.v"
 
 module spm (
     input         clk,            // Clock
@@ -40,16 +57,16 @@ module spm (
 	dpram_sim x_s3e_dpram (
 		/********** Port A: IF Stage **********/
 		.clock_a   (clk),			        // Clock
-		.address_a (if_spm_addr),     		// Address
-		.data_a    (if_spm_wr_data),     	// Write data (Not Connected)
+		.address_a (if_spm_addr),     // Address
+		.data_a    (if_spm_wr_data),  // Write data (Not Connected)
 		.wren_a    (wea),			        // Write enable A (Disable)
-		.q_a       (if_spm_rd_data),    	// Read data
+		.q_a       (if_spm_rd_data),  // Read data
 		/********** Port B: MEM Stage **********/
 		.clock_b   (clk),			        // Clock
-		.address_b (mem_spm_addr),	  	    // Address
-		.data_b    (mem_spm_wr_data),       // Write data
+		.address_b (mem_spm_addr),	  // Address
+		.data_b    (mem_spm_wr_data), // Write data
 		.wren_b    (web),			        // Write enable
-		.q_b       (mem_spm_rd_data)  	    // Read data
+		.q_b       (mem_spm_rd_data)  // Read data
 	);
 
 endmodule

@@ -141,6 +141,7 @@
 `define CSR_OP_CLEAR   2'b11
 
 `define CSR_ADDR_BUS   11:0  // CSRs address bus
+`define CSR_ADDR_W     12    // CSRs address bus
 
 
 ///////////////////////////////////////////////

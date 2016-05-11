@@ -42,8 +42,8 @@ module ex_stage (
     input [`EX_OUT_SEL_BUS] id_ex_out_sel,
     input [`WORD_DATA_BUS]  id_gpr_wr_data,
     /******** Forward Data From MEM Stage ********/
-    input                   ex_ra_fwd_en,
-    input                   ex_rb_fwd_en,
+    input                   ex_rs1_fwd_en,
+    input                   ex_rs2_fwd_en,
     input [`WORD_DATA_BUS]  mem_fwd_data,   // MEM Stage
     /******** output to ID Stage ********/
     output [`WORD_DATA_BUS] fwd_data,
@@ -71,10 +71,10 @@ module ex_stage (
     assign fwd_data    = ex_out_inner;
     // Forward Data From MEM Stage
     // When Load instruction in MEM Stage, Store instruction in EX Stage.
-    assign alu_in_0    = (ex_ra_fwd_en == `ENABLE) ? mem_fwd_data : id_alu_in_0;
-    assign mem_wr_data = (ex_rb_fwd_en == `ENABLE) ? mem_fwd_data : id_mem_wr_data;
+    assign alu_in_0    = (ex_rs1_fwd_en == `ENABLE) ? mem_fwd_data : id_alu_in_0;
+    assign mem_wr_data = (ex_rs2_fwd_en == `ENABLE) ? mem_fwd_data : id_mem_wr_data;
 
-    // assign alu_in_1 = (ex_rb_fwd_en == `ENABLE) ? mem_fwd_data : id_alu_in_1;
+    // assign alu_in_1 = (ex_rs2_fwd_en == `ENABLE) ? mem_fwd_data : id_alu_in_1;
     // It's wrong! When the instruction is Store, alu_in_1 is imm, not register data!
 
     /******** input logic ********/

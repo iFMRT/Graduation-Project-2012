@@ -71,7 +71,7 @@ module decoder (
 
 
     /********** Source Register Used State **********/
-    assign mem_wr_data = rs2_data;
+    assign mem_wr_data  = rs2_data;
     assign gpr_rs1_addr = rs1_addr;
     assign gpr_rs2_addr = rs2_addr;
 

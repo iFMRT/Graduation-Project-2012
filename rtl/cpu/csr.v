@@ -25,6 +25,7 @@ module cs_registers (
     output reg [`WORD_DATA_BUS] csr_rd_data,
     input [`WORD_DATA_BUS]      csr_wr_data_i,
     input [`WORD_DATA_BUS]      mepc_i,
+    output reg [`WORD_DATA_BUS] mepc_o,
     input [`EXP_CODE_BUS]       exp_code_i,
     input                       save_exp_code,
     input                       save_exp,
@@ -45,6 +46,7 @@ module cs_registers (
     /******** Read Logic ********/
     always @ (*) begin
         csr_rd_data = `WORD_DATA_W'hx;
+        mepc_o      = mepc_q;
 
         case (csr_addr)
             // mstatus: always M-mode, contains IE bit
