@@ -49,7 +49,8 @@ if __name__ == "__main__":
 
     args = argparser.parse_args()
 
-    module_name = args.src[0].split('.')[0]
+    # "foo/bar.py" or "bar.py" to "bar"
+    module_name = args.src[0].split('/')[-1].split('.')[0]
 
     with open(args.src[0], 'r') as yaml_file:
         task_ports = []
