@@ -360,7 +360,13 @@ module cpu_top(
         .if_spm_as_      (if_spm_as_),      // address strobe
         .if_spm_rw       (if_spm_rw),       // Read/Write
         .if_spm_wr_data  (if_spm_wr_data),  // Write data
-        .if_spm_rd_data  (if_spm_rd_data)   // Read data
+        .if_spm_rd_data  (if_spm_rd_data),  // Read data
+        /********** Port B: MEM Stage **********/
+	      .mem_spm_addr    (mem_spm_addr),    // Address
+	      .mem_spm_as_     (mem_spm_as_),     // Address Strobe
+	      .mem_spm_rw      (mem_spm_rw),      // Read/Write
+	      .mem_spm_wr_data (mem_spm_wr_data), // Write data
+	      .mem_spm_rd_data (mem_spm_rd_data)  // Read data
     );
 
 endmodule

@@ -391,6 +391,7 @@ module decoder (
                 end
                 default: begin // Undefined instruction
                     exp_code = `EXP_ILLEGAL_INSN;
+                    $display(op);
                     $display("OP error");
                 end
             endcase
