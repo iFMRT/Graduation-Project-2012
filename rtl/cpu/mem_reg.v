@@ -36,7 +36,7 @@ module mem_reg (
     input wire                  ex_gpr_we_,     // General purpose register write enable
     /********** MEM/WB Pipeline Register **********/
     output reg [`EXP_CODE_BUS]  mem_exp_code,   // Exception code
-    output reg                  mem_pc,
+    output reg [`WORD_DATA_BUS] mem_pc,
     output reg                  mem_en,         // If Pipeline data enables
     output reg [`REG_ADDR_BUS]  mem_rd_addr,    // General purpose register write address
     output reg                  mem_gpr_we_,    // General purpose register write enable
