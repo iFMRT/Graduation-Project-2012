@@ -1,155 +1,136 @@
 /******** Time scale ********/
 `timescale 1ns/1ps
-////////////////////////////////////////////////////////////////////////
-// Engineer:       Leway Colin - colin4124@gmail.com                  //
-//                                                                    //
-// Additional contributions by:                                       //
-//                 Beyond Sky - fan-dave@163.com                      //
-//                 Kippy Chen - 799182081@qq.com                      //
-//                 Junhao Chang                                       //
-//                                                                    //
-// Design Name:    Bus Interface                                      //
-// Project Name:   FMRT Mini Core                                     //
-// Language:       Verilog                                            //
-//                                                                    //
-// Description:    Bus interface used to control bus access; used for //
-//                 IF Stage and MEM Stage                             //
-//                                                                    //
-////////////////////////////////////////////////////////////////////////
 
-`include "common_defines.v"
+`include "stddef.h"
+`include "cpu.h"
 
-module bus_if_test; 
-    /********** Pipeline Control Signal **********/
-    reg                        stall;     // Stall
-    reg                        flush;     // Flush signal
+module bus_if_test;
+    /************* Pipeline Control Signals *************/
+    reg             stall;
+    reg             flush;
     /************* CPU Interface *************/
-    reg  [`WORD_ADDR_BUS]      addr;      // Address
-    reg                        as_;       // Address strobe
-    reg                        rw;        // Read/Write
-    reg  [`WORD_DATA_BUS]      wr_data;   // Write data
-    wire[`WORD_DATA_BUS] rd_data;   // Read data
+    reg [29:0]      addr;        // Address
+    reg             as_;         // Address strobe
+    reg             rw;          // Read/Write
+    reg [31:0]      wr_data;     // Write data
+    wire [31:0]     rd_data;     // Read data
     /************* SPM Interface *************/
-    reg  [`WORD_DATA_BUS]      spm_rd_data;
-    wire [`WORD_ADDR_BUS]     spm_addr;
-    wire                 spm_as_;
-    wire                      spm_rw;
-    wire [`WORD_DATA_BUS]     spm_wr_data
-;
+    reg [31:0]      spm_rd_data; // Read data
+    wire [29:0]     spm_addr;    // Address
+    wire            spm_as_;     // Address strobe
+    wire            spm_rw;      // Read/Write
+    wire [31:0]     spm_wr_data; // Read data
 
-
-    /******** Define Simulation Loop********/
+    /******** Define Simulation Loop ********/
     parameter             STEP = 10;
 
+    /******** Instantiate Test Module  ********/
     bus_if bus_if (
+        /************* Pipeline Control Signals *************/
         .stall(stall),
         .flush(flush),
-        .addr(addr),
-        .as_(as_),
-        .rw(rw),
-        .wr_data(wr_data),
-        .rd_data(rd_data),
-        .spm_rd_data(spm_rd_data),
-        .spm_addr(spm_addr),
-        .spm_as_(spm_as_),
-        .spm_rw(spm_rw),
-        .spm_wr_data(spm_wr_data)
+        /************* CPU Interface *************/
+        .addr(addr),               // Address
+        .as_(as_),                 // Address strobe
+        .rw(rw),                   // Read/Write
+        .wr_data(wr_data),         // Write data
+        .rd_data(rd_data),         // Read data
+        /************* SPM Interface *************/
+        .spm_rd_data(spm_rd_data), // Read data
+        .spm_addr(spm_addr),       // Address
+        .spm_as_(spm_as_),         // Address strobe
+        .spm_rw(spm_rw),           // Read/Write
+        .spm_wr_data(spm_wr_data)  // Read data
     );
 
-    task bus_if_tb;
-        input [`WORD_DATA_BUS] _rd_data;
-        input [`WORD_ADDR_BUS] _spm_addr;
-        input  _spm_as_;
-        input  _spm_rw;
-        input [`WORD_DATA_BUS] _spm_wr_data;
-
-        begin
-            if((rd_data  === _rd_data)  &&
-               (spm_addr  === _spm_addr)  &&
-               (spm_as_  === _spm_as_)  &&
-               (spm_rw  === _spm_rw)  &&
-               (spm_wr_data  === _spm_wr_data)
-              ) begin
-                $display("Test Succeeded !");
-            end else begin
-                $display("Test Failed !");
-            end
-        end
-
-    endtask
-
-    /******** Test Case ********/
+    //******** Test Case ********/
     initial begin
         # 0 begin
-            stall <= `DISABLE;
-            as_ <= `ENABLE_;
-            flush <= `DISABLE;
-            rw <= `READ;
+            /******** Read Data Input Test ********/
+            stall       <= `DISABLE;
+            flush       <= `DISABLE;
+            addr        <= `WORD_ADDR_W'h55;
+            as_         <= `ENABLE_;
+            rw          <= `READ;
+            wr_data     <= `WORD_DATA_W'h999;        // don't care, e.g: 0x999
             spm_rd_data <= `WORD_DATA_W'h24;
-            addr <= `WORD_ADDR_W'h55;
-            wr_data <= `WORD_DATA_W'h999;
+        end
+        # STEP begin
+            /******** Read Data Output Test ********/
+            if ( (rd_data      == `WORD_DATA_W'h24)  &&
+                 (spm_addr     == `WORD_ADDR_W'h55)  &&
+                 (spm_as_      == `ENABLE_)          &&
+                 (spm_rw       == `READ)             &&
+                 (spm_wr_data  == `WORD_DATA_W'h999)        // don't care, e.g: 0x999
+               ) begin
+                $display("Bus If module read data Test Succeeded !");
+            end else begin
+                $display("Bus If module read data Test Failed !");
             end
-        # (STEP * 3/4)
+            /******** No Memory Access Input Test ********/
+            addr        <= `WORD_ADDR_W'h55;
+            as_         <= `DISABLE_;
+            rw          <= `READ;
+            wr_data     <= `WORD_DATA_W'h999;        // don't care, e.g: 0x999
+            spm_rd_data <= `WORD_DATA_W'h24;
+        end
         # STEP begin
-            $display("\n== Read Data Test ==");
-           bus_if_tb(
-           	`WORD_DATA_W'h24, // rd_data
-           	`WORD_ADDR_W'h55, // spm_addr
-           	`ENABLE_, // spm_as_
-           	`READ, // spm_rw
-           	`WORD_DATA_W'h999 // spm_wr_data
-           );
-           
-            as_ <= `DISABLE_;
-           end
-        
+            /******** No Memory Access Output Test ********/
+            if ( (rd_data      == `WORD_DATA_W'h0)   &&
+                 (spm_addr     == `WORD_ADDR_W'h55)  &&
+                 (spm_as_      == `DISABLE_)         &&
+                 (spm_rw       == `READ)             &&
+                 (spm_wr_data  == `WORD_DATA_W'h999)        // don't care, e.g: 0x999
+               ) begin
+                $display("Bus If module no access Test Succeeded !");
+            end else begin
+                $display("Bus If module no access Test Failed !");
+            end
+            /******** Write Data Input Test ********/
+            addr        <= `WORD_ADDR_W'h55;
+            as_         <= `ENABLE_;
+            rw          <= `WRITE;
+            wr_data     <= `WORD_DATA_W'h59;
+            spm_rd_data <= `WORD_DATA_W'h24;
+        end
         # STEP begin
-            $display("\n== No Memory Access Test ==");
-           bus_if_tb(
-           	`WORD_DATA_W'h0, // rd_data
-           	`WORD_ADDR_W'h55, // spm_addr
-           	`DISABLE_, // spm_as_
-           	`READ, // spm_rw
-           	`WORD_DATA_W'h999 // spm_wr_data
-           );
-           
-            as_ <= `ENABLE_;
-           wr_data <= `WORD_DATA_W'h59;
-           rw <= `WRITE;
-           end
-        
+            /******** Write Data Output Test ********/
+            if ( (rd_data      == `WORD_DATA_W'h0)   &&
+                 (spm_addr     == `WORD_ADDR_W'h55)  &&
+                 (spm_as_      == `ENABLE_)          &&
+                 (spm_rw       == `WRITE)            &&
+                 (spm_wr_data  == `WORD_DATA_W'h59)
+                 ) begin
+                $display("Bus If module write data Test Succeeded !");
+            end else begin
+                $display("Bus If module write data Test Failed !");
+            end
+            /******** Pipeline flush or stall Input Test ********/
+            stall       <= `ENABLE;
+            flush       <= `ENABLE;
+            as_         <= `DISABLE_;
+            rw          <= `READ;
+            wr_data     <= `WORD_DATA_W'h999;        // don't care, e.g: 0x999
+        end
         # STEP begin
-            $display("\n== Write Data Test ==");
-           bus_if_tb(
-           	`WORD_DATA_W'h24, // rd_data
-           	`WORD_ADDR_W'h55, // spm_addr
-           	`ENABLE_, // spm_as_
-           	`WRITE, // spm_rw
-           	`WORD_DATA_W'h59 // spm_wr_data
-           );
-           
-            stall <= `ENABLE;
-           as_ <= `DISABLE_;
-           wr_data <= `WORD_DATA_W'h999;
-           rw <= `READ;
-           flush <= `ENABLE;
-           end
-        # STEP begin
-            $display("\n== Pipeline flush or stall Test ==");
-            bus_if_tb(
-            	`WORD_DATA_W'h0, // rd_data
-            	`WORD_ADDR_W'h55, // spm_addr
-            	`DISABLE_, // spm_as_
-            	`READ, // spm_rw
-            	`WORD_DATA_W'h999 // spm_wr_data
-            );
+            /******** Write Data Output Test ********/
+            if ( (rd_data      == `WORD_DATA_W'h0)   &&
+                 (spm_addr     == `WORD_ADDR_W'h55)  &&
+                 (spm_as_      == `DISABLE_)          &&
+                 (spm_rw       == `READ)            &&
+                 (spm_wr_data  == `WORD_DATA_W'h999)
+                 ) begin
+                $display("Bus If module Pipeline flush or stall Test Succeeded !");
+            end else begin
+                $display("Bus If module Pipeline flush or stall Test Failed !");
+            end
             $finish;
         end
-    end
-	/******** Output Waveform ********/
+    end // initial begin
+
+    /******** Output Waveform ********/
     initial begin
        $dumpfile("bus_if.vcd");
-       $dumpvars(0, bus_if);
+       $dumpvars(0,bus_if);
     end
-
-endmodule
+endmodule // mem_stage_test

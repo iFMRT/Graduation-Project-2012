@@ -148,14 +148,14 @@ module if_stage_test;
         # STEP begin
             $display("\n=== Clock 2: Flush ===");
            if_stage_tb(
-           	`WORD_ADDR_W'h58, // spm_addr
-           	`DISABLE_, // spm_as_
-           	`READ, // spm_rw
-           	`WORD_DATA_W'h0, // spm_wr_data
-           	`WORD_DATA_W'h0, // pc
-           	`WORD_DATA_W'h160, // if_pc
-           	`ISA_NOP, // if_insn
-           	`DISABLE // if_en
+           	           `WORD_ADDR_W'h58, // spm_addr
+           	           `DISABLE_, // spm_as_
+           	           `READ, // spm_rw
+           	           `WORD_DATA_W'h0, // spm_wr_data
+           	           `WORD_DATA_W'h0, // pc
+           	           `WORD_DATA_W'h160, // if_pc
+           	           `ISA_NOP, // if_insn
+           	           `DISABLE // if_en
            );
            
             br_taken <= `ENABLE;

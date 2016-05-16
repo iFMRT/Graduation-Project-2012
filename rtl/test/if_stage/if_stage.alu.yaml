@@ -1,0 +1,27 @@
+# Output Ports
+display:      "\\n========= Clock 1 ========"
+pc:           "`WORD_DATA_W'h0"
+if_pc:        "`WORD_DATA_W'h4"
+if_insn:      "`WORD_DATA_W'h00400493"
+if_en:        "`ENABLE"
+---
+# Output Ports
+display:      "\\n========= Clock 2 ========"
+pc:           "`WORD_DATA_W'h4"
+if_pc:        "`WORD_DATA_W'h8"
+if_insn:      "`WORD_DATA_W'hFFE02913"
+if_en:        "`ENABLE"
+---
+# Output Ports
+display:      "\\n========= Clock 3 ========"
+pc:           "`WORD_DATA_W'h8"
+if_pc:        "`WORD_DATA_W'hc"
+if_insn:      "`WORD_DATA_W'hFFE03993"
+if_en:        "`ENABLE"
+---
+# Output Ports
+display:      "\\n========= Clock 4 ========"
+pc:           "`WORD_DATA_W'hc"
+if_pc:        "`WORD_DATA_W'h10"
+if_insn:      "`WORD_DATA_W'h0054CA13"
+if_en:        "`ENABLE"
