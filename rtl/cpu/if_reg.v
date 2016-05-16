@@ -39,29 +39,29 @@ module if_reg (
     always @(posedge clk) begin
         if (reset == `ENABLE) begin
             /******** Reset ********/
-            pc      <= #1 `WORD_DATA_W'h0;
-            if_pc   <= #1 `WORD_DATA_W'h0;
-            if_insn <= #1 `OP_NOP;
-            if_en   <= #1 `DISABLE;
+            pc      <=  `WORD_DATA_W'h0;
+            if_pc   <=  `WORD_DATA_W'h0;
+            if_insn <=  `OP_NOP;
+            if_en   <=  `DISABLE;
         end else begin
             /******** Update pipeline ********/
             if (stall == `DISABLE) begin
                 if (flush == `ENABLE) begin
                     /* Flush */
-                    if_pc   <= #1 new_pc;
-                    if_insn <= #1 `OP_NOP;
-                    if_en   <= #1 `DISABLE;
+                    if_pc   <=  new_pc;
+                    if_insn <=  `OP_NOP;
+                    if_en   <=  `DISABLE;
                 end else if (br_taken == `ENABLE) begin
                     /* Branch taken */
-                    if_pc   <= #1 br_addr;
-                    if_insn <= #1 `OP_NOP;
-                    if_en   <= #1 `DISABLE;
+                    if_pc   <=  br_addr;
+                    if_insn <=  `OP_NOP;
+                    if_en   <=  `DISABLE;
                 end else begin
                     /* Next PC */
-                    pc      <= #1 if_pc;
-                    if_pc   <= #2 if_pc + `WORD_DATA_W'd4;
-                    if_insn <= #1 insn;
-                    if_en   <= #1 `ENABLE;
+                    pc      <=  if_pc;
+                    if_pc   <= #1 if_pc + `WORD_DATA_W'd4;
+                    if_insn <=  insn;
+                    if_en   <=  `ENABLE;
                 end // else: !if(br_taken == `ENABLE)
             end // if (stall == `DISABLE)
         end // else: !if(reset == `ENABLE)

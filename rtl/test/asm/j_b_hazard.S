@@ -1,39 +1,40 @@
-// test Jump & Branch & Load & Store format instruction with data hazard 
+# test Jump & Branch & Load & Store format instruction with data hazard
 
-addi t0,zero,1025  // t0 = 1025
-addi t1,zero,2     // t1 = 2
-beq  t0,t1,8       // if t0 = t1, jump to insn(sb   t0,t1,1024)
+addi x26,x0,1025     # x26 = 1025
+addi x27,x0,2        # x27 = 2
 
-addi t1,t0,4       // t1 = 1029               (t0 data hazard)
-jal  zero,16       // jump to insn (sw   t2,t0,1028)
+beq  x26,x27,jump1   # if x26 = x27, jump to insn(sb x26,x1024(x27))
+addi x27,x26,4       # x27 = x26+4 = 1029  (x26 data hazard)
+jal  x0,jump2        # jump to insn (sw   x28,x26,1028)
+jump1:
+sb   x26,1024(x27)   # x26 --> [x27 + 1024]
+sh   x27,1027(x26)   # x27 --> [x26 + 1027]
+lb   x28,1024(x27)   # [x27 + 1024] byte --> x28
+lh   x29,1027(x26)   # [x26 + 1027] half_word --> x29
+jump2:
+sw   x26,1027(x26)   # x26 --> [x26 + 1027] = 1025 --> [2052]
+lbu  x27,1027(x26)   # [x26 + 1027] --> x27 = 1     (load hazard)
+lhu  x30,1027(x26)   # [x26 + 1027] --> x30 = 1025  (load hazard)
+add  x29,x26,x27     # x29 = x26 + x27 = 1026     (x27 data hazard)
+addi x28,x0,14       # x28 = 14
 
-sb   t0,1024(t1)   // t0 --> [t1 + 1024] 
-sh   t1,1028(t0)   // t1 --> [t0 + 1028]
-lb   t2,1024(t1)   // [t1 + 1024] byte --> t2  
-lh   t3,1028(t0)   // [t0 + 1028] half_word --> t3  
+add  x30,x26,x28     # x30 = x26 + x28 = 1039     (x28 data hazard)
+add  x27,x27,x29     # x27 = x27 + x29 = 1027     (x29 data hazard)
+bne  x27,x30,branch1 # if x26 != x30,jump to insn(add  x27,x27,x29)
 
-sw   t0,1028(t0)   // t0 --> [t0 + 1028] = 1025 --> [2053]
-lbu  t1,1028(t0)   // [t0 + 1028] --> t1 = 1  (load hazard)
-lhu  t4,1028(t0)   // [t0 + 1028] --> t4 = 1  (load hazard)
-add  t3,t0,t1      // t3 = t0 + t1 = 1026     (t1 data hazard)
-addi t2,zero,14    // t2 = 14
-
-add  t4,t0,t2      // t4 = t0 + t2 = 1039     (t2 data hazard)
-add  t1,t1,t3      // t1 = t1 + t3 = 1027     (t3 data hazard)
-bne  t1,t4,8       // if t0 != t4,jump to insn(add  t1,t1,t3) 
-
-lw   t1,1028(t0)   // [t0 + 1028] --> t1    
-blt  t3,t2,8       // if t3 < t2, jump to insn(add  t1,t1,t3) 
-
-add  t1,t1,t3      // t1 = t1 + t3 = 2053
-bge  t3,t2,8       // if t3 > t2, jump to insn(blt  t3,t2,8) 
-
-add  t1,t1,t3      // t1 = t1 + t3 
-bltu t3,t2,8       // if t3 < t2, jump to insn 
- 
-bgeu t3,t2,8       // if t3 > t2, jump to insn(add  t1,t1,t3)
-
-add  t4,t0,t2      // t4 = t0 + t2 
-add  t4,t0,t2      // t4 = t0 + t2 
-
-add  t1,t1,t3      // t1 = t1 + t3 = 3079
+lw   x27,1027(x26)   # [x26 + 1027] --> x27
+blt  x29,x28,branch2 # if x29 < x28, jump to insn(add  x27,x27,x29)
+branch1:
+add  x27,x27,x29     # x27 = x27 + x29 = 2053
+bge  x29,x28,branch3 # if x29 > x28, jump to insn(bltu x29,x28,8)
+branch2:
+add  x27,x27,x29     # x27 = x27 + x29
+add  x27,x27,x29     # x27 = x27 + x29
+branch3:
+bltu x29,x28,branch4 # if x29 < x28, jump to insn(add  x30,x26,x28)
+bgeu x29,x28,branch5 # if x29 > x28, jump to insn(add  x27,x27,x29)
+add  x30,x26,x28     # x30 = x26 + x28
+branch4:
+add  x30,x26,x28     # x30 = x26 + x28
+branch5:
+add  x27,x27,x29     # x27 = x27 + x29 = 3079
