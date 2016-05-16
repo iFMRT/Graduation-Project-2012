@@ -1,9 +1,21 @@
 CC = riscv64-unknown-elf-as
 OBJCOPY = riscv64-unknown-elf-objcopy
+LD = riscv64-unknown-elf-ld
 
-INT_ALU_SRC = int_alu.S
-INT_ALU_OBJ = int_alu.out
+CSR_LD = csr.ld
+CSR_ELF = csr.elf
 
-int_alu: $(INT_ALU_SRC)
-	$(CC) -m32 $(INT_ALU_SRC) -o $(INT_ALU_OBJ)
-	$(OBJCOPY) $(INT_ALU_OBJ) -O verilog ../test.dat
+ALU_SRC = alu.S
+CSR_SRC = csr.S
+
+ALU_OBJ = alu.o
+CSR_OBJ = csr.o
+
+alu: $(ALU_SRC)
+	$(CC) -m32 $(ALU_SRC) -o $(ALU_OBJ)
+	$(OBJCOPY) $(ALU_OBJ) -O verilog ../test.dat
+
+csr: $(CSR_SRC)
+	$(CC) $(CSR_SRC) -o $(CSR_OBJ)
+	$(LD) --script $(CSR_LD) $(CSR_OBJ) -o $(CSR_ELF)
+	$(OBJCOPY) -O verilog $(CSR_ELF) ../test.dat
