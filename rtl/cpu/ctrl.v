@@ -94,7 +94,7 @@ module ctrl (
     // flush
     reg    flush, eret_flush;
     assign if_flush  = flush | eret_flush;
-    assign id_flush  = ld_hazard | br_taken;
+    assign id_flush  = flush | ld_hazard | br_taken;
     assign ex_flush  = flush;
     assign mem_flush = flush;
 

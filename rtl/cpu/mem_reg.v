@@ -30,15 +30,16 @@ module mem_reg (
     input wire                  flush,          // Flush
     /********** EX/MEM Pipeline Register **********/
     input wire [`EXP_CODE_BUS]  ex_exp_code,    // Exception code
-    input wire [`WORD_DATA_BUS] ex_pc,          // Memory access result
+    input wire [`WORD_DATA_BUS] ex_pc,
     input wire                  ex_en,          // If Pipeline data enable
     input wire [`REG_ADDR_BUS]  ex_rd_addr,     // General purpose register write address
     input wire                  ex_gpr_we_,     // General purpose register write enable
     /********** MEM/WB Pipeline Register **********/
+    output reg [`EXP_CODE_BUS]  mem_exp_code,   // Exception code
+    output reg [`WORD_DATA_BUS] mem_pc,
     output reg                  mem_en,         // If Pipeline data enables
     output reg [`REG_ADDR_BUS]  mem_rd_addr,    // General purpose register write address
     output reg                  mem_gpr_we_,    // General purpose register write enable
-    output reg [`EXP_CODE_BUS]  mem_exp_code,   // Exception code
     output reg [`WORD_DATA_BUS] mem_out         // MEM stage operating result
 );
 
@@ -46,32 +47,36 @@ module mem_reg (
     always @(posedge clk) begin
         if (reset == `ENABLE) begin
             /* Reset */
-            mem_en       <=  `DISABLE;
-            mem_rd_addr <=   `REG_ADDR_W'h0;
-            mem_gpr_we_  <=  `DISABLE_;
-            mem_exp_code <=  `EXP_NO_EXP;
-            mem_out      <=  `WORD_DATA_W'h0;
+            mem_exp_code <= `EXP_NO_EXP;
+            mem_pc       <= `WORD_DATA_W'h0;
+            mem_en       <= `DISABLE;
+            mem_rd_addr  <=  `REG_ADDR_W'h0;
+            mem_gpr_we_  <= `DISABLE_;
+            mem_out      <= `WORD_DATA_W'h0;
         end else begin
             if (stall == `DISABLE) begin
                 /* Update Pipeline Register */
                 if (flush == `ENABLE) begin                // flush
-                    mem_en       <=  `DISABLE;
-                    mem_rd_addr  <=  `REG_ADDR_W'h0;
-                    mem_gpr_we_  <=  `DISABLE_;
-                    mem_exp_code <=  `EXP_NO_EXP;
-                    mem_out      <=  `WORD_DATA_W'h0;
+                    mem_exp_code <= `EXP_NO_EXP;
+                    mem_pc       <= `WORD_DATA_W'h0;
+                    mem_en       <= `DISABLE;
+                    mem_rd_addr  <= `REG_ADDR_W'h0;
+                    mem_gpr_we_  <= `DISABLE_;
+                    mem_out      <= `WORD_DATA_W'h0;
                 end else if (miss_align == `ENABLE) begin  // Miss align
-                    mem_en       <=  ex_en;
-                    mem_rd_addr  <=   `REG_ADDR_W'h0;
-                    mem_gpr_we_  <=  `DISABLE_;
-                    mem_exp_code <=  `EXP_MISS_ALIGN;
-                    mem_out      <=  `WORD_DATA_W'h0;
+                    mem_exp_code <= `EXP_MISS_ALIGN;
+                    mem_pc       <= ex_pc;
+                    mem_en       <= ex_en;
+                    mem_rd_addr  <= `REG_ADDR_W'h0;
+                    mem_gpr_we_  <= `DISABLE_;
+                    mem_out      <= `WORD_DATA_W'h0;
                 end else begin                             // Next data
-                    mem_en       <=  ex_en;
-                    mem_rd_addr  <=  ex_rd_addr;
-                    mem_gpr_we_  <=  ex_gpr_we_;
-                    mem_exp_code <=  ex_exp_code;
-                    mem_out      <=  out;
+                    mem_exp_code <= ex_exp_code;
+                    mem_pc       <= ex_pc;
+                    mem_en       <= ex_en;
+                    mem_rd_addr  <= ex_rd_addr;
+                    mem_gpr_we_  <= ex_gpr_we_;
+                    mem_out      <= out;
                 end
             end
         end

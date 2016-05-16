@@ -116,10 +116,11 @@ module mem_stage (
         .ex_rd_addr       (ex_rd_addr),      // General purpose register write address
         .ex_gpr_we_       (ex_gpr_we_),      // General purpose register enable
         /********** MEM/WB Pipeline Register **********/
+        .mem_exp_code     (mem_exp_code),    // Exception code
+        .mem_pc           (mem_pc),
         .mem_en           (mem_en),
         .mem_rd_addr      (mem_rd_addr),     // General purpose register write address
         .mem_gpr_we_      (mem_gpr_we_),     // General purpose register enable
-        .mem_exp_code     (mem_exp_code),    // Exception code
         .mem_out          (mem_out)
     );
 

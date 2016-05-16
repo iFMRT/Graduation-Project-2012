@@ -113,7 +113,7 @@
 
 `define OP_SYSTEM         7'b1110011
 /******** Exception ********/
-`define EXP_ENTRY_ADDR    32'h8000_0180
+`define EXP_ENTRY_ADDR    32'h2000
 
 `define EXP_CODE_BUS      5:0   // Exception code bus
 `define EXP_CODE_W	      6     // Exception code width

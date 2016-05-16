@@ -28,7 +28,7 @@ UNITS_OBJS = ../cpu/if_stage.v ../cpu/if_reg.v ../cpu/bus_if.v      \
 						../cpu/spm.v ../cpu/dpram_sim.v ../cpu/gpr.v ../cpu/csr.v
 
 CPU_OBJS =  cpu_test.v $(UNITS_OBJS)
-CPU_TOP_OBJS =  cpu_top/cpu_top_test.v ../cpu/cpu_top.v $(UNITS_OBJS)
+CPU_TOP_ALU_OBJS =  cpu_top/cpu_top_alu_test.v ../cpu/cpu_top.v $(UNITS_OBJS)
 
 # CC specifies which compiler we're using
 CC = iverilog
@@ -46,7 +46,7 @@ MEM_STAGE_OBJ_NAME = mem_stage.out
 GPIO_OBJ_NAME      = gpio.out
 
 CPU_OBJ_NAME       = cpu.out
-CPU_TOP_OBJ_NAME   = cpu_top/cpu_top.out
+CPU_TOP_ALU_OBJ_NAME   = cpu_top/cpu_alu_top.out
 
 bus_if : $(BUS_IF_OBJS)
 	$(CC) $(INCLUDE_PATHS) $(BUS_IF_OBJS)  -o $(BUS_IF_OBJ_NAME) -s bus_if_test
@@ -80,9 +80,9 @@ cpu : $(CPU_OBJS)
 	$(CC) $(INCLUDE_PATHS) $(CPU_OBJS)  -o $(CPU_OBJ_NAME) -s cpu_test
 	vvp $(CPU_OBJ_NAME)
 
-cpu_top : $(CPU_TOP_OBJS)
-	$(CC) $(INCLUDE_PATHS) $(CPU_TOP_OBJS)  -o $(CPU_TOP_OBJ_NAME) -s cpu_top_test
-	vvp $(CPU_TOP_OBJ_NAME)
+cpu_top_alu : $(CPU_TOP_ALU_OBJS)
+	$(CC) $(INCLUDE_PATHS) $(CPU_TOP_ALU_OBJS)  -o $(CPU_TOP_ALU_OBJ_NAME) -s cpu_top_test
+	vvp $(CPU_TOP_ALU_OBJ_NAME)
 
 # Testcase Generator
 TCGEN = ../../utils/tbgen/tcgen.py
@@ -91,17 +91,21 @@ TCGEN = ../../utils/tbgen/tcgen.py
 TC_TEMPLATE = template/testcase.v
 
 # Component directory
-IF_DIR = if_stage
-ID_DIR = id_stage
+IF_DIR      = if_stage
+ID_DIR      = id_stage
+CPU_TOP_DIR = cpu_top
 
 # IF Stage ALU Testcase
-IF_TC_ALU = if_stage/if_stage.alu.yaml
-
+IF_TC_ALU   = if_stage/if_stage.alu.yaml
 # ID Stage ALU Testcase
-ID_TC_ALU = id_stage/id_stage.alu.yaml
+ID_TC_ALU   = id_stage/id_stage.alu.yaml
+# CPU Top ALU Testcase
+CPU_TOP_TC_ALU = cpu_top/cpu_top.alu.yaml
 
 testcase_if_alu : $(IF_TC_ALU)
 	$(TCGEN) $(IF_TC_ALU) -t $(TC_TEMPLATE) -o $(IF_DIR)/testcase_alu.v
 
 testcase_id_alu : $(ID_TC_ALU)
 	$(TCGEN) $(ID_TC_ALU) -t $(TC_TEMPLATE) -o $(ID_DIR)/testcase_alu.v
+testcase_cpu_top_alu : $(ID_TC_ALU)
+	$(TCGEN) $(CPU_TOP_TC_ALU) -t $(TC_TEMPLATE) -o $(CPU_TOP_DIR)/testcase_alu.v
