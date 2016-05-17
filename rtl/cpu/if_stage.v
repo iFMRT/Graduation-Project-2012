@@ -32,7 +32,8 @@ module if_stage(
     input  [127:0]          data0_rd,      // read data of data0
     input  [127:0]          data1_rd,      // read data of data1
     input  [127:0]          data_wd_l2,
-    input                   complete,      // complete op writing to L1
+    input                   w_complete,    // complete op writing to L1
+    input                   r_complete,    // complete op reading from L1
     output [20:0]           tag_wd,        // write data of L1_tag
     output                  block0_we,     // write signal of block0
     output                  block1_we,     // write signal of block1
@@ -88,7 +89,8 @@ icache_ctrl icache_ctrl(
         /* l2_cache part */
         .ic_en          (ic_en),         // busy signal of l2_cache
         .l2_rdy         (l2_rdy),        // ready signal of l2_cache
-        .complete       (complete),      // complete op writing to L1
+        .r_complete     (r_complete),    // complete op reading from L1
+        .w_complete     (w_complete),    // complete op writing to L1
         .mem_wr_ic_en   (mem_wr_ic_en), 
         .irq            (irq),
         .ic_rw_en       (ic_rw_en),      

@@ -27,11 +27,11 @@ module l1_dc_top(
     /* L2_cache part */
     input      [127:0] data_wd_l2,    // write data of l2_cache
     input              data_wd_l2_en,
-    input              l2_complete,
+    input              l2_complete_w,
     input              dc_en,         // busy signal of L2_cache
     input              l2_rdy,        // ready signal of L2_cache
     input              mem_wr_dc_en,   
-    output             complete_dc,   // complete write from L2 to L1
+    output             w_complete_dc, // complete op writing to L1
     output             drq,           // dcache request
     output             dc_rw_en,      // enable signal of writing dcache 
     output     [27:0]  l2_addr_dc,
@@ -40,8 +40,10 @@ module l1_dc_top(
     /*dtag*/
     wire    [7:0]   index_dc;         // address of cache
     wire    [1:0]   offset; 
-    wire            block0_rw;
-    wire            block1_rw;
+    wire            block0_we;
+    wire            block1_we;
+    wire            block0_re;
+    wire            block1_re;
     wire            dirty_wd;
     wire    [20:0]  tag_wd_dc;        // write data of tag
     wire    [20:0]  tag0_rd_dc;       // read data of tag0
@@ -49,6 +51,7 @@ module l1_dc_top(
     wire            dirty0;
     wire            dirty1;
     wire            lru_dc;           // read data of lru_field
+    wire            r_complete_dc;
     /*ddata*/
     wire    [127:0] data_wd_dc;
     wire            data_wd_dc_en;
@@ -71,7 +74,8 @@ module l1_dc_top(
         .dirty0         (dirty0),
         .dirty1         (dirty1),
         .lru_dc         (lru_dc),           // read data of tag
-        .complete_dc    (complete_dc),      // complete write from L2 to L1
+        .w_complete_dc  (w_complete_dc),    // complete write to L1
+        .r_complete_dc  (r_complete_dc),    // complete write from L1
         .dc_wd          (dc_wd),
         .offset         (offset),
         .tagcomp_hit    (tagcomp_hit),    
@@ -81,14 +85,14 @@ module l1_dc_top(
         .data0_rd_dc    (data0_rd_dc),      // read data of cache_data0
         .data1_rd_dc    (data1_rd_dc)       // read data of cache_data1
         );
-        /********** Dcache Interface **********/
+    /********** Dcache Interface **********/
     dcache_ctrl dcache_ctrl(
         .clk            (clk),              // clock
         .rst            (rst),              // reset
         /* CPU part */
         .addr           (addr),             // address of fetching instruction
         .memwrite_m     (memwrite_m),       // read / write signal of CPU
-        .wr_data      (wr_data),
+        .wr_data        (wr_data),
         .access_mem     (access_mem), 
         .read_data_m    (read_data_m),      // read data of CPU
         .miss_stall     (mem_busy),         // the signal of stall caused by cache miss
@@ -115,11 +119,12 @@ module l1_dc_top(
         .index          (index_dc),         // address of L1_cache
         .rd_to_l2       (rd_to_l2), 
         /* l2_cache part */
-        .l2_complete    (l2_complete),
+        .l2_complete_w  (l2_complete_w),
         .dc_en          (dc_en),            // busy signal of l2_cache
         .l2_rdy         (l2_rdy),           // ready signal of l2_cache
         .mem_wr_dc_en   (mem_wr_dc_en),  
-        .complete       (complete_dc),      // complete op writing to L1
+        .w_complete     (w_complete_dc),    // complete write to L1
+        .r_complete     (r_complete_dc),    // complete write from L1
         .drq            (drq),  
         .dc_rw_en       (dc_rw_en),     
         .l2_addr        (l2_addr_dc),    

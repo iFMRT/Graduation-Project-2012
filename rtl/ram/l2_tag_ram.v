@@ -29,7 +29,8 @@ module l2_tag_ram(
     output      [17:0]  l2_tag2_rd,        // read data of tag2
     output      [17:0]  l2_tag3_rd,        // read data of tag3
     output      [2:0]   plru,              // read data of plru_field
-    output reg          l2_complete,       // complete write from L2 to L1
+    output reg          l2_complete_w,     // complete write to L2
+    output reg          l2_complete_r,     // complete read from L2
     output              l2_dirty0,         // dirty signal of L2 
     output              l2_dirty1,         // dirty signal of L2 
     output              l2_dirty2,         // dirty signal of L2 
@@ -39,7 +40,6 @@ module l2_tag_ram(
     reg                 plru_we;           // read / write signal of plru_field
     reg         [2:0]   plru_wd;           // write data of plru_field
     reg                 i,next_i;
-    
     always @(*) begin
         if (l2_block0_we == `ENABLE) begin
             plru_wd[1:0] = 2'b11;
@@ -74,16 +74,23 @@ module l2_tag_ram(
     always @(posedge clk) begin
         if (rst == `ENABLE) begin
             i <= 1'b0;
-            l2_complete <= `DISABLE;
+            l2_complete_w <= `DISABLE;
+            l2_complete_r <= `DISABLE;
         end else begin
             i <= next_i;
-            if (next_i == 1'b1) begin
-                if (l2_block0_we == `ENABLE || l2_block1_we == `ENABLE 
-                    || l2_block2_we == `ENABLE || l2_block3_we == `ENABLE) begin
-                    l2_complete <= `ENABLE;
-                end
-            end else begin
-                l2_complete <= `DISABLE;
+            l2_complete_w <= `DISABLE;
+            l2_complete_r <= `DISABLE;
+            if (l2_block0_re == `ENABLE || l2_block1_re == `ENABLE 
+                || l2_block2_re == `ENABLE || l2_block3_re == `ENABLE) begin
+                if (next_i == 1'b1) begin
+                    l2_complete_r <= `ENABLE;
+                end 
+            end 
+            if (l2_block0_we == `ENABLE || l2_block1_we == `ENABLE 
+                || l2_block2_we == `ENABLE || l2_block3_we == `ENABLE) begin
+                if (next_i == 1'b1) begin
+                    l2_complete_w <= `ENABLE;
+                end 
             end 
         end                
     end

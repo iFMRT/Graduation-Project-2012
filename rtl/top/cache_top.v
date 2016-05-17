@@ -31,24 +31,26 @@ module cache_top(
     /*if_reg part*/
     output              data_rdy,       // tag hit mark
     /*memory part*/
-    input               mem_complete,
-    input       [511:0] mem_rd,
-    output      [511:0] mem_wd,
-    output      [25:0]  mem_addr,       // address of memory
-    output              mem_rw          // read / write signal of memory
+    input            mem_complete_r,
+    input            mem_complete_w,
+    input    [511:0] mem_rd,
+    output   [511:0] mem_wd,
+    output   [25:0]  mem_addr,      // address of memory
+    output           mem_we,        // read / write signal of memory
+    output           mem_re         // read / write signal of memory
     ); 
        
     /*dcache part*/
     wire                drq; 
     wire                dc_rw_en;       // write enable signal
-    wire                complete_dc;    // complete write from L2 to dcache
+    wire                w_complete_dc;    // complete write from L2 to dcache
     wire        [127:0] rd_to_l2;       // read data of L1_cache's data
     /*icache part*/
     wire                irq;
     wire                ic_rw_en;       // write enable signal 
-    wire                complete_ic;    // complete write from L2 to icache
+    wire                w_complete_ic;    // complete write from L2 to icache
     /*l2_cache part*/
-    wire                l2_complete;
+    wire                l2_complete_w;
     wire                l2_rdy;         // ready signal of L2_cache 
     wire                ic_en;          // busy signal of L2_cache
     wire                dc_en;
@@ -76,11 +78,11 @@ module cache_top(
         /* l2_cache part */
         .data_wd_l2     (data_wd_l2),    // write data of l2_cache
         .data_wd_l2_en  (data_wd_l2_en), // write data of l2_cache
-        .l2_complete    (l2_complete),
+        .l2_complete_w  (l2_complete_w),
         .dc_en          (dc_en),         // busy signal of l2_cache
         .l2_rdy         (l2_rdy),        // ready signal of l2_cache
         .mem_wr_dc_en   (mem_wr_dc_en), 
-        .complete_dc    (complete_dc),   // complete op writing to L1
+        .w_complete_dc  (w_complete_dc),   // complete op writing to L1
         .drq            (drq),  
         .dc_rw_en       (dc_rw_en),     
         .l2_addr_dc     (l2_addr_dc),    
@@ -99,7 +101,7 @@ module cache_top(
         .l2_rdy         (l2_rdy),           // ready signal of l2_cache
         .data_wd_l2     (data_wd_l2),       // write data of l2_cache
         .mem_wr_ic_en   (mem_wr_ic_en),
-        .complete_ic    (complete_ic),      // complete op writing to L1
+        .w_complete_ic  (w_complete_ic),      // complete op writing to L1
         .irq            (irq),
         .ic_rw_en       (ic_rw_en),       
         .l2_addr_ic     (l2_addr_ic),        
@@ -119,15 +121,15 @@ module cache_top(
         .ic_en          (ic_en),
         .dc_en          (dc_en),
         .l2_rdy         (l2_rdy),
-        .l2_complete    (l2_complete),
+        .l2_complete_w  (l2_complete_w),
         /*icache part*/
         .drq            (drq),
         .dc_rw_en       (dc_rw_en),
-        .complete_dc    (complete_dc),
+        .w_complete_dc  (w_complete_dc),
         /*dcache part*/
         .irq            (irq),           // icache request
         .ic_rw_en       (ic_rw_en),      // write enable signal of icache
-        .complete_ic    (complete_ic),   // complete write from L2 to L1
+        .w_complete_ic  (w_complete_ic),   // complete write from L2 to L1
         /*l1_cache part*/
         .rd_to_l2       (rd_to_l2),       // write data to L1C       
         .data_wd_l2     (data_wd_l2),    // write data to L1C       
@@ -135,10 +137,12 @@ module cache_top(
         .mem_wr_dc_en   (mem_wr_dc_en), 
         .mem_wr_ic_en   (mem_wr_ic_en),
         /*memory part*/
-        .mem_complete   (mem_complete),
+        .mem_complete_w (mem_complete_w),
+        .mem_complete_r (mem_complete_r),
         .mem_rd         (mem_rd),
         .mem_wd         (mem_wd), 
-        .mem_addr       (mem_addr),      // address of memory
-        .mem_rw         (mem_rw)         // read / write signal of memory
+        .mem_addr       (mem_addr),     // address of memory
+        .mem_we         (mem_we),       // mark of writing to memory
+        .mem_re         (mem_re)        // mark of reading from memory
     );
 endmodule

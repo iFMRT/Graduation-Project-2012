@@ -12,15 +12,11 @@
 
 module dtag_ram(
     input               clk,            // clock
-    // input               tag0_we,        // read / write signal of tag0
-    // input               tag1_we,        // read / write signal of tag1
     input       [7:0]   index,          // address of cache
     input               block0_we,      // read / write signal of block0
     input               block1_we,      // read / write signal of block1
     input               block0_re,      // write signal of block0
     input               block1_re,      // read signal of block1
-    // input               dirty0_we,
-    // input               dirty1_we,
     input               dirty_wd,
     input       [20:0]  tag_wd,         // write data of tag
     output      [20:0]  tag0_rd,        // read data of tag0
@@ -28,12 +24,12 @@ module dtag_ram(
     output              dirty0,
     output              dirty1,
     output              lru,            // read data of lru_field
-    output  reg         complete        // complete write from L2 to L1
+    output  reg         w_complete,     // complete write to L1
+    output  reg         r_complete      // complete read from L1
     );
     reg                 lru_we;         // read / write signal of lru_field
     reg                 lru_wd;         // write data of lru_field
     reg                 lru_re;
-
     always @(*) begin
         if (block0_we == `ENABLE) begin 
             lru_wd   <= 1'b1;
@@ -52,11 +48,18 @@ module dtag_ram(
     end
     always @(posedge clk) begin
         if (block0_we == `ENABLE) begin
-            complete <= `ENABLE;      
+            w_complete <= `ENABLE;      
         end else if (block1_we == `ENABLE) begin
-            complete <= `ENABLE;   
+            w_complete <= `ENABLE;   
         end else begin
-            complete <= `DISABLE;
+            w_complete <= `DISABLE;
+        end
+        if (block0_re == `ENABLE) begin
+            r_complete <= `ENABLE;      
+        end else if (block1_re == `ENABLE) begin
+            r_complete <= `ENABLE;   
+        end else begin
+            r_complete <= `DISABLE;
         end
     end
     // sram256x1

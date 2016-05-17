@@ -32,7 +32,7 @@ module l1_ic_top(
     input            l2_rdy,        // ready signal of L2_cache
     input   [127:0]  data_wd_l2,    // write data of l2_cache
     input            mem_wr_ic_en, 
-    output           complete_ic,   // complete write from L2 to L1
+    output           w_complete_ic, // complete write from L2 to L1
     output           irq,           // icache request
     output           ic_rw_en,      // enable signal of writing icache 
     output   [27:0]  l2_addr_ic,    // addr of l2_cache
@@ -50,7 +50,8 @@ module l1_ic_top(
     wire    [20:0]  tag0_rd_ic;     // read data of tag0
     wire    [20:0]  tag1_rd_ic;     // read data of tag1
     wire            lru_ic;         // read data of lru_field
-    /************ dtag ***********/  
+    wire            r_complete_ic;
+    /************ data ***********/  
     wire    [127:0] data0_rd_ic;    // read data of cache_data0
     wire    [127:0] data1_rd_ic;    // read data of cache_data1
 
@@ -74,7 +75,8 @@ module l1_ic_top(
         .tag0_rd        (tag0_rd_ic),       // read data of tag0
         .tag1_rd        (tag1_rd_ic),       // read data of tag1
         .lru            (lru_ic),           // read data of tag
-        .complete       (complete_ic)       // complete write from L2 to L1
+        .r_complete     (r_complete_ic),    // complete read from L1
+        .w_complete     (w_complete_ic)     // complete write to L1
         );
 
     //////////////////////////////////
@@ -133,7 +135,8 @@ module l1_ic_top(
         .ic_en          (ic_en),           // busy signal of l2_cache
         .l2_rdy         (l2_rdy),          // ready signal of l2_cache
         .mem_wr_ic_en   (mem_wr_ic_en), 
-        .complete       (complete_ic),     // complete op writing to L1
+        .r_complete     (r_complete_ic),   // complete read from L1
+        .w_complete     (w_complete_ic),   // complete op writing to L1
         .irq            (irq),
         .ic_rw_en       (ic_rw_en),   
         .l2_addr        (l2_addr_ic),        

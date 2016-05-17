@@ -41,8 +41,9 @@ module mem_stage (
     /* L2_cache part */
     input                        dc_en,         // busy signal of L2_cache
     input                        l2_rdy,        // ready signal of L2_cache
-    input                        complete,      // complete op writing to L1
-    input                        l2_complete,
+    input                        w_complete_dc, // complete op writing to L1
+    input                        r_complete_dc,      
+    input                        l2_complete_w,
     output                       drq,           // icache request
     output                       dc_rw_en, 
     output     [27:0]            l2_addr,
@@ -109,6 +110,7 @@ module mem_stage (
         .addr           (addr[31:2]),    // address of fetching instruction
         .memwrite_m     (memwrite_m),    // Read/Write 
         .wr_data        (wr_data),       // read / write signal of CPU
+        .dc_wd          (dc_wd),
         .access_mem     (access_mem), 
         .read_data_m    (read_data_m),   // read data of CPU
         .miss_stall     (miss_stall),    // the signal of stall caused by cache miss
@@ -129,23 +131,22 @@ module mem_stage (
         .tagcomp_hit    (tagcomp_hit),  
         .tag_wd         (tag_wd),        // write data of L1_tag
         .data_wd_dc_en  (data_wd_dc_en),
-        .dc_wd          (dc_wd),
         .hitway         (hitway),
         .index          (index),         // address of L1_cache
         .rd_to_l2       (rd_to_l2),
         /* l2_cache part */
-        .l2_complete    (l2_complete),   // complete signal of l2_cache
+        .l2_complete_w  (l2_complete_w), // complete signal of l2_cache
         .dc_en          (dc_en),         // busy signal of l2_cache
         .l2_rdy         (l2_rdy),        // ready signal of l2_cache
         .mem_wr_dc_en   (mem_wr_dc_en), 
-        .complete       (complete),      // complete op writing to L1
+        .w_complete     (w_complete_dc), // complete write to L1
+        .r_complete     (r_complete_dc), // complete write from L1
         .data_wd_l2     (data_wd_l2), 
         .drq            (drq),      
         .dc_rw_en       (dc_rw_en), 
         .l2_addr        (l2_addr),      
         .l2_cache_rw    (l2_cache_rw)        
         );
-
     // /********** MEM Stage Pipeline Register **********/
     mem_reg mem_reg (
         /********** Clock & Reset **********/

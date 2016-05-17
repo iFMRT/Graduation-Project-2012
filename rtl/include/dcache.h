@@ -23,4 +23,5 @@
     `define WRITE_DC_W           4'h6  // write block to L1_dcache,CPU wr signal is write
     `define WRITE_HIT            4'h7  // write block to L1_dcache
     `define DC_WRITE_L2          4'h8  // write L1_dcache's block to L2_cache
+    `define READ_DC              4'h9  // write L1_dcache's block to L2_cache
 `endif

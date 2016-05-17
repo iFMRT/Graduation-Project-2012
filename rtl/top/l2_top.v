@@ -22,15 +22,16 @@ module l2_top(
     output           ic_en,         // busy mark of L2C        
     output           dc_en,         
     output           l2_rdy,
-    output           l2_complete,   // complete write from MEM to L2
+    output           l2_complete_w, // complete write from MEM to L2
     /*dcache part*/
     input            drq, 
     input            dc_rw_en, 
-    input            complete_dc, 
+    input            w_complete_dc, // complete write to L1D 
     /*icache part*/
     input            irq,
     input            ic_rw_en,      // write enable signal
-    input            complete_ic,   // complete write from L2 to L1 
+    input            w_complete_ic, // complete write to L1P 
+    
     /*l1_cache part*/
     input    [127:0] rd_to_l2, 
     output   [127:0] data_wd_l2,    // write data to L1    
@@ -38,11 +39,13 @@ module l2_top(
     output           mem_wr_dc_en,       
     output           mem_wr_ic_en,
     /*memory part*/
-    input            mem_complete,
+    input            mem_complete_r,
+    input            mem_complete_w,
     input    [511:0] mem_rd,
     output   [511:0] mem_wd,
     output   [25:0]  mem_addr,      // address of memory
-    output           mem_rw         // read / write signal of memory
+    output           mem_we,        // read / write signal of memory
+    output           mem_re         // read / write signal of memory
     ); 
     /*cache part*/
     wire     [17:0]  l2_tag_wd;     // write data of tag
@@ -55,6 +58,7 @@ module l2_top(
     wire     [17:0]  l2_tag2_rd;    // read data of tag2
     wire     [17:0]  l2_tag3_rd;    // read data of tag3
     wire     [2:0]   plru;          // read data of tag
+    wire             l2_complete_r;
     // l2_data_ram
     wire             wd_from_l1_en;
     wire             wd_from_mem_en;
@@ -95,8 +99,8 @@ l2_cache_ctrl l2_cache_ctrl(
         .drq            (drq),
         .ic_rw_en       (ic_rw_en),      // write enable signal of icache
         .dc_rw_en       (dc_rw_en),
-        .complete_ic    (complete_ic),   // complete write from L2 to L1
-        .complete_dc    (complete_dc),     
+        .w_complete_ic  (w_complete_ic), // complete write to L1P
+        .w_complete_dc  (w_complete_dc), // complete write to L1D     
         .data_wd_l2     (data_wd_l2),    // write data to L1C       
         .data_wd_l2_en  (data_wd_l2_en), 
         .wd_from_mem_en (wd_from_mem_en),
@@ -104,7 +108,8 @@ l2_cache_ctrl l2_cache_ctrl(
         .mem_wr_dc_en   (mem_wr_dc_en), 
         .mem_wr_ic_en   (mem_wr_ic_en),
         /*l2_cache part*/
-        .l2_complete    (l2_complete),   // complete write from MEM to L2
+        .l2_complete_w  (l2_complete_w), // complete write from MEM to L2
+        .l2_complete_r  (l2_complete_r), // complete mark of reading from l2_cache
         .l2_rdy         (l2_rdy),
         .ic_en          (ic_en),
         .dc_en          (dc_en),
@@ -135,10 +140,13 @@ l2_cache_ctrl l2_cache_ctrl(
         .l2_dirty2      (l2_dirty2), 
         .l2_dirty3      (l2_dirty3),         
         /*memory part*/
-        .mem_complete   (mem_complete),
+        .mem_complete_w (mem_complete_w),
+        .mem_complete_r (mem_complete_r),
+        .mem_rd         (mem_rd),
         .mem_wd         (mem_wd), 
         .mem_addr       (mem_addr),     // address of memory
-        .mem_rw         (mem_rw)        // read / write signal of memory
+        .mem_we         (mem_we),       // mark of writing to memory
+        .mem_re         (mem_re)        // mark of reading from memory
     );
     l2_data_ram l2_data_ram(
         .clk            (clk),        // clock of L2C
@@ -181,7 +189,8 @@ l2_cache_ctrl l2_cache_ctrl(
         .l2_tag2_rd     (l2_tag2_rd),    // read data of tag2
         .l2_tag3_rd     (l2_tag3_rd),    // read data of tag3
         .plru           (plru),          // read data of plru_field
-        .l2_complete    (l2_complete),   // complete write from L2 to L1
+        .l2_complete_w  (l2_complete_w), // complete write to L2
+        .l2_complete_r  (l2_complete_r), // complete read from L2
         .l2_dirty0      (l2_dirty0),
         .l2_dirty1      (l2_dirty1),
         .l2_dirty2      (l2_dirty2),

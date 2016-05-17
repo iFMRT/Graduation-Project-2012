@@ -14,8 +14,10 @@
 module mem(
   input      clk,    // Clock
   input      rst,    // Asynchronous reset active low
-  input      rw,
-  output reg complete
+  input      we,
+  input      re,
+  output reg complete_w,
+  output reg complete_r
 );
 reg  [1:0] i,next_i;
     always @(*) begin
@@ -33,20 +35,28 @@ reg  [1:0] i,next_i;
             next_i = `CLOCK0;
           end
       endcase
+
     end
     always @(posedge clk) begin
         if(rst == `ENABLE) begin
-            complete <= `DISABLE;
-            i        <= `CLOCK0;
+            complete_w <= `DISABLE;
+            complete_r <= `DISABLE;
+            i          <= `CLOCK0;
         end else begin
             i        <= next_i;
         end 
-        if (i == `CLOCK1 && rw == `WRITE) begin
-            complete <= `ENABLE;      
+        if (next_i == `CLOCK1 && we == `ENABLE) begin
+            complete_w <= `ENABLE;      
         end else begin
-            complete <= `DISABLE;
+            complete_w <= `DISABLE;
+        end
+        if (next_i == `CLOCK1 && re == `ENABLE) begin
+            complete_r <= `ENABLE;      
+        end else begin
+            complete_r <= `DISABLE;
         end
     end
+
 endmodule
 
 // module ram0(
