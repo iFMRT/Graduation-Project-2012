@@ -1,4 +1,8 @@
-# test Jump & Branch & Load & Store format instruction with data hazard
+#  Test Jump & Branch & Load & Store format instruction with data hazard
+#  Control transfer instructions:
+#     JAL, JALR, BEQ, BNE, BLT, BGE, BLTU, BGEU
+#  Memeory access instructions:
+#     LW, LH, LHU, LB, LBU, SW, SH, SB
 
 addi x26,x0,1025     # x26 = 1025
 addi x27,x0,2        # x27 = 2

@@ -14,6 +14,7 @@ class TestbenchGenerator(object):
 
     # Parse each line of module header,
     # and assign module name to self.module_name.
+
     def __parse_header_line(self, line):
         # remove 'wire' and 'reg'
         # remove ')' is the same as replacing ');' to ';'
@@ -196,30 +197,35 @@ endmodule""".format(self.module_name, self.module_name)
         return case_result
 
 
-    def gen_testcase(self, yaml_src):
+    def gen_testcase(self, yaml_src, hasInput):
 
         testcase_list = list(yaml.load_all(yaml_src))
         testcase      = []
 
-        first_case = self.__convert_to_case_input(testcase_list.pop(0))
-        last_case  = self.__convert_to_case_result(testcase_list.pop())
+        if (hasInput):
+            first_case = self.__convert_to_case_input(testcase_list.pop(0))
+            last_case  = self.__convert_to_case_result(testcase_list.pop())
+            testcase_list = list(zip(testcase_list, testcase_list[1:]))[::2]
 
-        testcase_list = list(zip(testcase_list, testcase_list[1:]))[::2]
+            for (result, input) in testcase_list:
+                case_pair = []
+                result = self.__convert_to_case_result(result)
+                input  = self.__convert_to_case_input(input)
+                case_pair.append(result)
+                case_pair.append(input)
+                testcase.append(case_pair)
 
-        for (result, input) in testcase_list:
-            case_pair = []
-            result = self.__convert_to_case_result(result)
-            input  = self.__convert_to_case_input(input)
+            testcase_ctx   = {'testcase'  : testcase,
+                              'first_case': first_case,
+                              'last_case' : last_case,
+            }
 
-            case_pair.append(result)
-            case_pair.append(input)
+        else:
+              for result in testcase_list:
+                  result = self.__convert_to_case_result(result)
+                  testcase.append(result)
 
-            testcase.append(case_pair)
-
-        testcase_ctx   = {'testcase'  : testcase,
-                          'first_case': first_case,
-                          'last_case' : last_case,
-        }
+              testcase_ctx   = {'testcase'  : testcase,}
 
         # testcase context
         return testcase_ctx
@@ -227,19 +233,45 @@ endmodule""".format(self.module_name, self.module_name)
 
 if __name__ == "__main__":
 
-    argparser = argparse.ArgumentParser(description='Testbench Generator')
+    argparser       = argparse.ArgumentParser(description='Testbench Generator')
     exclusive_group = argparser.add_mutually_exclusive_group()
 
-    argparser.add_argument('src', nargs=1, action ='store', help ='Source file')
-    exclusive_group.add_argument('-g', nargs=1, action ='store', dest = 'yaml_obj', help ='Generate a yaml template file')
-    exclusive_group.add_argument('-y', nargs=1, action ='store', dest = 'yaml_src', help ='Specify a yaml template file')
-    argparser.add_argument('-t', nargs=1, action ='store', dest = 'template_file', help ='Template file')
-    argparser.add_argument('-o', nargs=1, action ='store', dest ='obj_file', help   ='Object file')
-    argparser.add_argument('-v', action ='version', version ='Testbench Generator Version: 0.1')
+    argparser.add_argument('src',
+                           nargs   = 1,
+                           action  = 'store',
+                           help    = 'Source file')
+    argparser.add_argument('--hasInput',
+                           action  = 'store_true',
+                           dest    = 'hasInput',
+                           help    = 'Testcase has input.')
+    argparser.add_argument('-t',
+                           nargs   = 1,
+                           action  = 'store',
+                           dest    = 'template_file',
+                           help    = 'Template file')
+    argparser.add_argument('-o',
+                           nargs   = 1,
+                           action  = 'store',
+                           dest    = 'obj_file',
+                           help    = 'Object file')
+    argparser.add_argument('-v',
+                           action  = 'version',
+                           version ='Testbench Generator Version: 0.1')
+
+    exclusive_group.add_argument('-g',
+                                 nargs  = 1,
+                                 action = 'store',
+                                 dest   = 'yaml_obj',
+                                 help   ='Generate a yaml template file')
+    exclusive_group.add_argument('-y',
+                                 nargs  = 1,
+                                 action = 'store',
+                                 dest   = 'yaml_src',
+                                 help   = 'Specify a yaml template file')
 
     args = argparser.parse_args()
 
-    tbg = TestbenchGenerator()
+    tbg  = TestbenchGenerator()
 
     with open(args.src[0], 'r') as src_file:
         module_header = tbg.parser_header(src_file.readlines())
@@ -250,16 +282,19 @@ if __name__ == "__main__":
     result = ''
 
     if args.yaml_obj:
+
         with open(args.yaml_obj[0], 'w') as f:
             f.write(tbg.gen_test_case_yaml())
         sys.exit(0)
+
     elif args.template_file:
+
         if not args.yaml_src:
             print("You must specify a yaml file!")
             sys.exit(1)
 
         with open(args.yaml_src[0], 'r') as yaml_file:
-            testcase_ctx = tbg.gen_testcase(yaml_file)
+            testcase_ctx = tbg.gen_testcase(yaml_file, args.hasInput)
 
         task_ctx.update(testcase_ctx)
         ctx = task_ctx.copy()
