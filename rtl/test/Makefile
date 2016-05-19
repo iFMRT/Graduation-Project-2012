@@ -88,6 +88,17 @@ CPU_TOP_TB_CSR = cpu_top/cpu_top.csr.yaml
 # CPU Top CTRL and MEM Testbench
 CPU_TOP_TB_CTRL_MEM_HAZARD = cpu_top/cpu_top.ctrl_mem_hazard.yaml
 
+# Generate yaml template file
+yaml_cpu_top_alu : $(CPU_TOP_TB_ALU)
+	$(TBGEN) $(CPU_TOP_SRC) -g $(CPU_TOP_TB_ALU)
+
+yaml_cpu_top_csr : $(CPU_TOP_TB_CSR)
+	$(TBGEN) $(CPU_TOP_SRC) -g $(CPU_TOP_TB_CSR)
+
+yaml_cpu_top_ctrl_mem_hazard : $(CPU_TOP_TB_CTRL_MEM)
+	$(TBGEN) $(CPU_TOP_SRC) -g $(CPU_TOP_TB_CTRL_MEM_HAZARD)
+
+# Generate testcase
 tb_cpu_top_alu : $(CPU_TOP_TB_ALU)
 	$(TBGEN) $(CPU_TOP_SRC) -y $(CPU_TOP_TB_ALU) -t $(TB_SEQ_TEMPLATE_OUTPUT) -o cpu_top/cpu_top_test.v
 
