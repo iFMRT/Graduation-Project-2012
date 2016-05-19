@@ -19,25 +19,25 @@
 
 module if_stage(
     /********** clock & reset *********/
-    input                   clk,            // Clk
-    input                   reset,          // Reset
+    input wire                   clk,            // Clk
+    input wire                   reset,          // Reset
     /********* SPM Interface *********/
-    input  [`WORD_DATA_BUS] spm_rd_data,    // Address of reading SPM
-    output [`WORD_ADDR_BUS] spm_addr,       // Address of SPM
-    output                  spm_as_,        // SPM strobe
-    output                  spm_rw,         // Read/Write SPM
-    output [`WORD_DATA_BUS] spm_wr_data,    // Write data of SPM
+    input wire  [`WORD_DATA_BUS] spm_rd_data,    // Address of reading SPM
+    output wire [`WORD_ADDR_BUS] spm_addr,       // Address of SPM
+    output wire                  spm_as_,        // SPM strobe
+    output wire                  spm_rw,         // Read/Write SPM
+    output wire [`WORD_DATA_BUS] spm_wr_data,    // Write data of SPM
     /******** Pipeline control ********/
-    input                   stall,          // Stall
-    input                   flush,          // Flush
-    input  [`WORD_DATA_BUS] new_pc,         // New value of program counter
-    input                   br_taken,       // Branch taken
-    input  [`WORD_DATA_BUS] br_addr,        // Branch target
+    input wire                   stall,          // Stall
+    input wire                   flush,          // Flush
+    input wire  [`WORD_DATA_BUS] new_pc,         // New value of program counter
+    input wire                   br_taken,       // Branch taken
+    input wire  [`WORD_DATA_BUS] br_addr,        // Branch target
     /******** IF/ID Pipeline Register ********/
-    output [`WORD_DATA_BUS] pc,             // Current Program counter
-    output [`WORD_DATA_BUS] if_pc,          // Next PC
-    output [`WORD_DATA_BUS] if_insn,        // Instruction
-    output                  if_en           // Effective mark of pipeline
+    output wire [`WORD_DATA_BUS] pc,             // Current Program counter
+    output wire [`WORD_DATA_BUS] if_pc,          // Next PC
+    output wire [`WORD_DATA_BUS] if_insn,        // Instruction
+    output wire                  if_en           // Effective mark of pipeline
 );
 
     /********** Inner Signal **********/

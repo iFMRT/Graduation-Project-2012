@@ -19,58 +19,58 @@
 
 module id_stage (
     /********** Clock & Reset **********/
-    input                    clk,           // Clock
-    input                    reset,         // Reset
+    input wire                    clk, // Clock
+    input wire                    reset, // Reset
     /********** GPR Interface **********/
-    input  [`WORD_DATA_BUS]  gpr_rs1_data,  // Read rs1 data
-    input  [`WORD_DATA_BUS]  gpr_rs2_data,  // Read rs2 data
-    output [`REG_ADDR_BUS]   gpr_rs1_addr,  // Read rs1 address
-    output [`REG_ADDR_BUS]   gpr_rs2_addr,  // Read rs2 address
+    input wire [`WORD_DATA_BUS]   gpr_rs1_data, // Read rs1 data
+    input wire [`WORD_DATA_BUS]   gpr_rs2_data, // Read rs2 data
+    output wire [`REG_ADDR_BUS]   gpr_rs1_addr, // Read rs1 address
+    output wire [`REG_ADDR_BUS]   gpr_rs2_addr, // Read rs2 address
     /********** Forward **********/
-    input  [`WORD_DATA_BUS]  ex_fwd_data,   // Forward data from EX Stage
-    input  [`WORD_DATA_BUS]  mem_fwd_data,  // Forward data from MEM Stage
+    input wire [`WORD_DATA_BUS]   ex_fwd_data, // Forward data from EX Stage
+    input wire [`WORD_DATA_BUS]   mem_fwd_data, // Forward data from MEM Stage
     /********** CSRs Interface **********/
-    input  [`WORD_DATA_BUS]  csr_rd_data,   // Read from CSRs
-    output [`CSR_OP_BUS]     csr_op,        // CSRs operation
-    output [`CSR_ADDR_BUS]   csr_addr,      // Access CSRs address
-    output [`WORD_DATA_BUS]  csr_wr_data,   // Write to CSRs
+    input wire [`WORD_DATA_BUS]   csr_rd_data, // Read from CSRs
+    output wire [`CSR_OP_BUS]     csr_op, // CSRs operation
+    output wire [`CSR_ADDR_BUS]   csr_addr, // Access CSRs address
+    output wire [`WORD_DATA_BUS]  csr_wr_data, // Write to CSRs
     /********** Pipeline Control Signal **********/
-    input                    stall,         // Stall
-    input                    flush,         // Flush
+    input wire                    stall, // Stall
+    input wire                    flush, // Flush
     /********** Forward Signal **********/
-    input [`FWD_CTRL_BUS]    rs1_fwd_ctrl,
-    input [`FWD_CTRL_BUS]    rs2_fwd_ctrl,
+    input wire [`FWD_CTRL_BUS]    rs1_fwd_ctrl,
+    input wire [`FWD_CTRL_BUS]    rs2_fwd_ctrl,
     /********** IF/ID Pipeline Register **********/
-    input [`WORD_DATA_BUS]   pc,            // Current PC
-    input [`WORD_DATA_BUS]   if_pc,         // Next PC
-    input [`WORD_DATA_BUS]   if_insn,       // Instruction
-    input                    if_en,         // Pipeline data enable
+    input wire [`WORD_DATA_BUS]   pc, // Current PC
+    input wire [`WORD_DATA_BUS]   if_pc, // Next PC
+    input wire [`WORD_DATA_BUS]   if_insn, // Instruction
+    input wire                    if_en, // Pipeline data enable
     /********** ID/EX Pipeline Register  **********/
-    output                   id_is_jalr,    // is JALR instruction
-    output [`EXP_CODE_BUS]   id_exp_code,   // Exception code
-    output [`WORD_DATA_BUS]  id_pc,
-    output                   id_en,         // Pipeline data enable
-    output [`ALU_OP_BUS]     id_alu_op,     // ALU Operation
-    output [`WORD_DATA_BUS]  id_alu_in_0,   // ALU input 0
-    output [`WORD_DATA_BUS]  id_alu_in_1,   // ALU input 1
-    output [`CMP_OP_BUS]     id_cmp_op,     // CMP Operation
-    output [`WORD_DATA_BUS]  id_cmp_in_0,   // CMP input 0
-    output [`WORD_DATA_BUS]  id_cmp_in_1,   // CMP input 1
-    output                   id_jump_taken,
-    output [`MEM_OP_BUS]     id_mem_op,     // Memory Operation
-    output [`WORD_DATA_BUS]  id_mem_wr_data,// Memory write data
-    output [`REG_ADDR_BUS]   id_rd_addr,    // GPR write address
-    output                   id_gpr_we_,    // GPR write enable
-    output [`EX_OUT_SEL_BUS] id_ex_out_sel,
-    output [`WORD_DATA_BUS]  id_gpr_wr_data,
+    output wire                   id_is_jalr, // is JALR instruction
+    output wire [`EXP_CODE_BUS]   id_exp_code, // Exception code
+    output wire [`WORD_DATA_BUS]  id_pc,
+    output wire                   id_en, // Pipeline data enable
+    output wire [`ALU_OP_BUS]     id_alu_op, // ALU Operation
+    output wire [`WORD_DATA_BUS]  id_alu_in_0, // ALU input 0
+    output wire [`WORD_DATA_BUS]  id_alu_in_1, // ALU input 1
+    output wire [`CMP_OP_BUS]     id_cmp_op, // CMP Operation
+    output wire [`WORD_DATA_BUS]  id_cmp_in_0, // CMP input 0
+    output wire [`WORD_DATA_BUS]  id_cmp_in_1, // CMP input 1
+    output wire                   id_jump_taken,
+    output wire [`MEM_OP_BUS]     id_mem_op, // Memory Operation
+    output wire [`WORD_DATA_BUS]  id_mem_wr_data,// Memory write data
+    output wire [`REG_ADDR_BUS]   id_rd_addr, // GPR write address
+    output wire                   id_gpr_we_, // GPR write enable
+    output wire [`EX_OUT_SEL_BUS] id_ex_out_sel,
+    output wire [`WORD_DATA_BUS]  id_gpr_wr_data,
     // output to Control Unit
-    output                   is_eret,       // is ERET instruction
-    output [`INSN_OP_BUS]    op,
-    output [`REG_ADDR_BUS]   id_rs1_addr,
-    output [`REG_ADDR_BUS]   id_rs2_addr,
-    output [`REG_ADDR_BUS]   rs1_addr,
-    output [`REG_ADDR_BUS]   rs2_addr,
-    output [1:0]             src_reg_used   // How many source registers instruction used
+    output wire                   is_eret, // is ERET instruction
+    output wire [`INSN_OP_BUS]    op,
+    output wire [`REG_ADDR_BUS]   id_rs1_addr,
+    output wire [`REG_ADDR_BUS]   id_rs2_addr,
+    output wire [`REG_ADDR_BUS]   rs1_addr,
+    output wire [`REG_ADDR_BUS]   rs2_addr,
+    output wire [1:0]             src_reg_used   // How many source registers instruction used
 );
 
     wire [`ALU_OP_BUS]     alu_op;          // ALU Operation

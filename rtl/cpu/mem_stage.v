@@ -33,8 +33,8 @@ module mem_stage (
     output wire                  spm_rw,         // SPM: Read/Write
     output wire [`WORD_DATA_BUS] spm_wr_data,    // SPM: Write data
     /********** EX/MEM Pipeline Register **********/
-    input [`EXP_CODE_BUS]        ex_exp_code,    // Exception code
-    input [`WORD_DATA_BUS]       ex_pc,
+    input wire [`EXP_CODE_BUS]   ex_exp_code,    // Exception code
+    input wire [`WORD_DATA_BUS]  ex_pc,
     input wire                   ex_en,          // If Pipeline data enable
     input wire [`MEM_OP_BUS]     ex_mem_op,      // Memory operation
     input wire [`WORD_DATA_BUS]  ex_mem_wr_data, // Memory write data

@@ -24,17 +24,17 @@
 /********** Simulate FPGA Block RAM: dpram_sim **********/
 module  dpram_sim (
     /********** Port A: IF Stage **********/
-    input         clock_a,          // Clock
-    input [11:0]  address_a,        // Address
-    input [31:0]  data_a,           // Write data (Not Connected)
-    input         wren_a,           // Write enable A (Disable)
-    output [31:0] q_a,              // Read data
+    input wire         clock_a,          // Clock
+    input wire [11:0]  address_a,        // Address
+    input wire [31:0]  data_a,           // Write data (Not Connected)
+    input wire         wren_a,           // Write enable A (Disable)
+    output wire [31:0] q_a,              // Read data
     /********** Port B: MEM Stage **********/
-    input         clock_b,          // Clock
-    input [11:0]  address_b,        // Address
-    input [31:0]  data_b,           // Write data
-    input         wren_b,           // Write enable
-    output [31:0] q_b               // Read data
+    input wire         clock_b,          // Clock
+    input wire [11:0]  address_b,        // Address
+    input wire [31:0]  data_b,           // Write data
+    input wire         wren_b,           // Write enable
+    output wire [31:0] q_b               // Read data
 );
 
     reg [7:0]     RAM[`SPM_DEPTH-1:0];

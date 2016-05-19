@@ -18,47 +18,47 @@
 `include "base_core_defines.v"
 
 module ex_stage (
-    input                   clk,
-    input                   reset,
+    input wire                   clk,
+    input wire                   reset,
     /******** Pipeline Control Signal ********/
-    input                   stall,
-    input                   flush,
+    input wire                   stall,
+    input wire                   flush,
     /******** ID/EX Pipleline Register ********/
-    input                   id_is_jalr,  // is JALR instruction
-    input [`EXP_CODE_BUS]   id_exp_code, // Exception code
-    input [`WORD_DATA_BUS]  id_pc,
-    input                   id_en,       // Pipeline data enable
-    input [`ALU_OP_BUS]     id_alu_op,
-    input [`WORD_DATA_BUS]  id_alu_in_0,
-    input [`WORD_DATA_BUS]  id_alu_in_1,
-    input [`CMP_OP_BUS]     id_cmp_op,
-    input [`WORD_DATA_BUS]  id_cmp_in_0,
-    input [`WORD_DATA_BUS]  id_cmp_in_1,
-    input                   id_jump_taken, // true - jump to target pc
-    input [`MEM_OP_BUS]     id_mem_op,
-    input [`WORD_DATA_BUS]  id_mem_wr_data,
-    input [`REG_ADDR_BUS]   id_rd_addr,    // bypass input
-    input                   id_gpr_we_,
-    input [`EX_OUT_SEL_BUS] id_ex_out_sel,
-    input [`WORD_DATA_BUS]  id_gpr_wr_data,
+    input wire                   id_is_jalr,  // is JALR instruction
+    input wire [`EXP_CODE_BUS]   id_exp_code, // Exception code
+    input wire [`WORD_DATA_BUS]  id_pc,
+    input wire                   id_en,       // Pipeline data enable
+    input wire [`ALU_OP_BUS]     id_alu_op,
+    input wire [`WORD_DATA_BUS]  id_alu_in_0,
+    input wire [`WORD_DATA_BUS]  id_alu_in_1,
+    input wire [`CMP_OP_BUS]     id_cmp_op,
+    input wire [`WORD_DATA_BUS]  id_cmp_in_0,
+    input wire [`WORD_DATA_BUS]  id_cmp_in_1,
+    input wire                   id_jump_taken, // true - jump to target pc
+    input wire [`MEM_OP_BUS]     id_mem_op,
+    input wire [`WORD_DATA_BUS]  id_mem_wr_data,
+    input wire [`REG_ADDR_BUS]   id_rd_addr,    // bypass input wire
+    input wire                   id_gpr_we_,
+    input wire [`EX_OUT_SEL_BUS] id_ex_out_sel,
+    input wire [`WORD_DATA_BUS]  id_gpr_wr_data,
     /******** Forward Data From MEM Stage ********/
-    input                   ex_rs1_fwd_en,
-    input                   ex_rs2_fwd_en,
-    input [`WORD_DATA_BUS]  mem_fwd_data,   // MEM Stage
+    input wire                   ex_rs1_fwd_en,
+    input wire                   ex_rs2_fwd_en,
+    input wire [`WORD_DATA_BUS]  mem_fwd_data,   // MEM Stage
     /******** output to ID Stage ********/
-    output [`WORD_DATA_BUS] fwd_data,
+    output wire [`WORD_DATA_BUS] fwd_data,
     /******** Output to Next Stage ********/
-    output [`EXP_CODE_BUS]  ex_exp_code,    // Exception code
-    output [`WORD_DATA_BUS] ex_pc,
-    output                  ex_en,
-    output [`MEM_OP_BUS]    ex_mem_op,
-    output [`WORD_DATA_BUS] ex_mem_wr_data,
-    output [`REG_ADDR_BUS]  ex_rd_addr,     // bypass output
-    output                  ex_gpr_we_,
-    output [`WORD_DATA_BUS] ex_out,
+    output wire [`EXP_CODE_BUS]  ex_exp_code,    // Exception code
+    output wire [`WORD_DATA_BUS] ex_pc,
+    output wire                  ex_en,
+    output wire [`MEM_OP_BUS]    ex_mem_op,
+    output wire [`WORD_DATA_BUS] ex_mem_wr_data,
+    output wire [`REG_ADDR_BUS]  ex_rd_addr,     // bypass output wire
+    output wire                  ex_gpr_we_,
+    output wire [`WORD_DATA_BUS] ex_out,
     // output to IF Stage
-    output [`WORD_DATA_BUS] br_addr,        // target pc value of branch or jump
-    output                  br_taken        // ture - take branch or jump
+    output wire [`WORD_DATA_BUS] br_addr,        // target pc value of branch or jump
+    output wire                  br_taken        // ture - take branch or jump
 );
 
     /******** internal signles ********/

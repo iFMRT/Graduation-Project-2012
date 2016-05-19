@@ -18,19 +18,19 @@
 `include "base_core_defines.v"
 
 module spm (
-    input         clk,            // Clock
+    input wire         clk,            // Clock
     /********** Port A: IF Stage **********/
-    input [11:0]  if_spm_addr,    // Address
-	  input         if_spm_as_,     // Address Strobe
-	  input         if_spm_rw,      // Read/Write
-	  input [31:0]  if_spm_wr_data, // Write data
-	  output [31:0] if_spm_rd_data, // Read data
+    input wire [11:0]  if_spm_addr,    // Address
+	  input wire         if_spm_as_,     // Address Strobe
+	  input wire         if_spm_rw,      // Read/Write
+	  input wire [31:0]  if_spm_wr_data, // Write data
+	  output wire [31:0] if_spm_rd_data, // Read data
 	/********** Port B: MEM Stage **********/
-	  input [11:0]  mem_spm_addr,   // Address
-	  input         mem_spm_as_,    // Address Strobe
-	  input         mem_spm_rw,     // Read/Write
-	  input [31:0]  mem_spm_wr_data,// Write data
-	  output [31:0] mem_spm_rd_data // Read data
+	  input wire [11:0]  mem_spm_addr,   // Address
+	  input wire         mem_spm_as_,    // Address Strobe
+	  input wire         mem_spm_rw,     // Read/Write
+	  input wire [31:0]  mem_spm_wr_data,// Write data
+	  output wire [31:0] mem_spm_rd_data // Read data
 );
 
     /********** Internal Signal **********/
@@ -39,19 +39,19 @@ module spm (
 
     /********** Generate Write Enable Signal **********/
     always @(*) begin
-	  	/* Generate Port A Write Enable Signal */
-	  	if ((if_spm_as_ == `ENABLE_) && (if_spm_rw == `WRITE)) begin
-	    	wea = `ENABLE;	          // Write enable
-	  	end else begin
-	        wea = `DISABLE;         // Write disable
-	  	end
-	  	/* Generate Port B Write Enable Signal */
+	  	  /* Generate Port A Write Enable Signal */
+	  	  if ((if_spm_as_ == `ENABLE_) && (if_spm_rw == `WRITE)) begin
+	    	    wea = `ENABLE;	          // Write enable
+	  	  end else begin
+	          wea = `DISABLE;         // Write disable
+	  	  end
+	  	  /* Generate Port B Write Enable Signal */
 	  	if ((mem_spm_as_ == `ENABLE_) && (mem_spm_rw == `WRITE)) begin
 	        web = `ENABLE;	        // Write enable
 	  	end else begin
 	        web = `DISABLE;         // Write disable
 	  	end
-	end
+	  end
 
 	/********** Simulate FPGA Block RAM: dpram_sim **********/
 	dpram_sim x_s3e_dpram (

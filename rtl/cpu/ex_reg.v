@@ -27,7 +27,7 @@ module ex_reg (
 	  input wire                  flush,
 	  // ID/EX Pipeline Register
     input wire [`EXP_CODE_BUS]  id_exp_code, // Exception code
-    input [`WORD_DATA_BUS]      id_pc,
+    input wire [`WORD_DATA_BUS]      id_pc,
 	  input wire                  id_en,
 	  input wire [`MEM_OP_BUS]    id_mem_op,
 	  input wire [`WORD_DATA_BUS] id_mem_wr_data,

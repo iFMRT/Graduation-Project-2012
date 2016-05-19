@@ -19,20 +19,20 @@
 
 module bus_if (
     /********** Pipeline Control Signal **********/
-    input                       stall,     // Stall
-    input                       flush,     // Flush signal
+    input wire                       stall,     // Stall
+    input wire                       flush,     // Flush signal
     /************* CPU Interface *************/
-    input [`WORD_ADDR_BUS]      addr,      // Address
-    input                       as_,       // Address strobe
-    input                       rw,        // Read/Write
-    input [`WORD_DATA_BUS]      wr_data,   // Write data
-    output reg [`WORD_DATA_BUS] rd_data,   // Read data
+    input wire [`WORD_ADDR_BUS]      addr,      // Address
+    input wire                       as_,       // Address strobe
+    input wire                       rw,        // Read/Write
+    input wire [`WORD_DATA_BUS]      wr_data,   // Write data
+    output reg [`WORD_DATA_BUS]      rd_data,   // Read data
     /************* SPM Interface *************/
-    input [`WORD_DATA_BUS]      spm_rd_data,
-    output [`WORD_ADDR_BUS]     spm_addr,
-    output reg                  spm_as_,
-    output                      spm_rw,
-    output [`WORD_DATA_BUS]     spm_wr_data
+    input wire [`WORD_DATA_BUS]      spm_rd_data,
+    output wire [`WORD_ADDR_BUS]     spm_addr,
+    output reg                       spm_as_,
+    output wire                      spm_rw,
+    output wire [`WORD_DATA_BUS]     spm_wr_data
 );
 
     /********** Output Assignment **********/

@@ -19,32 +19,32 @@
 
 module id_reg (
     /********** Clock & Rest **********/
-    input                        clk,           // Clock
-    input                        reset,         // Asynchronous rest
+    input wire                   clk,           // Clock
+    input wire                   reset,         // Asynchronous rest
     /********** Decode result **********/
-    input [`ALU_OP_BUS]          alu_op,        // ALU operation
-    input [`WORD_DATA_BUS]       alu_in_0,      // ALU input 0
-    input [`WORD_DATA_BUS]       alu_in_1,      // ALU input 1
-    input [`CMP_OP_BUS]          cmp_op,        // CMP operation
-    input [`WORD_DATA_BUS]       cmp_in_0,      // CMP input 0
-    input [`WORD_DATA_BUS]       cmp_in_1,      // CMP input 1
-    input [`REG_ADDR_BUS]        rs1_addr,      // Read register source one
-    input [`REG_ADDR_BUS]        rs2_addr,      // Read register source two
-    input                        jump_taken,    // Jump taken
-    input [`MEM_OP_BUS]          mem_op,        // Memory operation
-    input [`WORD_DATA_BUS]       mem_wr_data,   // Memory write data
-    input [`REG_ADDR_BUS]        rd_addr,      // destination register address
-    input                        gpr_we_,       // GPR write eanble
-    input [`EX_OUT_SEL_BUS]      ex_out_sel,    // Select ex stage outputs
-    input [`WORD_DATA_BUS]       gpr_wr_data,   // the data which write to GPR
-    input                        is_jalr,       // is JALR instruction
-    input [`EXP_CODE_BUS]        exp_code,      // Exception code
+    input wire [`ALU_OP_BUS]     alu_op,        // ALU operation
+    input wire [`WORD_DATA_BUS]  alu_in_0,      // ALU input 0
+    input wire [`WORD_DATA_BUS]  alu_in_1,      // ALU input 1
+    input wire [`CMP_OP_BUS]     cmp_op,        // CMP operation
+    input wire [`WORD_DATA_BUS]  cmp_in_0,      // CMP input 0
+    input wire [`WORD_DATA_BUS]  cmp_in_1,      // CMP input 1
+    input wire [`REG_ADDR_BUS]   rs1_addr,      // Read register source one
+    input wire [`REG_ADDR_BUS]   rs2_addr,      // Read register source two
+    input wire                   jump_taken,    // Jump taken
+    input wire [`MEM_OP_BUS]     mem_op,        // Memory operation
+    input wire [`WORD_DATA_BUS]  mem_wr_data,   // Memory write data
+    input wire [`REG_ADDR_BUS]   rd_addr,      // destination register address
+    input wire                   gpr_we_,       // GPR write eanble
+    input wire [`EX_OUT_SEL_BUS] ex_out_sel,    // Select ex stage outputs
+    input wire [`WORD_DATA_BUS]  gpr_wr_data,   // the data which write to GPR
+    input wire                   is_jalr,       // is JALR instruction
+    input wire [`EXP_CODE_BUS]   exp_code,      // Exception code
     /********** Control Signal **********/
-    input                        stall,
-    input                        flush,
+    input wire                   stall,
+    input wire                   flush,
     /********** IF/ID Pipeline  Register  **********/
-    input [`WORD_DATA_BUS]       pc,            // Current program counter
-    input                        if_en,         // IF stage register enable
+    input wire [`WORD_DATA_BUS]  pc,            // Current program counter
+    input wire                   if_en,         // IF stage register enable
     /********** ID/EX Register Output **********/
     output reg                   id_is_jalr,
     output reg [`EXP_CODE_BUS]   id_exp_code,   // Exception code
