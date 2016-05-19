@@ -18,18 +18,18 @@
 `include "base_core_defines.v"
 
 module cs_registers (
-    input                       clk,
-    input                       reset,
-    input [`CSR_OP_BUS]         csr_op,
-    input [`CSR_ADDR_BUS]       csr_addr,
+    input wire                  clk,
+    input wire                  reset,
+    input wire [`CSR_OP_BUS]    csr_op,
+    input wire [`CSR_ADDR_BUS]  csr_addr,
     output reg [`WORD_DATA_BUS] csr_rd_data,
-    input [`WORD_DATA_BUS]      csr_wr_data_i,
-    input [`WORD_DATA_BUS]      mepc_i,
+    input wire [`WORD_DATA_BUS] csr_wr_data_i,
+    input wire [`WORD_DATA_BUS] mepc_i,
     output reg [`WORD_DATA_BUS] mepc_o,
-    input [`EXP_CODE_BUS]       exp_code_i,
-    input                       save_exp_code,
-    input                       save_exp,
-    input                       restore_exp
+    input wire [`EXP_CODE_BUS]  exp_code_i,
+    input wire                  save_exp_code,
+    input wire                  save_exp,
+    input wire                  restore_exp
 );
 
 
@@ -93,18 +93,18 @@ module cs_registers (
         case (csr_addr)
             // mstatus: only IE bit is writable
             12'h300: if (csr_we)
-                mstatus_ie_n  <= #1 csr_wr_data[0];
+                mstatus_ie_n  = csr_wr_data[0];
 
             // mepc: exception program counter
             12'h341: if (csr_we)
-                mepc_n        <= #1 csr_wr_data;
+                mepc_n        = csr_wr_data;
             // mcause
             12'h342: if (csr_we)
-                exp_code_n    <= #1 {csr_wr_data[5], csr_wr_data[4:0]};
+                exp_code_n    = {csr_wr_data[5], csr_wr_data[4:0]};
 
             // mestatus: machine exception status
             12'h7C0: if (csr_we)
-                mestatus_ie_n <= #1 csr_wr_data[0];
+                mestatus_ie_n = csr_wr_data[0];
         endcase
 
         // save exception
@@ -125,16 +125,16 @@ module cs_registers (
     always @(posedge clk) begin
         if (reset == `ENABLE) begin
             // Reset
-            mstatus_ie_q  <= #1 `DISABLE;
-            mepc_q        <= #1 `WORD_DATA_W'h0;
-            exp_code_q    <= #1 `EXP_CODE_W'h0;
-            mestatus_ie_q <= #1 `DISABLE;
+            mstatus_ie_q  <= `DISABLE;
+            mepc_q        <= `WORD_DATA_W'h0;
+            exp_code_q    <= `EXP_CODE_W'h0;
+            mestatus_ie_q <= `DISABLE;
         end else begin
             // update CSRs
-            mstatus_ie_q  <= #1 mstatus_ie_n;
-            mepc_q        <= #1 mepc_n;
-            exp_code_q    <= #1 exp_code_n;
-            mestatus_ie_q <= #1 mestatus_ie_n;
+            mstatus_ie_q  <= mstatus_ie_n;
+            mepc_q        <= mepc_n;
+            exp_code_q    <= exp_code_n;
+            mestatus_ie_q <= mestatus_ie_n;
         end
     end
 

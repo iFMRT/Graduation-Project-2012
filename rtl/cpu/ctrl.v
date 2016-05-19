@@ -24,7 +24,7 @@ module ctrl (
     input wire                  br_taken,    // branch hazard mark
 
     /********** Data Forward **********/
-    input [1:0]                 src_reg_used,
+    input wire [1:0]            src_reg_used,
 
     // from ID stage
     input wire                  is_eret,
