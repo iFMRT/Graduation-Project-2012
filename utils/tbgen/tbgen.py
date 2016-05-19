@@ -150,7 +150,7 @@ endmodule""".format(self.module_name, self.module_name)
         return task_ctx
 
 
-    def gen_test_case_yaml(self):
+    def gen_testcase_yaml(self, hasInput):
         init_input  = '# Input Ports\n'
         init_output = '---\n# Output Ports\n'
         init_output += 'display: something you want to display\n'
@@ -164,7 +164,10 @@ endmodule""".format(self.module_name, self.module_name)
             else:
                 init_output += ('{:<'+str(name_max)+'}  {} \n').format(port+':', '"placeholder"')
 
-        return init_input + init_output
+        if (hasInput):
+            return init_input + init_output
+        else:
+            return init_output
 
 
     def __convert_to_case_input(self, case):
@@ -284,7 +287,7 @@ if __name__ == "__main__":
     if args.yaml_obj:
 
         with open(args.yaml_obj[0], 'w') as f:
-            f.write(tbg.gen_test_case_yaml())
+            f.write(tbg.gen_testcase_yaml(args.hasInput))
         sys.exit(0)
 
     elif args.template_file:
