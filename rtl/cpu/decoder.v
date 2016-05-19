@@ -112,6 +112,7 @@ module decoder (
 
         exp_code     = `EXP_NO_EXP;
         is_eret      = `DISABLE;
+        csr_op       = `CSR_OP_NOP;
         csr_wr_data  = `WORD_DATA_W'h0;
 
         /* Decode instruction type */
@@ -391,7 +392,6 @@ module decoder (
                 end
                 default: begin // Undefined instruction
                     exp_code = `EXP_ILLEGAL_INSN;
-                    $display(op);
                     $display("OP error");
                 end
             endcase

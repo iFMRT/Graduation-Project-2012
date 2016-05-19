@@ -356,13 +356,13 @@ module cpu_top(
         /********** Clock **********/
         .clk             (clk_),            // Clock
         /********** Port A: IF Stage **********/
-        .if_spm_addr     (if_spm_addr[`SPM_ADDR_LOC]),  // address
+        .if_spm_addr     (if_spm_addr[`SPM_ADDR_LOC]),  // Address
         .if_spm_as_      (if_spm_as_),      // address strobe
         .if_spm_rw       (if_spm_rw),       // Read/Write
         .if_spm_wr_data  (if_spm_wr_data),  // Write data
         .if_spm_rd_data  (if_spm_rd_data),  // Read data
         /********** Port B: MEM Stage **********/
-	      .mem_spm_addr    (mem_spm_addr),    // Address
+	      .mem_spm_addr    (mem_spm_addr[`SPM_ADDR_LOC]), // Address
 	      .mem_spm_as_     (mem_spm_as_),     // Address Strobe
 	      .mem_spm_rw      (mem_spm_rw),      // Read/Write
 	      .mem_spm_wr_data (mem_spm_wr_data), // Write data
