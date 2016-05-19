@@ -1,0 +1,130 @@
+* 如何测试
+** 快速开始
+以测试整合了各个部件的 ~cpu_top.v~ 为例，测试运算逻辑移位类指令。切换到 ~rtl/test/~ 文件夹下。
+
+1. 把汇编测试程序生成 Verilog
+   ~make alu~
+2. 编写测试用例的 YAML 文件
+   ~make yaml_cpu_top_alu~
+3. 生成 Testbench
+   ~make tb_cpu_top_alu~
+4. 测试 Testbench
+   ~make cpu_top~
+
+** 把汇编测试程序生成 Verilog
+使用 [[https://github.com/riscv/riscv-gnu-toolchain][GNU toolchain for RISC-V]] 的汇编器 ~as~ 以及 ~objcopy~ ，把汇编测试程序生成 Verilog 数据文件。汇编源码都放在 ~rtl/test/asm/~ 文件夹里。
+
+以运算逻辑移位类 ~alu.S~ ：
+#+BEGIN_SRC asm
+# 注释。用 '\\' 和 '\*...*\' 会报错
+addi  x1, zero, 4   # x1 = 4
+#+END_SRC
+
+编写保存好之后，执行下列命令生成 verilog 数据文件：
+#+BEGIN_SRC shell 
+riscv64-unknown-elf-as -m32 alu.S -o alu.o
+riscv64-unknown-elf-objcopy alu.o -O verilog test.dat
+#+END_SRC
+
+*注意：* 编写异常处理的汇编测试程序时，异常处理的地址是 0x2000，需要 ld 程序实现指令地址的划分。
+
+- ~csr.S~
+ #+BEGIN_SRC asm
+.section .initial, "xa"
+# 正常的测试指令
+  addi  x1, zero, 4   # x1 = 4
+  ...
+
+.section .exception, "xa"
+# 处理异常的测试指令，mepc 要加 4，不然就跳回原来的出错指令
+  csrr x8, mepc
+  addi x8, x8, 4
+  csrw mepc, x8
+  eret
+#+END_SRC
+
+- ~csr.ld~
+#+BEGIN_SRC ld
+SECTIONS {
+    . = 0;
+    .initial : { *{.initial} }
+    . = 0x2000
+    .exception : { *{.exception} }
+}
+#+END_SRC
+
+然后执行下列命令：
+
+1. ~riscv64-unknown-elf-as csr.S -o csr.o~
+2. ~riscv64-unknown-elf-ld --script csr.ld csr.o -o csr.elf~
+3. ~riscv64-unknown-elf-objcopy -O verilog csr.elf csr.v~
+
+这样就可以 保存两段代码到不同的存储地址：
+
+- ~csr.v~
+#+BEGIN_SRC
+@00000000
+...
+@00002000
+...
+#+END_SRC
+
+由于这里测试的是无效指令，所以得在生成的 ~test.dat~ 最开始的地址添加无效指令。
+
+目前已经完成了运算逻辑移位类指令（ ~alu.S~ ）， 异常处理类指令（ ~csr.S~ ）和存在冲突的控制存储器访问类指令（ ~ctrl_mem.S~ )。
+
+在 ~rtl/test/~ 文件夹下分别执行下列命令即可生成 verilog 数据文件：
+- ~make alu~
+- ~make csr~
+- ~make ctrl_mem_hazard~
+
+*注意：* ~make csr~ 后，要在 ~test.dat~  文件的最前面加入一条无效指令，比如 ~0000004F~
+
+生成的 ~test.dat~
+#+BEGIN_SRC 
+@00000000
+93 00 40 00  ...
+#+END_SRC
+
+加入无效指令后的  ~test.dat~
+#+BEGIN_SRC 
+@00000000
+4F 00 40 00 93 00 40 00 ...
+#+END_SRC
+** 编写测试用例的 YAML 文件
+*** 生成yaml模板文件
+使用 ~/utils/tbgen/tbgen.py~ ，需要安装 ~Python3~ 和 ~pyyaml~  
+#+BEGIN_SRC 
+Python3 tbgen.py cpu_top.v -g cpu_top.yaml 
+#+END_SRC
+
+生成的 ~cpu_top.yaml~ yaml 模板：
+
+#+BEGIN_SRC 
+---
+# Output Ports
+display: something you want to display
+gpr_rs1_data:  "placeholder" 
+gpr_rs2_data:  "placeholder" 
+gpr_rs1_addr:  "placeholder" 
+gpr_rs2_addr:  "placeholder" 
+mem_rd_addr:   "placeholder" 
+mem_out:       "placeholder" 
+#+END_SRC
+
+目前可以使用下列命令分别生成对应的模板文件：
+
+- ~make yaml_cpu_top_alu~
+- ~make yaml_cpu_top_csr~
+- ~make yaml_cpu_top_ctrl_mem~
+
+*** 编写测试用例
+~cpu_top.yaml~ 里面的 ~placeholder~ 换成每条指令对应的时钟周期应该输出的正确值， ~display~ 的值是 ~$display~ 用于提示不同时钟周期的输出内容。多个时钟周期需要自己复制多次，注意最后不能有空行。
+** 生成 Testbench
+
+- make tb_cpu_top_alu
+- make tb_cpu_top_csr
+- make tb_cpu_top_ctrl_mem_hazard
+ 
+** 测试 Testbench
+- make cpu_top
