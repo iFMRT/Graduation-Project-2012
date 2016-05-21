@@ -340,11 +340,11 @@ module cpu_top(
         .clk            (clk),              // Clock
         .reset          (reset),            // Asynchronous Reset
         /********** Read Port  0 **********/
-        .rd_addr_0      (gpr_rs1_addr),     // Read  address
-        .rd_data_0      (gpr_rs1_data),    // Read data
+        .rs1_addr       (gpr_rs1_addr),     // Read  address
+        .rs1_data       (gpr_rs1_data),     // Read data
         /********** Read Port  1 **********/
-        .rd_addr_1      (gpr_rs2_addr),     // Read  address
-        .rd_data_1      (gpr_rs2_data),     // Read data
+        .rs2_addr       (gpr_rs2_addr),     // Read  address
+        .rs2_data       (gpr_rs2_data),     // Read data
         /********** Write Port  **********/
         .we_            (mem_gpr_we_),      // Write enable
         .wr_addr        (mem_rd_addr),      // Write  address
