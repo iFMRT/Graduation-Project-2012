@@ -63,6 +63,7 @@ module cpu_top(
     wire [`REG_ADDR_BUS]   ex_dst_addr;    // General purpose RegisterWrite  address
     wire                   ex_gpr_we_;     // General purpose RegisterWrite enable
     wire [`WORD_DATA_BUS]  ex_out;         // Operating result
+    wire [`WORD_DATA_BUS]  alu_out; 
     // MEM/WB Pipeline  Regr
     wire [`REG_ADDR_BUS]   mem_dst_addr;   // General purpose RegisterWrite  address
     wire                   mem_gpr_we_;    // General purpose RegisterWrite enable
@@ -140,6 +141,7 @@ module cpu_top(
     wire                   block0_re_ic;     // read signal of block0
     wire                   block1_re_ic;     // read signal of block1
     // dcache
+    wire                   access_mem;
     wire [7:0]             index_dc;         // address of L1_cache
     wire [1:0]             offset; 
     wire                   tagcomp_hit;
@@ -201,6 +203,7 @@ module cpu_top(
         .clk            (clk),              // clock
         .reset          (rst),              // reset
         /* CPU part */
+        .mem_busy       (mem_busy),
         .miss_stall     (if_busy),          // the signal of stall caused by cache miss
         /* L1_cache part */
         .lru            (lru_ic),           // mark of replacing
@@ -219,8 +222,8 @@ module cpu_top(
         .ic_en          (ic_en),            // busy signal of l2_cache
         .l2_rdy         (l2_rdy),           // ready signal of l2_cache
         .mem_wr_ic_en   (mem_wr_ic_en),
-        .w_complete     (w_complete_ic),    // complete op writing to L1
-        .r_complete     (r_complete_ic),    // complete op reading from L1
+        .w_complete     (w_complete_ic), // complete write to L1
+        .r_complete     (r_complete_ic), // complete write from L1
         .irq            (irq),
         .ic_rw_en       (ic_rw_en),         // write enable signal of icache      
         .l2_addr        (l2_addr_ic),        
@@ -332,8 +335,10 @@ module cpu_top(
         .ex_mem_wr_data (ex_mem_wr_data),   // Memory Write data
         .ex_dst_addr    (ex_dst_addr),      // General purpose RegisterWrite address
         .ex_gpr_we_     (ex_gpr_we_),       // General purpose RegisterWrite enable
+        
+        .alu_out        (alu_out), 
         .ex_out         (ex_out),           // Operating result
-
+        .access_mem     (access_mem),
         .id_jump_taken  (id_jump_taken),
 
         .br_addr        (br_addr),
@@ -352,7 +357,9 @@ module cpu_top(
         .fwd_data       (mem_fwd_data),
         /************ CPU part ************/
         .miss_stall     (mem_busy),     // the signal of stall caused by cache miss
+        .access_mem     (access_mem), 
         /* L1_cache part */
+        .alu_out        (alu_out), 
         .lru            (lru_dc),       // mark of replacing
         .tag0_rd        (tag0_rd_dc),   // read data of tag0
         .tag1_rd        (tag1_rd_dc),   // read data of tag1
@@ -415,8 +422,8 @@ module cpu_top(
         .drq            (drq),
         .ic_rw_en       (ic_rw_en),      // write enable signal of icache
         .dc_rw_en       (dc_rw_en),
-        .w_complete_ic  (w_complete_ic),   // complete write from L2 to L1
-        .w_complete_dc  (w_complete_dc),    
+        .w_complete_ic  (w_complete_ic), // complete write to L1P
+        .w_complete_dc  (w_complete_dc), // complete write to L1D        
         .data_wd_l2     (data_wd_l2),    // write data to L1C       
         .data_wd_l2_en  (data_wd_l2_en), 
         .wd_from_mem_en (wd_from_mem_en),
@@ -424,7 +431,7 @@ module cpu_top(
         .mem_wr_dc_en   (mem_wr_dc_en), 
         .mem_wr_ic_en   (mem_wr_ic_en),
         /*l2_cache part*/
-        .l2_complete_w  (l2_complete_w),   // complete write from MEM to L2
+        .l2_complete_w  (l2_complete_w), // complete write from MEM to L2
         .l2_complete_r  (l2_complete_r), // complete mark of reading from l2_cache
         .l2_rdy         (l2_rdy),
         .ic_en          (ic_en),         // busy signal of l2_cache
@@ -603,7 +610,7 @@ module cpu_top(
     );
     l2_tag_ram l2_tag_ram(    
         .clk            (clk),           // clock of L2C
-        .rst            (rst),           // reset
+        .rst            (rst),              // reset
         .l2_index       (l2_index),      // address of cache
         .l2_tag_wd      (l2_tag_wd),     // write data of tag
         .l2_block0_we   (l2_block0_we),  // write signal of block0

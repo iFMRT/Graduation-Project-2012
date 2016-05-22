@@ -21,6 +21,8 @@ module dcache_mem_test();
     reg              clk;           // clock
     reg              rst;           // reset
     /* CPU part */
+    reg              access_mem;
+    reg     [31:0]   alu_out;
     wire             miss_stall;    // the signal of stall caused by cache miss
     /* L1_cache part */
     wire             block0_we;     // write signal of block0
@@ -89,7 +91,6 @@ module dcache_mem_test();
     // l2_data_ram
     wire             wd_from_mem_en;
     wire             wd_from_l1_en;
-    wire     [511:0] l2_data_wd;     // write data of l2_cache
     wire     [511:0] l2_data0_rd;    // read data of cache_data0
     wire     [511:0] l2_data1_rd;    // read data of cache_data1
     wire     [511:0] l2_data2_rd;    // read data of cache_data2
@@ -148,7 +149,7 @@ module dcache_mem_test();
     wire [`WORD_DATA_BUS]  ex_mem_wr_data; // Memory write data
     wire [`REG_ADDR_BUS]   ex_dst_addr;    // General purpose register write address
     wire                   ex_gpr_we_;     // General purpose register enable
-    reg  [`WORD_DATA_BUS]  ex_out;         // EX Stage operating reslut
+    wire [`WORD_DATA_BUS]  ex_out;         // EX Stage operating reslut
     /********** MEM/WB Pipeline Register **********/
     wire                  mem_en;         // If Pipeline data enables
     wire [`REG_ADDR_BUS]  mem_dst_addr;   // General purpose register write address
@@ -212,6 +213,8 @@ module dcache_mem_test();
         /************ Forward *************/
         .fwd_data       (fwd_data),
         /************ CPU part ************/
+        .alu_out        (alu_out),
+        .access_mem     (access_mem),
         .miss_stall     (miss_stall),    // the signal of stall caused by cache miss
         /* L1_cache part */
         .lru            (lru),           // mark of replacing
@@ -730,8 +733,9 @@ module dcache_mem_test();
             rst       <= `DISABLE;      
             if_busy   <= `DISABLE;
             ex_en     <= `ENABLE;
+            access_mem<= `ENABLE;
             ex_mem_op <= `MEM_OP_LW;
-            ex_out    <= 32'b1110_0001_0000_0000;
+            alu_out    <= 32'b1110_0001_0000_0000;
             mem_rd    <= 512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000;      // write data of l2_cache
         end
         #STEP begin // DC_ACCESS & L2_IDLE 
@@ -762,7 +766,7 @@ module dcache_mem_test();
                 28'b1110_0001_0000,                       // l2_addr
                 1'b0,                                     // dirty_wd
                 `WRITE,                                   // dirty0_rw
-                1'bx,                                     // dirty1_rw
+                `DISABLE,                                 // dirty1_rw
                 `ENABLE 
                 );
             tag_ram_tb(

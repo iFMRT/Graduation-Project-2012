@@ -19,6 +19,7 @@ module dcache_test();
     /* CPU part */
     reg      [29:0]  addr;          // address of fetching instruction
     reg      [31:0]  wr_data;
+    reg              out_rdy;
     wire     [31:0]  dc_wd;
     reg              memwrite_m;    // read / write signal of CPU
     reg              access_mem;
@@ -125,6 +126,7 @@ module dcache_test();
         .access_mem     (access_mem), 
         .wr_data        (wr_data), 
         .dc_wd          (dc_wd),
+        .out_rdy        (out_rdy),
         .read_data_m    (read_data_m),      // read data of CPU
         .miss_stall     (miss_stall),    // the signal of stall caused by cache miss
         /* L1_cache part */
@@ -572,6 +574,7 @@ module dcache_test();
             addr       <= 30'b1110_0001_0000_00;
             access_mem <= `ENABLE;
             memwrite_m <= `READ;
+            out_rdy    <= `ENABLE;
             mem_rd <= 512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000;      // write data of l2_cache
         end
         #STEP begin // L1_ACCESS & L2_IDLE 
@@ -579,8 +582,8 @@ module dcache_test();
             dcache_ctrl_tb(
                 32'bx,                                   // read_data_m of CPU
                 `ENABLE,                                 // miss_stall
-                1'bx,                                    // rw_tag0
-                1'bx,                                    // rw_tag1
+                `DISABLE,                                // rw_tag0
+                `DISABLE,                                // rw_tag1
                 21'b1_0000_0000_0000_0000_1110,          // write data of L1_tag
                 8'b0001_0000,                            // L1_address 
                 128'bx,                                  // data_rd choosing from data_rd1~data_rd3

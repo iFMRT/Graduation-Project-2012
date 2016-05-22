@@ -226,6 +226,12 @@ module l2_cache_ctrl(
         /*State Control Part*/
         case(state)
             `L2_IDLE:begin
+                ic_en         = `DISABLE;
+                dc_en         = `DISABLE;
+                l2_block0_re  = `DISABLE;
+                l2_block1_re  = `DISABLE; 
+                l2_block2_re  = `DISABLE;
+                l2_block3_re  = `DISABLE;
                 if (irq == `ENABLE) begin  
                     nextstate     = `ACCESS_L2;
                     ic_en         = `ENABLE;
@@ -242,12 +248,6 @@ module l2_cache_ctrl(
                     l2_block3_re  = `ENABLE;
                 end else begin
                     nextstate     = `L2_IDLE;
-                    ic_en         = `DISABLE;
-                    dc_en         = `DISABLE;
-                    l2_block0_re  = `DISABLE;
-                    l2_block1_re  = `DISABLE; 
-                    l2_block2_re  = `DISABLE;
-                    l2_block3_re  = `DISABLE;
                 end   
             end
             `ACCESS_L2:begin

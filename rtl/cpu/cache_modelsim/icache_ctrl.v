@@ -25,6 +25,7 @@ module icache_ctrl(
     input              clk,              // clock
     input              rst,              // reset
     /********** CPU part **********/
+    input              mem_busy,
     input      [29:0]  if_addr,          // address of fetching instruction
     input              rw,               // read / write signal of CPU
     output reg [31:0]  cpu_data,         // read data of CPU
@@ -104,6 +105,7 @@ module icache_ctrl(
             end
             `IC_ACCESS:begin                
                 data_rdy    = `DISABLE;
+                ic_rw_en    = `DISABLE;
                 miss_stall =  `ENABLE;
                 if (r_complete == `ENABLE) begin
                     block0_re   = `DISABLE;
@@ -119,10 +121,12 @@ module icache_ctrl(
                         data_rdy    = `ENABLE;
                         block0_re   = `ENABLE;
                         block1_re   = `ENABLE;
-                        if(if_addr[1:0] == 2'b11)begin
-                            index       = if_addr[9:2] + 1;
-                            l2_addr     = if_addr[29:2]  + 1;
-                            tag_wd      = {1'b1,if_addr[29:10]};
+                        if (mem_busy == `DISABLE) begin
+                            if(if_addr[1:0] == 2'b11)begin
+                                index       = if_addr[9:2] + 1;
+                                l2_addr     = if_addr[29:2]  + 1;
+                                tag_wd      = {1'b1,if_addr[29:10]};
+                            end
                         end
                         if (hitway0 == `ENABLE) begin
                             case(if_addr[1:0])

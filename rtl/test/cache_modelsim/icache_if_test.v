@@ -208,6 +208,7 @@ module icache_if_test();
         .clk            (clk),           // clock
         .reset          (rst),           // reset
         /* CPU part */
+        .mem_busy       (mem_busy),
         .miss_stall     (miss_stall),    // the signal of stall caused by cache miss
         /* L1_cache part */
         .lru            (lru),           // mark of replacing
@@ -446,8 +447,8 @@ module icache_if_test();
         end
     endtask 
     task l2_cache_ctrl_tb;
-        input           _ic_en  ;            // L2C busy mark
-        input   [127:0] _data_wd_l2;            // write data to L1_IC
+        input           _ic_en;              // L2C busy mark
+        input   [127:0] _data_wd_l2;         // write data to L1_IC
         input   [17:0]  _l2_tag_wd;          // write data of tag0
         input           _l2_rdy;             // ready signal of l2_cache
         input           _l2_block0_we;       // the mark of cache_block0 write signal 

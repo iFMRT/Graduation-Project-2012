@@ -22,6 +22,7 @@ module cache_top(
     input               memwrite_m,     // read / write signal of CPU
     input               access_mem,
     input      [29:0]   if_pc,          // address of fetching instruction
+    input               out_rdy,
     output     [31:0]   insn,           // read data of CPU
     output              if_busy,        // the signal of stall caused by cache miss   
     output     [31:0]   read_data_m,    // read data of CPU
@@ -70,6 +71,7 @@ module cache_top(
         .wr_data        (wr_data),
         .memwrite_m     (memwrite_m),    // read / write signal of CPU
         .access_mem     (access_mem), 
+        .out_rdy        (out_rdy),
         .read_data_m    (read_data_m),   // read data of CPU
         .mem_busy       (mem_busy),      // the signal of stall caused by cache miss
         /* L1_cache part */
@@ -93,6 +95,7 @@ module cache_top(
         .clk            (clk),              // clock
         .rst            (rst),              // reset
         /* CPU part */
+        .mem_busy       (mem_busy),
         .if_pc          (if_pc),            // address of fetching instruction
         .insn           (insn),             // read data from cache to CPU
         .if_busy        (if_busy),          // the signal of stall caused by cache miss

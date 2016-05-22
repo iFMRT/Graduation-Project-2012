@@ -12,10 +12,11 @@ module mem_ctrl (
     input  wire                   ex_en,          // If Pipeline data enable
     input  wire  [`MEM_OP_BUS]    ex_mem_op,      // Memory operation
     input  wire  [`WORD_DATA_BUS] ex_mem_wr_data, // Memory write data
-    input  wire  [`WORD_DATA_BUS] ex_out,         // EX stage operating result
+    input  wire  [1:0]            offset,         // EX stage operating result
+    input  wire  [`WORD_DATA_BUS] ex_out,
     /***** Memory Access Interface ******/
     input  wire  [`WORD_DATA_BUS] read_data_m,    // Read data
-    output wire  [`WORD_DATA_BUS] addr,           // address
+    // output wire  [`WORD_DATA_BUS] addr,           // address
     output reg                    rw,             // Read/Write
     output reg   [`WORD_DATA_BUS] wr_data,        // Write data
     input  wire                   hitway,         // path hit mark           
@@ -23,15 +24,16 @@ module mem_ctrl (
     input  wire  [127:0]          data1_rd,       // read data of data cache'path1     
     /********** Memory Access  **********/
     output reg  [`WORD_DATA_BUS]  out,            // Memory access result
+    output reg                    load_rdy,
     output reg                    miss_align      // miss align
 );
 
     /********* Internal Signal **********/
-    wire [`BYTE_OFFSET_BUS]      offset;          // Byte offset
+    // wire [`BYTE_OFFSET_BUS]      offset;          // Byte offset
 
     /******** Output Assignment *********/
-    assign addr    = ex_out;
-    assign offset  = ex_out[`BYTE_OFFSET_LOC];
+    // assign addr    = ex_out;
+    // assign offset  = ex_out[`BYTE_OFFSET_LOC];
 
     /****** Memory Access Control *******/
     always @(*) begin
@@ -40,6 +42,7 @@ module mem_ctrl (
         wr_data    = ex_mem_wr_data;
         out        = `WORD_DATA_W'h0;
         rw         = `READ;
+        load_rdy   = `DISABLE;
         /* Memory Access */
         if (ex_en == `ENABLE) begin
             case (ex_mem_op)
@@ -47,6 +50,7 @@ module mem_ctrl (
                     /* Check offset */
                     if (offset == `BYTE_OFFSET_WORD) begin      // Align
                         out         = read_data_m;
+                        load_rdy     = `ENABLE;
                     end else begin                              // Miss align
                         miss_align  = `ENABLE;
                     end
@@ -54,6 +58,7 @@ module mem_ctrl (
                 `MEM_OP_LH : begin                              // Read a half word
                     /* Check offset */
                     if (offset[0] == 1'b0) begin // Align
+                        load_rdy     = `ENABLE;
                         if (offset[1] == 1'b0) begin
                             out     = { {16{read_data_m[15]}}, read_data_m[15:0]};
                         end else begin
@@ -64,6 +69,7 @@ module mem_ctrl (
                     end
                 end
                 `MEM_OP_LB : begin                              // Read a byte
+                    load_rdy     = `ENABLE;
                     case (offset)
                         `BYTE0:begin
                             out     = { {24{read_data_m[7]}}, read_data_m[7:0]};
@@ -80,6 +86,7 @@ module mem_ctrl (
                     endcase
                 end
                 `MEM_OP_LBU : begin                             // Read a unsigned byte
+                    load_rdy     = `ENABLE;
                     case (offset)
                         `BYTE0:begin
                             out     = { {24{1'b0}}, read_data_m[7:0]};
@@ -98,6 +105,7 @@ module mem_ctrl (
                 `MEM_OP_LHU : begin                             // Read a half unsigned word
                     /* Check offset */
                     if (offset[0] == 1'b0) begin // Align
+                        load_rdy     = `ENABLE;
                         if (offset[1] == 1'b0) begin
                             out     = { {16{1'b0}}, read_data_m[15:0]};
                         end else begin

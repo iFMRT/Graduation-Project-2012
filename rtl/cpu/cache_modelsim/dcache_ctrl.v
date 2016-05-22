@@ -29,6 +29,7 @@ module dcache_ctrl(
     input              memwrite_m,    // read / write signal of CPU
     input              access_mem,    // access MEM mark
     input      [31:0]  wr_data,       // write data from CPU
+    input              out_rdy,
     output reg [31:0]  read_data_m,   // read data of CPU
     output reg         miss_stall,    // the signal of stall caused by cache miss
     /******** D_Cache part ********/
@@ -132,10 +133,11 @@ module dcache_ctrl(
         case(state)
             `DC_IDLE:begin
                 miss_stall = `DISABLE;
+                block0_re  = `DISABLE;
+                block1_re  = `DISABLE;
                 index      = addr[9:2];
                 offset     = addr[1:0];
                 tag_wd     = {1'b1,addr[29:10]};
-                dc_wd      = wr_data;
                 if (access_mem == `ENABLE) begin 
                     block0_re  =  `ENABLE;
                     block1_re  =  `ENABLE;
@@ -148,6 +150,8 @@ module dcache_ctrl(
             `DC_ACCESS:begin
                 miss_stall =  `ENABLE;
                 drq        =  `DISABLE;
+                block0_we   =  `DISABLE;
+                block1_we   =  `DISABLE; 
                 if (r_complete == `ENABLE) begin                        
                     block0_re  = `DISABLE;
                     block1_re  = `DISABLE;
@@ -155,18 +159,22 @@ module dcache_ctrl(
                         if(memwrite_m == `READ) begin // read hit
                             // read l1_block ,write to cpu
                             miss_stall  =  `DISABLE;
-                            if(access_mem == `ENABLE) begin
-                                index      = addr[9:2];
-                                offset     = addr[1:0];
-                                dc_wd      = wr_data;
-                                tag_wd     = {1'b1,addr[29:10]};
-                                block0_re  =  `ENABLE;
-                                block1_re  =  `ENABLE;
-                                dc_rw_en   =  `DISABLE;
-                                nextstate  =  `DC_ACCESS;
-                            end else begin
-                                nextstate  =  `DC_IDLE;
-                            end
+                            nextstate   =  `DC_ACCESS;
+                            block0_re   =  `ENABLE;
+                            block1_re   =  `ENABLE;
+                            if (out_rdy == `ENABLE) begin
+                                if(access_mem == `ENABLE) begin
+                                    index      = addr[9:2];
+                                    offset     = addr[1:0];
+                                    tag_wd     = {1'b1,addr[29:10]};
+                                    block0_re  =  `ENABLE;
+                                    block1_re  =  `ENABLE;
+                                    dc_rw_en   =  `DISABLE;
+                                    nextstate  =  `DC_ACCESS;
+                                end else begin
+                                    nextstate  =  `DC_IDLE;
+                                end
+                            end                            
                             case(hitway)
                                 `WAY0:begin
                                     case(offset)
@@ -206,6 +214,7 @@ module dcache_ctrl(
                             miss_stall     =  `ENABLE;
                             nextstate      = `WRITE_HIT;
                             dirty_wd       =  1'b1;
+                            dc_wd          = wr_data;
                             data_wd_dc_en  =  `ENABLE;
                             case(hitway)
                                 `WAY0:begin
@@ -215,23 +224,6 @@ module dcache_ctrl(
                                     block1_we = `ENABLE;
                                 end // hitway == 1
                             endcase // case(hitway) 
-                            // if(w_complete == `ENABLE)begin
-                            //     data_wd_dc_en =  `DISABLE;
-                            //     miss_stall    =  `DISABLE;  
-                            //     block0_we     =  `DISABLE;
-                            //     block1_we     =  `DISABLE;
-                            //     if(access_mem == `ENABLE) begin
-                            //         index      = addr[9:2];
-                            //         offset     = addr[1:0];
-                            //         dc_wd      = wr_data;
-                            //         tag_wd     = {1'b1,addr[29:10]};
-                            //         block0_re  =  `ENABLE;
-                            //         block1_re  =  `ENABLE;
-                            //         nextstate  =  `DC_ACCESS;
-                            //     end else begin
-                            //         nextstate  =  `DC_IDLE;
-                            //     end
-                            // end
                         end // end：write hit
                     end else begin // cache miss
                         miss_stall =  `ENABLE; 
@@ -332,7 +324,6 @@ module dcache_ctrl(
                     if(access_mem == `ENABLE) begin
                         index      = addr[9:2];
                         offset     = addr[1:0];
-                        dc_wd      = wr_data;
                         tag_wd     = {1'b1,addr[29:10]};
                         nextstate  =  `DC_ACCESS;
                         block0_re  =  `ENABLE;
@@ -353,6 +344,7 @@ module dcache_ctrl(
                         block0_re      =  `DISABLE;
                         block1_re      =  `DISABLE;
                         nextstate      =  `WRITE_HIT;
+                        dc_wd          =  wr_data;
                         dirty_wd       =  1'b1;
                         data_wd_dc_en  =  `ENABLE;
                         case(hitway)
@@ -377,7 +369,6 @@ module dcache_ctrl(
                     if(access_mem == `ENABLE) begin
                         index     = addr[9:2];
                         offset    = addr[1:0];
-                        dc_wd     = wr_data;
                         tag_wd    = {1'b1,addr[29:10]};
                         block0_re  =  `ENABLE;
                         block1_re  =  `ENABLE;

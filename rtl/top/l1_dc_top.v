@@ -19,6 +19,7 @@ module l1_dc_top(
     input      [31:0]  wr_data,
     input              memwrite_m,    // read / write signal of CPU
     input              access_mem,
+    input              out_rdy,
     output     [31:0]  read_data_m,   // read data of CPU
     output             mem_busy,      // the signal of stall caused by cache miss
     /* dcache part */
@@ -94,6 +95,7 @@ module l1_dc_top(
         .memwrite_m     (memwrite_m),       // read / write signal of CPU
         .wr_data        (wr_data),
         .access_mem     (access_mem), 
+        .out_rdy        (out_rdy),
         .read_data_m    (read_data_m),      // read data of CPU
         .miss_stall     (mem_busy),         // the signal of stall caused by cache miss
         /* L1_cache part */

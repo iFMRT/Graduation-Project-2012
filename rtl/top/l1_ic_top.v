@@ -24,6 +24,7 @@ module l1_ic_top(
     input            clk,           // clock
     input            rst,           // reset   
     /********** CPU part *********/
+    input            mem_busy,
     input    [29:0]  if_pc,         // address of fetching instruction
     output   [31:0]  insn,          // read data of CPU
     output           if_busy,       // the signal of stall caused by cache miss
@@ -114,6 +115,7 @@ module l1_ic_top(
         .clk            (clk),             // clock
         .rst            (rst),             // reset
         /********** CPU part **********/
+        .mem_busy       (mem_busy),
         .if_addr        (if_pc),           // address of fetching instruction
         .rw             (`READ),           // read / write signal of CPU
         .cpu_data       (insn),            // read data from cache to CPU

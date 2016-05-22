@@ -15,8 +15,10 @@ module mem_stage (
     output     [`WORD_DATA_BUS]  fwd_data,                   
     /*********** Data_cache ***********/
     /* CPU part */
+    input                        access_mem,
     output                       miss_stall,    // the signal of stall caused by cache miss
     /* L1_cache part */
+    input      [31:0]            alu_out,
     input                        lru,           // mark of replacing
     input      [20:0]            tag0_rd,       // read data of tag0
     input      [20:0]            tag1_rd,       // read data of tag1
@@ -66,52 +68,50 @@ module mem_stage (
     /********** Internal signals **********/
     wire [`WORD_DATA_BUS]        wr_data;         // Write data
     wire [`WORD_DATA_BUS]        read_data_m;     // Read data
-    wire [`WORD_DATA_BUS]        addr;            // Address
+    // wire [`WORD_DATA_BUS]        addr;            // Address
     wire                         memwrite_m;      // Read/Write
     wire [`WORD_DATA_BUS]        out;             // Memory Access Result
     wire                         miss_align;
-    reg                          access_mem;
-    // reg                          access_mem_ex;
+    // reg                          access_mem;
     wire                         hitway;
+    wire                         out_rdy;
+    wire                         load_rdy;
+
     assign fwd_data  = out;
 
-    always @(*) begin
-        if (ex_mem_op[3:2] == 2'b00) begin
-            access_mem = `DISABLE;
-        end else begin
-            access_mem = `ENABLE;
-        end
-    end
     // /********** Memory Access Control Module **********/
     mem_ctrl mem_ctrl (
         /********** EX/MEM Pipeline Register **********/
         .ex_en            (ex_en),
         .ex_mem_op        (ex_mem_op),      // Memory operation
         .ex_mem_wr_data   (ex_mem_wr_data), // Memory write data
-        .ex_out           (ex_out),         // EX Stage operating reslut
+        .ex_out           (ex_out),
+        .offset           (alu_out[1:0]),   // EX Stage operating reslut
         /********** Memory Access Interface **********/
         .read_data_m      (read_data_m),    // Read data
-        .addr             (addr),           // Address
+        // .addr             (addr),           // Address
         .rw               (memwrite_m),     // Read/Write                
         .wr_data          (wr_data),        // Write data
         .hitway           (hitway),         // Address Strobe
         .data0_rd         (data0_rd),       // Read/Write
         .data1_rd         (data1_rd),       // Write data
-        /********** Memory Access Result **********/
+        /********** Memory Access Result **********/        
+        .load_rdy         (load_rdy),
         .out              (out),            // Memory Access Result
         .miss_align       (miss_align)
     );
-
     /********** Dcache Interface **********/
     dcache_ctrl dcache_ctrl(
         .clk            (clk),           // clock
         .rst            (reset),         // reset
         /* CPU part */
-        .addr           (addr[31:2]),    // address of fetching instruction
+        // .addr           (ex_out[31:2]),  // address of fetching instruction
+        .addr           (alu_out[31:2]), // address of fetching instruction
         .memwrite_m     (memwrite_m),    // Read/Write 
         .wr_data        (wr_data),       // read / write signal of CPU
         .dc_wd          (dc_wd),
         .access_mem     (access_mem), 
+        .out_rdy        (out_rdy),
         .read_data_m    (read_data_m),   // read data of CPU
         .miss_stall     (miss_stall),    // the signal of stall caused by cache miss
         /* L1_cache part */
@@ -166,6 +166,8 @@ module mem_stage (
         .mem_en           (mem_en),          
         .mem_dst_addr     (mem_dst_addr),    // General purpose register write address
         .mem_gpr_we_      (mem_gpr_we_),     // General purpose register enable
+        .load_rdy         (load_rdy),
+        .out_rdy          (out_rdy),
         .mem_out          (mem_out)
         );
 

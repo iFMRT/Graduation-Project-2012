@@ -19,7 +19,6 @@ module ex_stage (
     // Pipeline Control Signal
     input                   stall,
     input                   flush,
-
     input  wire             id_en,
     input [`ALU_OP_BUS]     id_alu_op,
     input [`WORD_DATA_BUS]  id_alu_in_0,
@@ -49,9 +48,10 @@ module ex_stage (
     output [`WORD_DATA_BUS] ex_mem_wr_data,
     output [`REG_ADDR_BUS]  ex_dst_addr, // bypass output
     output                  ex_gpr_we_,
-
+    
+    output [`WORD_DATA_BUS] alu_out,
     output [`WORD_DATA_BUS] ex_out,
-
+    output                  access_mem,    // access MEM mark
     // input [`WORD_DATA_BUS]  pc_next, // pc_next = current pc + 1
     input                   id_jump_taken, // true - jump to target pc
 
@@ -60,7 +60,7 @@ module ex_stage (
 );
 
     /* internal signles ==============================================*/
-    wire [`WORD_DATA_BUS] alu_out;
+    // wire [`WORD_DATA_BUS] alu_out;
     wire [`WORD_DATA_BUS] alu_in_0;
     wire [`WORD_DATA_BUS] mem_wr_data;
     wire                  cmp_out;
@@ -134,6 +134,7 @@ module ex_stage (
         .ex_dst_addr    (ex_dst_addr),
         .ex_gpr_we_     (ex_gpr_we_),
         .ex_mem_op      (ex_mem_op),
+        .access_mem     (access_mem),
         .ex_mem_wr_data (ex_mem_wr_data),
         .ex_out         (ex_out)
     );

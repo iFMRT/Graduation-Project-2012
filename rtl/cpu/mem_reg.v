@@ -28,6 +28,8 @@ module mem_reg (
     output reg [`REG_ADDR_BUS]  mem_dst_addr,   // General purpose register write address
     output reg                  mem_gpr_we_,    // General purpose register write enable
     // output reg [`IsaExpBus]     mem_exp_code,   // Exception code
+    input                       load_rdy,
+    output reg                  out_rdy,
     output reg [`WORD_DATA_BUS] mem_out         // MEM stage operating result
 );
 
@@ -43,6 +45,7 @@ module mem_reg (
             // mem_exp_code <=  `ISA_EXP_NO_EXP;
             mem_out      <=  `WORD_DATA_W'h0;
         end else begin
+            out_rdy      <=  `DISABLE;
             if (stall == `DISABLE) begin
                 /* Update Pipeline Register */
                 if (flush == `ENABLE) begin                // flush
@@ -69,6 +72,9 @@ module mem_reg (
                     mem_gpr_we_  <=  ex_gpr_we_;
                     // mem_exp_code <=  ex_exp_code;
                     mem_out      <=  out;
+                    if (load_rdy == `ENABLE) begin
+                        out_rdy      <=  `ENABLE;
+                    end
                 end
             end 
         end

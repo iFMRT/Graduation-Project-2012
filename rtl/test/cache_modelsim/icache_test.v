@@ -17,6 +17,7 @@ module icache_test();
     reg              clk;           // clock
     reg              rst;           // reset
     /* CPU part */
+    reg              mem_busy;
     reg      [29:0]  if_addr;       // address of fetching instruction
     reg              rw;            // read / write signal of CPU
     wire     [31:0]  cpu_data;      // read data of CPU
@@ -111,6 +112,7 @@ module icache_test();
         .clk            (clk),           // clock
         .rst            (rst),           // reset
         /* CPU part */
+        .mem_busy       (mem_busy),
         .if_addr        (if_addr),       // address of fetching instruction
         .rw             (rw),            // read / write signal of CPU
         .cpu_data       (cpu_data),      // read data of CPU
@@ -533,6 +535,7 @@ module icache_test();
             /******** Initialize Test Output ********/
             rst     <= `DISABLE;      
             if_addr <= 30'b1110_0001_0000_00;
+            mem_busy<= `ENABLE;
             rw      <= `READ;
             mem_rd  <= 512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000;      // write data of l2_cache
             // IC_IDLE & L2_IDLE 

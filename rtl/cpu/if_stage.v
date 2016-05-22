@@ -24,6 +24,7 @@ module if_stage(
     input                   clk,           // Clk
     input                   reset,         // Reset
     /* CPU part */ 
+    input                   mem_busy,
     output                  miss_stall,    // the signal of stall caused by cache miss
     /************* I_Cache ************/
     input                   lru,           // mark of replacing
@@ -69,6 +70,7 @@ icache_ctrl icache_ctrl(
         .clk            (clk),           // clock
         .rst            (reset),         // reset
         /* CPU part */
+        .mem_busy       (mem_busy),
         .if_addr        (if_pc[31:2]),   // address of fetching instruction
         .rw             (`READ),         // read / write signal of CPU
         .cpu_data       (insn),          // read data of CPU

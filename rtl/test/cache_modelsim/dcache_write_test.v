@@ -17,6 +17,7 @@ module dcache_write_test();
     reg              clk;           // clock
     reg              rst;           // reset
     /* CPU part */
+    reg              out_rdy;
     reg      [29:0]  aluout_m;      // address of fetching instruction
     reg      [31:0]  wr_data;
     wire     [31:0]  dc_wd;
@@ -124,6 +125,7 @@ module dcache_write_test();
         .access_mem     (access_mem), 
         .wr_data        (wr_data),
         .dc_wd          (dc_wd),
+        .out_rdy        (out_rdy),
         .read_data_m    (read_data_m),    // read data of CPU
         .miss_stall     (miss_stall),     // the signal of stall caused by cache miss
         /* L1_cache part */
@@ -558,6 +560,7 @@ module dcache_write_test();
             aluout_m   <= 30'b1110_0001_0000_00;
             access_mem <= `ENABLE;
             memwrite_m <= `WRITE;
+            out_rdy    <= `ENABLE;
             wr_data  <= 32'h123B;
             // write data of l2_cache
             mem_rd     <= 512'h123BC000_0876547A_00000000_ABF00000_123BC000_00000000_0876547A_00000000_ABF00000_123BC000;         
@@ -580,8 +583,8 @@ module dcache_write_test();
             dcache_ctrl_tb(
                 32'bx,                                     // read_data_m of CPU
                 `ENABLE,                                   // the signal of stall caused by cache miss
-                1'bx,                                      // read / write signal of L1_tag0
-                1'bx,                                      // read / write signal of L1_tag1
+                `DISABLE,                                  // read / write signal of L1_tag0
+                `DISABLE,                                  // read / write signal of L1_tag1
                 21'b1_0000_0000_0000_0000_1110,            // write data of L1_tag
                 8'b0001_0000,                              // address of L1_cache
                 128'bx,                                    // data_rd choosing from data_rd1~data_rd3
@@ -596,7 +599,7 @@ module dcache_write_test();
                 32'bx,                                     // read_data_m of CPU
                 `ENABLE,                                   // the signal of stall caused by cache miss
                 `ENABLE,                                   // read / write signal of L1_tag0
-                1'bx,                                      // read / write signal of L1_tag1
+                `DISABLE,                                  // read / write signal of L1_tag1
                 21'b1_0000_0000_0000_0000_1110,            // write data of L1_tag
                 8'b0001_0000,                              // address of L1_cache
                 128'bx,                                    // data_rd choosing from data_rd1~data_rd3
