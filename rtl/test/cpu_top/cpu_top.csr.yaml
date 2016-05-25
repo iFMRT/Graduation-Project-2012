@@ -124,20 +124,20 @@ gpr_rs2_addr:  "`REG_ADDR_W'h8"
 mem_rd_addr:   "`REG_ADDR_W'h0"
 mem_out:       "`WORD_DATA_W'h0"
 ---
-#  sub  x4, x3, x1
+#  lw   x4, 3(x1)
 display:      "\\n========= Clock 16 ========"
-gpr_rs1_data:  "`WORD_DATA_W'hx"
-gpr_rs2_data:  "`WORD_DATA_W'h4"
-gpr_rs1_addr:  "`REG_ADDR_W'h3"
-gpr_rs2_addr:  "`REG_ADDR_W'h1"
+gpr_rs1_data:  "`WORD_DATA_W'h4"
+gpr_rs2_data:  "`WORD_DATA_W'hx"
+gpr_rs1_addr:  "`REG_ADDR_W'h1"
+gpr_rs2_addr:  "`REG_ADDR_W'h3"
 mem_rd_addr:   "`REG_ADDR_W'h1"
 mem_out:       "`WORD_DATA_W'h4"
 ---
-#  csrrs x5, mepc, x4
+#  csrrs x5, mepc, x3
 display:      "\\n========= Clock 17 ========"
 gpr_rs1_data:  "`WORD_DATA_W'hx"
 gpr_rs2_data:  "`WORD_DATA_W'h4"
-gpr_rs1_addr:  "`REG_ADDR_W'h4"
+gpr_rs1_addr:  "`REG_ADDR_W'h3"
 gpr_rs2_addr:  "`REG_ADDR_W'h1"
 mem_rd_addr:   "`REG_ADDR_W'h2"
 mem_out:       "`WORD_DATA_W'h4"
@@ -157,28 +157,28 @@ gpr_rs1_data:  "`WORD_DATA_W'hx"
 gpr_rs2_data:  "`WORD_DATA_W'h4"
 gpr_rs1_addr:  "`REG_ADDR_W'h5"
 gpr_rs2_addr:  "`REG_ADDR_W'h1"
-mem_rd_addr:   "`REG_ADDR_W'h4"
-mem_out:       "`WORD_DATA_W'h8"
+mem_rd_addr:   "`REG_ADDR_W'h0"
+mem_out:       "`WORD_DATA_W'h0"
 ---
-#  csrrsi x7, mepc, 31
+# nop
 display:      "\\n========= Clock 20 ========"
-gpr_rs1_data:  "`WORD_DATA_W'hx"
-gpr_rs2_data:  "`WORD_DATA_W'h4"
-gpr_rs1_addr:  "`REG_ADDR_W'h1f"
-gpr_rs2_addr:  "`REG_ADDR_W'h1"
-mem_rd_addr:   "`REG_ADDR_W'h5"
-mem_out:       "`WORD_DATA_W'h4"
+gpr_rs1_data:  "`WORD_DATA_W'h0"
+gpr_rs2_data:  "`WORD_DATA_W'h0"
+gpr_rs1_addr:  "`REG_ADDR_W'h0"
+gpr_rs2_addr:  "`REG_ADDR_W'h0"
+mem_rd_addr:   "`REG_ADDR_W'h0"
+mem_out:       "`WORD_DATA_W'h0"
 ---
-#  csrrci x8, mepc, 10
+# csrr x7, mcause
 display:      "\\n========= Clock 21 ========"
-gpr_rs1_data:  "`WORD_DATA_W'hx"
+gpr_rs1_data:  "`WORD_DATA_W'h0"
 gpr_rs2_data:  "`WORD_DATA_W'h4"
-gpr_rs1_addr:  "`REG_ADDR_W'ha"
-gpr_rs2_addr:  "`REG_ADDR_W'h1"
-mem_rd_addr:   "`REG_ADDR_W'h6"
-mem_out:       "`WORD_DATA_W'hc"
+gpr_rs1_addr:  "`REG_ADDR_W'h0"
+gpr_rs2_addr:  "`REG_ADDR_W'h2"
+mem_rd_addr:   "`REG_ADDR_W'h0"
+mem_out:       "`WORD_DATA_W'h0"
 ---
-#  csrrwi x0, mepc, 0
+# csrr x8, mepc
 display:      "\\n========= Clock 22 ========"
 gpr_rs1_data:  "`WORD_DATA_W'h0"
 gpr_rs2_data:  "`WORD_DATA_W'h4"
@@ -187,17 +187,107 @@ gpr_rs2_addr:  "`REG_ADDR_W'h1"
 mem_rd_addr:   "`REG_ADDR_W'h0"
 mem_out:       "`WORD_DATA_W'h0"
 ---
-#  xxxxxxxx
+#  addi x8, x8, 4
 display:      "\\n========= Clock 23 ========"
+gpr_rs1_data:  "`WORD_DATA_W'h4"
+gpr_rs2_data:  "`WORD_DATA_W'hx"
+gpr_rs1_addr:  "`REG_ADDR_W'h8"
+gpr_rs2_addr:  "`REG_ADDR_W'h4"
+mem_rd_addr:   "`REG_ADDR_W'h0"
+mem_out:       "`WORD_DATA_W'h0"
+---
+#  csrw mepc, x8
+display:      "\\n========= Clock 24 ========"
+gpr_rs1_data:  "`WORD_DATA_W'h4"
+gpr_rs2_data:  "`WORD_DATA_W'h4"
+gpr_rs1_addr:  "`REG_ADDR_W'h8"
+gpr_rs2_addr:  "`REG_ADDR_W'h1"
+mem_rd_addr:   "`REG_ADDR_W'h7"
+mem_out:       "`WORD_DATA_W'h4"
+---
+#  eret
+display:      "\\n========= Clock 25 ========"
+gpr_rs1_data:  "`WORD_DATA_W'h0"
+gpr_rs2_data:  "`WORD_DATA_W'h0"
+gpr_rs1_addr:  "`REG_ADDR_W'h0"
+gpr_rs2_addr:  "`REG_ADDR_W'h0"
+mem_rd_addr:   "`REG_ADDR_W'h8"
+mem_out:       "`WORD_DATA_W'h10"
+---
+# nop
+display:      "\\n========= Clock 26 ========"
+gpr_rs1_data:  "`WORD_DATA_W'h0"
+gpr_rs2_data:  "`WORD_DATA_W'h0"
+gpr_rs1_addr:  "`REG_ADDR_W'h0"
+gpr_rs2_addr:  "`REG_ADDR_W'h0"
+mem_rd_addr:   "`REG_ADDR_W'h8"
+mem_out:       "`WORD_DATA_W'h14"
+---
+#  csrrs x5, mepc, x3
+display:      "\\n========= Clock 27 ========"
+gpr_rs1_data:  "`WORD_DATA_W'hc"
+gpr_rs2_data:  "`WORD_DATA_W'h4"
+gpr_rs1_addr:  "`REG_ADDR_W'h3"
+gpr_rs2_addr:  "`REG_ADDR_W'h1"
+mem_rd_addr:   "`REG_ADDR_W'h0"
+mem_out:       "`WORD_DATA_W'h10"
+---
+#  csrrc x6, mepc, x3
+display:      "\\n========= Clock 28 ========"
+gpr_rs1_data:  "`WORD_DATA_W'hc"
+gpr_rs2_data:  "`WORD_DATA_W'h4"
+gpr_rs1_addr:  "`REG_ADDR_W'h3"
+gpr_rs2_addr:  "`REG_ADDR_W'h1"
+mem_rd_addr:   "`REG_ADDR_W'h0"
+mem_out:       "`WORD_DATA_W'h0"
+---
+#  csrrw x0, mepc, x5
+display:      "\\n========= Clock 29 ========"
+gpr_rs1_data:  "`WORD_DATA_W'hx"
+gpr_rs2_data:  "`WORD_DATA_W'h4"
+gpr_rs1_addr:  "`REG_ADDR_W'h5"
+gpr_rs2_addr:  "`REG_ADDR_W'h1"
+mem_rd_addr:   "`REG_ADDR_W'h0"
+mem_out:       "`WORD_DATA_W'h0"
+---
+#  csrrsi x7, mepc, 31
+display:      "\\n========= Clock 30 ========"
+gpr_rs1_data:  "`WORD_DATA_W'hx"
+gpr_rs2_data:  "`WORD_DATA_W'h4"
+gpr_rs1_addr:  "`REG_ADDR_W'h1f"
+gpr_rs2_addr:  "`REG_ADDR_W'h1"
+mem_rd_addr:   "`REG_ADDR_W'h5"
+mem_out:       "`WORD_DATA_W'h14"
+---
+#  csrrci x8, mepc, 10
+display:      "\\n========= Clock 31 ========"
+gpr_rs1_data:  "`WORD_DATA_W'hx"
+gpr_rs2_data:  "`WORD_DATA_W'h4"
+gpr_rs1_addr:  "`REG_ADDR_W'ha"
+gpr_rs2_addr:  "`REG_ADDR_W'h1"
+mem_rd_addr:   "`REG_ADDR_W'h6"
+mem_out:       "`WORD_DATA_W'h1c"
+---
+#  csrrwi x0, mepc, 0
+display:      "\\n========= Clock 32 ========"
+gpr_rs1_data:  "`WORD_DATA_W'h0"
+gpr_rs2_data:  "`WORD_DATA_W'h4"
+gpr_rs1_addr:  "`REG_ADDR_W'h0"
+gpr_rs2_addr:  "`REG_ADDR_W'h1"
+mem_rd_addr:   "`REG_ADDR_W'h0"
+mem_out:       "`WORD_DATA_W'h10"
+---
+#  xxxxxxxx
+display:      "\\n========= Clock 33 ========"
 gpr_rs1_data:  "`WORD_DATA_W'hx"
 gpr_rs2_data:  "`WORD_DATA_W'hx"
 gpr_rs1_addr:  "`REG_ADDR_W'hx"
 gpr_rs2_addr:  "`REG_ADDR_W'hx"
 mem_rd_addr:   "`REG_ADDR_W'h7"
-mem_out:       "`WORD_DATA_W'h4"
+mem_out:       "`WORD_DATA_W'h14"
 ---
 #  xxxxxxxx
-display:      "\\n========= Clock 24 ========"
+display:      "\\n========= Clock 34 ========"
 gpr_rs1_data:  "`WORD_DATA_W'hx"
 gpr_rs2_data:  "`WORD_DATA_W'hx"
 gpr_rs1_addr:  "`REG_ADDR_W'hx"
