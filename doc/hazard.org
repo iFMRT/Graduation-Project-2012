@@ -1,0 +1,150 @@
+* 检测冲突
+
+** 结构冲突
+采用哈弗结构解决冲突
+
+** 数据冲突
+*** 采用转发（Forward）解决
+**** EX 阶段转发到 ID 阶段
+1. ID/EXE 阶段的数据有效
+   检测ID/EXE流水线寄存器有效位（ ~id_en~ ）：
+   ~id_en == `ENABLE~
+2. EX 阶段的指令是否打算修改通用寄存器
+   检测ID/EXE流水线寄存器中，写入通用寄存器有效位（ ~id_gpr_we_~ ）：
+   ~id_gpr_we_ == `ENABLE_~
+3. 判断 ID 阶段的指令是否用到了源寄存器 rs1 和 rs2
+   检测译码器的输出信号 ~src_reg_used~ :
+   1. 是否用到源寄存器 rs1： ~src_reg_used[0] == 1'b1~
+   2. 是否用到源寄存器 rs2： ~src_reg_used[1] == 1'b1~
+   
+4. 判断ID阶段的指令的源寄存器是不是零号寄存器
+   1. rs1 是否为零号寄存器： ~rs1_addr != 1'b0~ 
+   2. rs2 是否为零号寄存器： ~rs2_addr != 1'b0~
+   
+5. EX 阶段的目的寄存器（id_rd_addr）和 ID 阶段的源寄存器一致
+   判断ID/EX 流水线寄存器中的目的寄存器地址和 ID 阶段的源寄存器 rs1，rs2：
+   ~id_rd_addr == rs1_addr~
+   ~id_rd_addr == rs2_addr~
+
+6. 如果前五个条件都满足的情况下：
+   让 ID 阶段操作数输出的多路选择器选择 EX 阶段转发来的数据
+   ~rs1_fwd_ctrl = `FWD_CTRL_EX~
+   ~rs2_fwd_ctrl = `FWD_CTRL_EX~
+
+**** MEM 阶段转发到 ID 阶段
+1. EXE/MEM 阶段的数据有效
+   检测EXE/MEM流水线寄存器有效位（ ~ex_en~ ）：
+   ~ex_en == `ENABLE~
+
+2. MEM 阶段的指令是否打算修改通用寄存器
+   检测EXE/MEM流水线寄存器中，写入通用寄存器有效位（ ~ex_gpr_we_~ ）：
+   ~ex_gpr_we_ == `ENABLE_~
+
+3. 判断 ID 阶段的指令是否用到了源寄存器 rs1 和 rs2
+   检测译码器的输出信号 ~src_reg_used~ :
+   1. 是否用到源寄存器 rs1： ~src_reg_used[0] == 1'b1~
+   2. 是否用到源寄存器 rs2： ~src_reg_used[1] == 1'b1~
+   
+4. 判断ID阶段的指令的源寄存器是不是零号寄存器
+   1. rs1 是否为零号寄存器： ~rs1_addr != 1'b0~ 
+   2. rs2 是否为零号寄存器： ~rs2_addr != 1'b0~
+   
+5. MEM 阶段的目的寄存器（ex_rd_addr）和 ID 阶段的源寄存器一致
+   判断EX/MEM 流水线寄存器中的目的寄存器地址和 ID 阶段的源寄存器 rs1，rs2：
+   ~ex_rd_addr == rs1_addr~
+   ~ex_rd_addr == rs2_addr~
+
+6. 如果前五个条件都满足的情况下：
+   让 ID 阶段操作数输出的多路选择器选择 MEM 阶段转发来的数据
+   ~rs1_fwd_ctrl = `FWD_CTRL_MEM~
+   ~rs2_fwd_ctrl = `FWD_CTRL_MEM~
+
+**** MEM 阶段转发到 EX 阶段
+当处于 MEM 阶段的是取数类指令（LOAD），处于 EX 阶段的是存数类指令（STORE），才可能需要从 MEM 阶段转发到 EX 阶段。
+
+1. EXE/MEM 阶段的数据有效
+   检测EXE/MEM流水线寄存器有效位（ ~ex_en~ ）：
+   ~ex_en == `ENABLE~
+
+2. MEM 阶段的指令是否打算修改通用寄存器
+   检测EXE/MEM流水线寄存器中，写入通用寄存器有效位（ ~ex_gpr_we_~ ）：
+   ~ex_gpr_we_ == `ENABLE_~
+
+3. 判断 EX 阶段的指令是否用到了源寄存器 rs1 和 rs2
+   由于取数和存数类指令都用到了源寄存器 rs1 和 rs2，因此这个条件不用检测
+
+4. 判断EX阶段的指令的源寄存器是不是零号寄存器
+   1. rs1 是否为零号寄存器： ~id_rs1_addr != 1'b0~ 
+   2. rs2 是否为零号寄存器： ~id_rs2_addr != 1'b0~
+   
+5. MEM 阶段的目的寄存器（ex_rd_addr）和 EX 阶段的源寄存器一致
+   判断EX/MEM 流水线寄存器中的目的寄存器地址和 ID 阶段的源寄存器 rs1，rs2：
+   ~ex_rd_addr == id_rs1_addr~
+   ~ex_rd_addr == id_rs2_addr~
+   
+6. 判断当前处于 MEM 阶段的是不是取数类指令（LOAD）
+   取数类指令（LOAD）的存储器操作码是 ~1XXX~ (X 为无关项）
+   ~(ex_mem_op[3] == 1'b1)~
+ 
+7. 判断当前处于 EX 阶段的是不是存数类指令（STORE）
+   存数类指令（STORE）的存储器操作码是 ~01XX~ (X 为无关项）
+   ~(ex_mem_op[3:2] == 2'b01)~
+
+8. 如果上面提到的条件都满足的情况下：
+   让 EX 阶段操作数来源的多路选择器选择 MEM 阶段转发来的数据
+   ~ex_rs1_fwd_en = `ENABLE~
+   ~ex_rs2_fwd_en = `ENABLE~
+
+
+*** 采用停顿（Stall）解决
+
+Load Stall （若是Load 指令后跟着 Store 指令，且 Store指令的 rs1跟 Load 的rd 不一致， 就算 rs2 跟 Load 的 rd 一致也不必停顿） 
+
+1. ID/EXE 阶段的数据有效
+   检测ID/EXE流水线寄存器有效位（ ~id_en~ ）：
+   ~id_en == `ENABLE~
+
+2. EX 阶段的指令是否打算修改通用寄存器
+   检测ID/EXE流水线寄存器中，写入通用寄存器有效位（ ~id_gpr_we_~ ）：
+   ~id_gpr_we_ == `ENABLE_~
+
+3. 判断当前处于 EX 阶段的是不是取数类指令（LOAD）
+   取数类指令（LOAD）的存储器操作码是 ~1XXX~ (X 为无关项）
+   ~(id_mem_op[3] == 1'b1)~
+
+4. 满足下列两个条件之一：
+   1. 判断 ID 阶段的指令是否用到了源寄存器 rs1 且和 EX 阶段的目的寄存器（id_rd_addr）一致
+      ~( (src_reg_used[0] == 1'b1) && (id_rd_addr == rs1_addr) )~
+   2. 判断 ID 阶段的指令是否用到了源寄存器 rs2 且和 EX 阶段的目的寄存器（id_rd_addr）一致，并且不是STORE 类指令。因为 STORE 类指令的 rs2 是用来存放到存储器的，所以可以等进入了 EX 阶段，通过从 MEM 转发到 EX 阶段来解决冲突。
+      ~( (src_reg_used[1] == 1'b1) && (id_rd_addr == rs2_addr) && (op != `OP_ST))~
+   
+5. 若满足上述条件，则使 IF/ID 流水线寄存器停顿，ID/EX 流水线寄存器刷新：
+#+BEGIN_SRC 
+   ld_hazard = `ENABLE;
+   assign if_stall  = ld_hazard;
+   assign id_flush  = ld_hazard;
+#+END_SRC
+
+*** 需要注意：
+- S-type 和 SB-type 没有目的寄存器
+- U-type 和 UJ-type 没有源寄存器
+- I-type 没有源寄存器 Rs2
+
+是否有源寄存器 rs1 或 rs2 的判断：使用 2 位寄存器 ~src_reg_used~
+
+| 寄存器位    | 1 号 | 0 号 |
+| 使用 Rs1    |    X |    1 |
+| 没有 Rs1    |    X |    0 |
+| 使用 Rs2    |    1 |    X |
+| 没有 Rs2    |    0 |    X |
+| U/UJ-type   |    0 |    0 |
+| I-type      |    0 |    1 |
+| R/S/SB-type |    1 |    1 |
+
+是否有目的寄存器 Rd 的判断：GPR 的写入信号是否有效，用到 Rd 的写入 GPR 信号都有效  
+
+** 控制冲突
+这里采用最简单的方式，刷新 IF/ID 和 ID/EX 流水线寄存器：
+~assign id_flush  = br_taken;~
+
+IF/ID 流水线寄存器的刷新见 ~if_reg.v~
