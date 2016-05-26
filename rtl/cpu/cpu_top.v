@@ -16,6 +16,7 @@
 
 `include "common_defines.v"
 `include "base_core_defines.v"
+`include "hart_ctrl.h"
 
 `timescale 1ns/1ps
 
@@ -131,32 +132,46 @@ module cpu_top(
     wire [`WORD_DATA_BUS]  ctrl_mepc;       // Output from control unit
     wire [`WORD_DATA_BUS]  csr_mepc;        // Output from CSRs uni
 
+    /********** Hart control signal **********/
+    // to IF stage
+    wire [`HART_ID_B]      hart_issue_hid;
+    wire [`HART_STATE_B]   hart_issue_hstate;
+
     assign clk_ = ~clk;
 
     /********** IF Stage **********/
     if_stage if_stage (
-        /********** Clock & Reset **********/
+        /* clock & reset *************************/
         .clk            (clk),              // Clock
         .reset          (reset),            // Asynchronous Reset
-        /********** SPM Interface **********/
+
+        /* SPM Interface *************************/
         .spm_rd_data    (if_spm_rd_data),   // Read data
         .spm_addr       (if_spm_addr),      // Address
         .spm_as_        (if_spm_as_),       // Address strobe
         .spm_rw         (if_spm_rw),        // Read/Write
         .spm_wr_data    (if_spm_wr_data),   // Write data
-        /**********  Pipeline Control Signal **********/
+
+        /* Pipeline control **********************/
         .stall          (if_stall),         // Stall
         .flush          (if_flush),         // Flush
         .new_pc         (new_pc),           // New PC
         .br_taken       (br_taken),         // Branch taken
         .br_addr        (br_addr),          // Branch address
-        /********** IF/ID Pipeline Register **********/
+
+        /* Hart select ***************************/
+        .hart_id        (hart_issue_hid),    // Hart ID to issue ins
+        .hart_st        (hart_issue_hstate), // Hart state
+
+        /* IF/ID Pipeline Register ***************/
         .pc             (pc),               // Current Program count
         .if_pc          (if_pc),            // Next Program count
         .if_insn        (if_insn),          // Instruction
-        .if_en          (if_en)             // Pipeline data enable
+        .if_en          (if_en),            // Pipeline data enable
+        .if_hart_st     (if_hart_st)        // Hart state
     );
 
+    /********** ID Stage **********/
     id_stage id_stage (
         /********** Clock & Reset **********/
         .clk            (clk),              // Clock
@@ -213,6 +228,7 @@ module cpu_top(
         .src_reg_used   (src_reg_used)
     );
 
+    /********** EX Stage **********/
     ex_stage ex_stage (
         .clk            (clk),
         .reset          (reset),
@@ -251,6 +267,7 @@ module cpu_top(
         .br_taken       (br_taken)
     );
 
+    /********** MEM Stage **********/
     mem_stage mem_stage (
         .clk            (clk),
         .reset          (reset),
@@ -278,6 +295,43 @@ module cpu_top(
         .mem_out        (mem_out)
     );
 
+    /********** hart control unit **********/
+    hart_ctrl hart_ctrl (
+        .clk                   (clk),
+        .rst                   (rst),
+
+        /* hart ctrl ins ***********************/
+        .set_hart              (set_hart),
+        .set_hart_id           (set_hart_id),
+        .set_hart_val          (set_hart_val),
+
+        /* ID stage ins type *******************/
+        .is_branch             (is_branch),
+        .is_load               (is_load),
+        .de_hstate             (de_hstate),
+  
+        /* cache miss **************************/
+        .i_cache_miss          (i_cache_miss),
+        .if_hstate             (if_hstate),
+        .use_cache_miss        (use_cache_miss),
+        .use_hstate            (use_hstate),
+
+        /* cache finish ************************/
+        .i_cache_fin           (i_cache_fin),
+        .i_cache_fin_hstate    (i_cache_fin_hstate),
+        .d_cache_fin           (d_cache_fin),
+        .d_cache_fin_hstate    (d_cache_fin_hstate),
+
+        /* hart issue **************************/
+        .hart_issue_hid        (hart_issue_hid),
+        .hart_issue_hstate     (hart_issue_hstate),
+
+        /* hart state **************************/
+        .hart_acti_hstate      (hart_acti_hstate),
+        .hart_idle_hstate      (hart_idle_hstate)
+    );
+
+    /********** control unit **********/
     ctrl ctrl (
         .br_taken       (br_taken),
         .src_reg_used   (src_reg_used),
