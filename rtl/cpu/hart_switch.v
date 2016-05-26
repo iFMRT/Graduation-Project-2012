@@ -19,7 +19,7 @@ module hart_switch (
 
     input  wire                  is_branch,        // conditional branch ins
     input  wire                  is_load,          // load ins
-    input  wire [`HART_STATE_B]  de_hstate,
+    input  wire [`HART_STATE_B]  id_hstate,
 
     output reg  [`HART_STATE_B]  hart_issue_hstate,      // 3:0
 
@@ -49,8 +49,8 @@ module hart_switch (
                                                           hart_issue_hstate = one_hot_hstate;
         else if (acti_hstate == `HART_STATE_W'b1111)      hart_issue_hstate = shifted_issue_hstate;
         else if (   minor_hstate == `HART_STATE_W'b0000)  hart_issue_hstate = prim_hstate;
-        else if (is_branch & de_hstate == prim_hstate)    hart_issue_hstate = one_hot_hstate;
-        else if (  is_load & de_hstate == prim_hstate)    hart_issue_hstate = one_hot_hstate;
+        else if (is_branch & id_hstate == prim_hstate)    hart_issue_hstate = one_hot_hstate;
+        else if (  is_load & id_hstate == prim_hstate)    hart_issue_hstate = one_hot_hstate;
         else if (issue_minor &  issue_twice)              hart_issue_hstate = minor_hstate;
         else if (issue_minor & ~issue_twice)              hart_issue_hstate = ~issue_hstate & minor_hstate;
         else                                              hart_issue_hstate = prim_hstate;
@@ -64,8 +64,8 @@ module hart_switch (
                          | acti_hstate == `HART_STATE_W'b1110;
     always @(posedge clk) begin
         if (rst) issue_minor <= 0;
-        else if (is_load   & de_hstate == prim_hstate
-               | is_branch & de_hstate == prim_hstate & issue_two_ins)
+        else if (is_load   & id_hstate == prim_hstate
+               | is_branch & id_hstate == prim_hstate & issue_two_ins)
             issue_minor <= 1;
         else issue_minor <= 0;
     end

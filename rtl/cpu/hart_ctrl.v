@@ -19,7 +19,7 @@ module hart_ctrl (
 
     input  wire                  is_branch,        // conditional branch ins
     input  wire                  is_load,          // load ins
-    input  wire [`HART_STATE_B]  de_hstate,
+    input  wire [`HART_STATE_B]  id_hstate,
 
     input  wire                  i_cache_miss,
     input  wire [`HART_STATE_B]  if_hstate,        // IF stage hart state 3:0
@@ -83,7 +83,7 @@ module hart_ctrl (
 
         .is_branch          (is_branch),
         .is_load            (is_load),
-        .de_hstate          (de_hstate),
+        .id_hstate          (id_hstate),
 
         .hart_issue_hstate  (hart_issue_hstate),
 

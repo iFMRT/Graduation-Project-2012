@@ -136,6 +136,10 @@ module cpu_top(
     // to IF stage
     wire [`HART_ID_B]      hart_issue_hid;
     wire [`HART_STATE_B]   hart_issue_hstate;
+    // from ID stage
+    wire                   is_branch;
+    wire                   is_load;
+    wire [`HART_STATE_B]   id_hstate;
 
     assign clk_ = ~clk;
 
@@ -200,6 +204,7 @@ module cpu_top(
         .if_pc          (if_pc),            // Next Program count
         .if_insn        (if_insn),          // Instruction
         .if_en          (if_en),            // Pipeline data enable
+        .if_hart_st     (if_hart_st),     // IF stage hart state
         /********** ID/EX Pipeline  Register **********/
         .id_is_jalr     (id_is_jalr),       // is JALR instruction
         .id_exp_code    (id_exp_code),      // Exception code
@@ -218,7 +223,8 @@ module cpu_top(
         .id_gpr_we_     (id_gpr_we_),       // GPRWrite enable
         .id_ex_out_sel  (id_ex_out_sel),
         .id_gpr_wr_data (id_gpr_wr_data),
-        // output to Control Unit
+        .id_hart_st     (id_hart_st),     // ID stage hart state
+        /********** output to Control Unit **********/
         .is_eret        (is_eret),          // is ERET instruction
         .op             (op),
         .id_rs1_addr    (id_rs1_addr),
@@ -226,6 +232,10 @@ module cpu_top(
         .rs1_addr       (rs1_addr),
         .rs2_addr       (rs2_addr),
         .src_reg_used   (src_reg_used)
+        /********** output to Hart Control Unit **********/
+        .is_branch      (is_branch),
+        .is_load        (is_load),
+        .id_hstate      (id_hstate)
     );
 
     /********** EX Stage **********/
@@ -297,8 +307,8 @@ module cpu_top(
 
     /********** hart control unit **********/
     hart_ctrl hart_ctrl (
-        .clk                   (clk),
-        .rst                   (rst),
+        .clk                   (clk),                 // √
+        .rst                   (rst),                 // √
 
         /* hart ctrl ins ***********************/
         .set_hart              (set_hart),
@@ -306,9 +316,9 @@ module cpu_top(
         .set_hart_val          (set_hart_val),
 
         /* ID stage ins type *******************/
-        .is_branch             (is_branch),
-        .is_load               (is_load),
-        .de_hstate             (de_hstate),
+        .is_branch             (is_branch),               // √
+        .is_load               (is_load),                 // √
+        .id_hstate             (id_hstate),               // √
   
         /* cache miss **************************/
         .i_cache_miss          (i_cache_miss),
@@ -323,8 +333,8 @@ module cpu_top(
         .d_cache_fin_hstate    (d_cache_fin_hstate),
 
         /* hart issue **************************/
-        .hart_issue_hid        (hart_issue_hid),
-        .hart_issue_hstate     (hart_issue_hstate),
+        .hart_issue_hid        (hart_issue_hid),                 // √
+        .hart_issue_hstate     (hart_issue_hstate),              // √
 
         /* hart state **************************/
         .hart_acti_hstate      (hart_acti_hstate),

@@ -19,32 +19,33 @@
 
 module id_stage (
     /********** Clock & Reset **********/
-    input wire                    clk, // Clock
-    input wire                    reset, // Reset
+    input  wire                   clk, // Clock
+    input  wire                   reset, // Reset
     /********** GPR Interface **********/
-    input wire [`WORD_DATA_BUS]   gpr_rs1_data, // Read rs1 data
-    input wire [`WORD_DATA_BUS]   gpr_rs2_data, // Read rs2 data
+    input  wire [`WORD_DATA_BUS]  gpr_rs1_data, // Read rs1 data
+    input  wire [`WORD_DATA_BUS]  gpr_rs2_data, // Read rs2 data
     output wire [`REG_ADDR_BUS]   gpr_rs1_addr, // Read rs1 address
     output wire [`REG_ADDR_BUS]   gpr_rs2_addr, // Read rs2 address
     /********** Forward **********/
-    input wire [`WORD_DATA_BUS]   ex_fwd_data, // Forward data from EX Stage
-    input wire [`WORD_DATA_BUS]   mem_fwd_data, // Forward data from MEM Stage
+    input  wire [`WORD_DATA_BUS]  ex_fwd_data, // Forward data from EX Stage
+    input  wire [`WORD_DATA_BUS]  mem_fwd_data, // Forward data from MEM Stage
     /********** CSRs Interface **********/
-    input wire [`WORD_DATA_BUS]   csr_rd_data, // Read from CSRs
+    input  wire [`WORD_DATA_BUS]  csr_rd_data, // Read from CSRs
     output wire [`CSR_OP_BUS]     csr_op, // CSRs operation
     output wire [`CSR_ADDR_BUS]   csr_addr, // Access CSRs address
     output wire [`WORD_DATA_BUS]  csr_wr_data, // Write to CSRs
     /********** Pipeline Control Signal **********/
-    input wire                    stall, // Stall
-    input wire                    flush, // Flush
+    input  wire                   stall, // Stall
+    input  wire                   flush, // Flush
     /********** Forward Signal **********/
-    input wire [`FWD_CTRL_BUS]    rs1_fwd_ctrl,
-    input wire [`FWD_CTRL_BUS]    rs2_fwd_ctrl,
+    input  wire [`FWD_CTRL_BUS]   rs1_fwd_ctrl,
+    input  wire [`FWD_CTRL_BUS]   rs2_fwd_ctrl,
     /********** IF/ID Pipeline Register **********/
-    input wire [`WORD_DATA_BUS]   pc, // Current PC
-    input wire [`WORD_DATA_BUS]   if_pc, // Next PC
-    input wire [`WORD_DATA_BUS]   if_insn, // Instruction
-    input wire                    if_en, // Pipeline data enable
+    input  wire [`WORD_DATA_BUS]  pc, // Current PC
+    input  wire [`WORD_DATA_BUS]  if_pc, // Next PC
+    input  wire [`WORD_DATA_BUS]  if_insn, // Instruction
+    input  wire                   if_en, // Pipeline data enable
+    input  reg  [`HART_STATE_B]   if_hart_st,    // Hart state
     /********** ID/EX Pipeline Register  **********/
     output wire                   id_is_jalr, // is JALR instruction
     output wire [`EXP_CODE_BUS]   id_exp_code, // Exception code
@@ -63,6 +64,7 @@ module id_stage (
     output wire                   id_gpr_we_, // GPR write enable
     output wire [`EX_OUT_SEL_BUS] id_ex_out_sel,
     output wire [`WORD_DATA_BUS]  id_gpr_wr_data,
+    output wire [`HART_STATE_B]   id_hart_st,   // ID stage hart state
     // output to Control Unit
     output wire                   is_eret, // is ERET instruction
     output wire [`INSN_OP_BUS]    op,
@@ -70,7 +72,11 @@ module id_stage (
     output wire [`REG_ADDR_BUS]   id_rs2_addr,
     output wire [`REG_ADDR_BUS]   rs1_addr,
     output wire [`REG_ADDR_BUS]   rs2_addr,
-    output wire [1:0]             src_reg_used   // How many source registers instruction used
+    output wire [1:0]             src_reg_used, // How many source registers instruction used
+    // output to Hart Control Unit
+    output wire                   is_branch,
+    output wire                   is_load,
+    output wire [`HART_STATE_B]   id_hstate
 );
 
     wire [`ALU_OP_BUS]     alu_op;          // ALU Operation
@@ -90,6 +96,11 @@ module id_stage (
     wire                   gpr_we_;         // GPR write enable
     wire                   is_jalr;         // is JALR instruction
     wire [`EXP_CODE_BUS]   exp_code;
+
+    /********** To Hart Control Unit **********/
+    assign id_hstate = if_hart_st;
+    assign is_branch = (op == `OP_LD) 1'b1 : 1'b0;
+    assign is_load   = (op == `OP_BR) 1'b1 : 1'b0;
 
     /********** Two Operand **********/
     reg  [`WORD_DATA_BUS] rs1_data;         // The first operand
@@ -197,6 +208,7 @@ module id_stage (
         /********** IF/ID Pipeline  Register  **********/
         .pc             (pc),             // Current program counter
         .if_en          (if_en),          // Pipeline data enable
+        .if_hart_st     (if_hart_st),     // IF stage hart state
         /********** ID/EX Pipeline  Register  **********/
         .id_is_jalr     (id_is_jalr),     // is JALR instruction
         .id_exp_code    (id_exp_code),    // Exception code
@@ -217,7 +229,9 @@ module id_stage (
         .id_mem_wr_data (id_mem_wr_data), // Memory write data
         .id_rd_addr     (id_rd_addr),     // General purpose Register write address
         .id_gpr_we_     (id_gpr_we_),     // General purpose Register write enable
-        .id_gpr_wr_data (id_gpr_wr_data)
+        .id_gpr_wr_data (id_gpr_wr_data),
+
+        .id_hart_st     (id_hart_st)      // ID stage hart state
     );
 
 endmodule
