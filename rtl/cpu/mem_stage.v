@@ -16,6 +16,7 @@
 
 `include "common_defines.v"
 `include "base_core_defines.v"
+`include "hart_ctrl.h"
 
 module mem_stage (
     /********** Clock & Reset *********/
@@ -41,13 +42,15 @@ module mem_stage (
     input wire [`REG_ADDR_BUS]   ex_rd_addr,     // General purpose register write address
     input wire                   ex_gpr_we_,     // General purpose register enable
     input wire [`WORD_DATA_BUS]  ex_out,         // EX Stage operating reslut
+    input wire [`HART_STATE_B]   ex_hart_st,     // EX stage hart state
     /********** MEM/WB Pipeline Register **********/
     output wire [`EXP_CODE_BUS]  mem_exp_code,   // Exception code
     output wire [`WORD_DATA_BUS] mem_pc,
     output wire                  mem_en,         // If Pipeline data enables
     output wire [`REG_ADDR_BUS]  mem_rd_addr,    // General purpose register write address
     output wire                  mem_gpr_we_,    // General purpose register enable
-    output wire [`WORD_DATA_BUS] mem_out
+    output wire [`WORD_DATA_BUS] mem_out,
+    output wire [`HART_STATE_B]  mem_hart_st     // MEM stage hart state
 );
 
     /********** Internal signals **********/
@@ -115,13 +118,15 @@ module mem_stage (
         .ex_en            (ex_en),
         .ex_rd_addr       (ex_rd_addr),      // General purpose register write address
         .ex_gpr_we_       (ex_gpr_we_),      // General purpose register enable
+        .ex_hart_st       (ex_hart_st),
         /********** MEM/WB Pipeline Register **********/
         .mem_exp_code     (mem_exp_code),    // Exception code
         .mem_pc           (mem_pc),
         .mem_en           (mem_en),
         .mem_rd_addr      (mem_rd_addr),     // General purpose register write address
         .mem_gpr_we_      (mem_gpr_we_),     // General purpose register enable
-        .mem_out          (mem_out)
+        .mem_out          (mem_out),
+        .mem_hart_st      (mem_hart_st)
     );
 
 endmodule

@@ -16,36 +16,39 @@
 
 `include "common_defines.v"
 `include "base_core_defines.v"
+`include "hart_ctrl.h"
 
 module ex_reg (
-    input wire                  clk,
-    input wire                  reset,
+    input  wire                  clk,
+    input  wire                  reset,
 
     // Inner Output
-    input wire [`WORD_DATA_BUS] ex_out_inner,
+    input  wire [`WORD_DATA_BUS] ex_out_inner,
 
     // Pipeline Control Signal
-    input wire                  stall,
-    input wire                  flush,
+    input  wire                  stall,
+    input  wire                  flush,
 
     // ID/EX Pipeline Register
-    input wire [`EXP_CODE_BUS]  id_exp_code,     // Exception code
-    input wire [`WORD_DATA_BUS] id_pc,
-    input wire                  id_en,
-    input wire [`MEM_OP_BUS]    id_mem_op,
-    input wire [`WORD_DATA_BUS] id_mem_wr_data,
-    input wire [`REG_ADDR_BUS]  id_rd_addr,      // bypass input
-    input wire                  id_gpr_we_,
+    input  wire [`EXP_CODE_BUS]  id_exp_code,     // Exception code
+    input  wire [`WORD_DATA_BUS] id_pc,
+    input  wire                  id_en,
+    input  wire [`MEM_OP_BUS]    id_mem_op,
+    input  wire [`WORD_DATA_BUS] id_mem_wr_data,
+    input  wire [`REG_ADDR_BUS]  id_rd_addr,      // bypass input 
+    input  wire                  id_gpr_we_,
+    input  wire [`HART_STATE_B]  id_hart_st,      // ID stage hart state
 
     // EX/MEM Pipeline Register
-    output reg [`EXP_CODE_BUS]  ex_exp_code,     // Exception code
-    output reg [`WORD_DATA_BUS] ex_pc,
-    output reg                  ex_en,
-    output reg [`MEM_OP_BUS]    ex_mem_op,
-    output reg [`WORD_DATA_BUS] ex_mem_wr_data,
-    output reg [`REG_ADDR_BUS]  ex_rd_addr,      // bypass output
-    output reg                  ex_gpr_we_,
-    output reg [`WORD_DATA_BUS] ex_out
+    output reg  [`EXP_CODE_BUS]  ex_exp_code,     // Exception code
+    output reg  [`WORD_DATA_BUS] ex_pc,
+    output reg                   ex_en,
+    output reg  [`MEM_OP_BUS]    ex_mem_op,
+    output reg  [`WORD_DATA_BUS] ex_mem_wr_data,
+    output reg  [`REG_ADDR_BUS]  ex_rd_addr,      // bypass output
+    output reg                   ex_gpr_we_,
+    output reg  [`WORD_DATA_BUS] ex_out,
+    output reg  [`HART_STATE_B]  ex_hart_st       // EX stage hart state
 );
 
     always @(posedge clk) begin
@@ -58,6 +61,7 @@ module ex_reg (
             ex_rd_addr     <= #1 `REG_ADDR_W'd0;
             ex_gpr_we_     <= #1 `DISABLE_;
             ex_out         <= #1 `WORD_DATA_W'b0;
+            ex_hart_st     <= #1 `HART_STATE_W'h0;
         end else begin
             if (stall == `DISABLE) begin
                 if (flush == `ENABLE) begin
@@ -69,6 +73,7 @@ module ex_reg (
                     ex_rd_addr     <= #1 `REG_ADDR_W'd0;
                     ex_gpr_we_     <= #1 `DISABLE_;
                     ex_out         <= #1 `WORD_DATA_W'b0;
+                    ex_hart_st     <= #1 `HART_STATE_W'h0;
                 end else begin
                     ex_en          <= #1 id_en;
                     ex_exp_code    <= #1 id_exp_code;
@@ -78,6 +83,7 @@ module ex_reg (
                     ex_gpr_we_     <= #1 id_gpr_we_;
                     ex_mem_op      <= #1 id_mem_op;
                     ex_mem_wr_data <= #1 id_mem_wr_data;
+                    ex_hart_st     <= #1 id_hart_st;
                 end
             end
         end

@@ -21,15 +21,15 @@
 `timescale 1ns/1ps
 
 module cpu_top(
-    input wire                   clk,            // Clock
-    input wire                   reset,          // Asynchronous Reset
+    input wire                   clk,          // Clock
+    input wire                   reset,        // Asynchronous Reset
     /********** General Purpose Register Signal **********/
     output wire [`WORD_DATA_BUS] gpr_rs1_data, // Read data 0
     output wire [`WORD_DATA_BUS] gpr_rs2_data, // Read data 1
-    output wire [`REG_ADDR_BUS]  gpr_rs1_addr, // Read  address 0
-    output wire [`REG_ADDR_BUS]  gpr_rs2_addr, // Read  address 1
-    output wire [`REG_ADDR_BUS]  mem_rd_addr, // General purpose register write  address
-    output wire [`WORD_DATA_BUS] mem_out         // Operating result
+    output wire [`REG_ADDR_BUS]  gpr_rs1_addr, // Read address 0
+    output wire [`REG_ADDR_BUS]  gpr_rs2_addr, // Read address 1
+    output wire [`REG_ADDR_BUS]  mem_rd_addr,  // General purpose register write address
+    output wire [`WORD_DATA_BUS] mem_out       // Operating result
 );
     /********** Clock & Reset **********/
     wire                   clk_;           // Reverse Clock
@@ -38,12 +38,13 @@ module cpu_top(
     wire [`WORD_DATA_BUS]  if_pc;          // Next Program count
     wire [`WORD_DATA_BUS]  pc;             // Current Program count
     wire [`WORD_DATA_BUS]  if_insn;        // Instruction
-    wire                   if_en;          //  Pipeline data enable
+    wire                   if_en;          // Pipeline data enable
+    wire [`HART_STATE_B]   if_hart_st;
     // ID/EX Pipeline  Register
     wire                   id_is_jalr;     // is JALR instruction
     wire [`EXP_CODE_BUS]   id_exp_code;    // Exception code
     wire [`WORD_DATA_BUS]  id_pc;          // Program count
-    wire                   id_en;          //  Pipeline data enable
+    wire                   id_en;          // Pipeline data enable
     wire [`ALU_OP_BUS]     id_alu_op;      // ALU operation
     wire [`WORD_DATA_BUS]  id_alu_in_0;    // ALU input 0
     wire [`WORD_DATA_BUS]  id_alu_in_1;    // ALU input 1
@@ -53,8 +54,9 @@ module cpu_top(
     wire                   id_jump_taken;
     wire [`MEM_OP_BUS]     id_mem_op;      // Memory operation
     wire [`WORD_DATA_BUS]  id_mem_wr_data; // Memory Write data
-    wire [`REG_ADDR_BUS]   id_rd_addr;     // GPRWrite  address
+    wire [`REG_ADDR_BUS]   id_rd_addr;     // GPRWrite address
     wire                   id_gpr_we_;     // GPRWrite enable
+    wire [`HART_STATE_B]   id_hart_st;
     wire [`EX_OUT_SEL_BUS] id_ex_out_sel;
     wire [`WORD_DATA_BUS]  id_gpr_wr_data;
     // output to Control Unit
@@ -74,11 +76,13 @@ module cpu_top(
     wire [`REG_ADDR_BUS]   ex_rd_addr;    // General purpose RegisterWrite  address
     wire                   ex_gpr_we_;     // General purpose RegisterWrite enable
     wire [`WORD_DATA_BUS]  ex_out;         // Operating result
+    wire [`HART_STATE_B]   ex_hart_st;
     // MEM/WB Pipeline  Register
     wire [`EXP_CODE_BUS]   mem_exp_code;   // Exception code
     wire [`WORD_DATA_BUS]  mem_pc;
     wire                   mem_en;         // If Pipeline data enables
     wire                   mem_gpr_we_;    // General purpose register write enable
+    wire [`HART_STATE_B]   mem_hart_st;
     // Use to CPU TOP ports for test
     // wire [`REG_ADDR_BUS]   mem_rd_addr;    // General purpose register write  address
     // wire [`WORD_DATA_BUS]  mem_out;        // Operating result
@@ -242,8 +246,10 @@ module cpu_top(
     ex_stage ex_stage (
         .clk            (clk),
         .reset          (reset),
+        // Pipeline Control Signal
         .stall          (ex_stall),
         .flush          (ex_flush),
+        // ID/EX Pipleline Register
         .id_is_jalr     (id_is_jalr),
         .id_exp_code    (id_exp_code),
         .id_pc          (id_pc),
@@ -259,12 +265,16 @@ module cpu_top(
         .id_mem_wr_data (id_mem_wr_data),
         .id_rd_addr     (id_rd_addr),
         .id_gpr_we_     (id_gpr_we_),
+        .id_hart_st     (id_hart_st),
         .id_ex_out_sel  (id_ex_out_sel),
         .id_gpr_wr_data (id_gpr_wr_data),
+        // Forward Data From MEM Stage
         .ex_rs1_fwd_en  (ex_rs1_fwd_en),
         .ex_rs2_fwd_en  (ex_rs2_fwd_en),
         .mem_fwd_data   (mem_fwd_data),
+        // output to ID Stage
         .fwd_data       (ex_fwd_data),
+        // Output to Next Stage
         .ex_exp_code    (ex_exp_code),
         .ex_pc          (ex_pc),
         .ex_en          (ex_en),
@@ -273,6 +283,8 @@ module cpu_top(
         .ex_rd_addr     (ex_rd_addr),
         .ex_gpr_we_     (ex_gpr_we_),
         .ex_out         (ex_out),
+        .ex_hart_st     (ex_hart_st),
+        // output to IF Stage
         .br_addr        (br_addr),
         .br_taken       (br_taken)
     );
@@ -297,12 +309,14 @@ module cpu_top(
         .ex_rd_addr     (ex_rd_addr),
         .ex_gpr_we_     (ex_gpr_we_),
         .ex_out         (ex_out),
+        .ex_hart_st     (ex_hart_st),
         .mem_exp_code   (mem_exp_code),
         .mem_pc         (mem_pc),
         .mem_en         (mem_en),
         .mem_rd_addr    (mem_rd_addr),
         .mem_gpr_we_    (mem_gpr_we_),
-        .mem_out        (mem_out)
+        .mem_out        (mem_out),
+        .mem_hart_st    (mem_hart_st)
     );
 
     /********** hart control unit **********/

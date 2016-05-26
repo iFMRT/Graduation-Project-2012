@@ -16,6 +16,7 @@
 
 `include "common_defines.v"
 `include "base_core_defines.v"
+`include "hart_ctrl.h"
 
 module id_stage (
     /********** Clock & Reset **********/
