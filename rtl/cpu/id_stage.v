@@ -36,44 +36,44 @@ module id_stage (
     output wire [`CSR_ADDR_BUS]   csr_addr, // Access CSRs address
     output wire [`WORD_DATA_BUS]  csr_wr_data, // Write to CSRs
     /********** Pipeline Control Signal **********/
-    input  wire                   stall, // Stall
-    input  wire                   flush, // Flush
+    input  wire                   stall,          // Stall
+    input  wire                   flush,          // Flush
     /********** Forward Signal **********/
     input  wire [`FWD_CTRL_BUS]   rs1_fwd_ctrl,
     input  wire [`FWD_CTRL_BUS]   rs2_fwd_ctrl,
     /********** IF/ID Pipeline Register **********/
-    input  wire [`WORD_DATA_BUS]  pc, // Current PC
-    input  wire [`WORD_DATA_BUS]  if_pc, // Next PC
-    input  wire [`WORD_DATA_BUS]  if_insn, // Instruction
-    input  wire                   if_en, // Pipeline data enable
-    input  reg  [`HART_STATE_B]   if_hart_st,    // Hart state
+    input  wire [`WORD_DATA_BUS]  pc,             // Current PC
+    input  wire [`WORD_DATA_BUS]  if_pc,          // Next PC
+    input  wire [`WORD_DATA_BUS]  if_insn,        // Instruction
+    input  wire                   if_en,          // Pipeline data enable
+    input  reg  [`HART_STATE_B]   if_hart_st,     // Hart state
     /********** ID/EX Pipeline Register  **********/
-    output wire                   id_is_jalr, // is JALR instruction
-    output wire [`EXP_CODE_BUS]   id_exp_code, // Exception code
+    output wire                   id_is_jalr,     // is JALR instruction
+    output wire [`EXP_CODE_BUS]   id_exp_code,    // Exception code
     output wire [`WORD_DATA_BUS]  id_pc,
-    output wire                   id_en, // Pipeline data enable
-    output wire [`ALU_OP_BUS]     id_alu_op, // ALU Operation
-    output wire [`WORD_DATA_BUS]  id_alu_in_0, // ALU input 0
-    output wire [`WORD_DATA_BUS]  id_alu_in_1, // ALU input 1
-    output wire [`CMP_OP_BUS]     id_cmp_op, // CMP Operation
-    output wire [`WORD_DATA_BUS]  id_cmp_in_0, // CMP input 0
-    output wire [`WORD_DATA_BUS]  id_cmp_in_1, // CMP input 1
+    output wire                   id_en,          // Pipeline data enable
+    output wire [`ALU_OP_BUS]     id_alu_op,      // ALU Operation
+    output wire [`WORD_DATA_BUS]  id_alu_in_0,    // ALU input 0
+    output wire [`WORD_DATA_BUS]  id_alu_in_1,    // ALU input 1
+    output wire [`CMP_OP_BUS]     id_cmp_op,      // CMP Operation
+    output wire [`WORD_DATA_BUS]  id_cmp_in_0,    // CMP input 0
+    output wire [`WORD_DATA_BUS]  id_cmp_in_1,    // CMP input 1
     output wire                   id_jump_taken,
-    output wire [`MEM_OP_BUS]     id_mem_op, // Memory Operation
-    output wire [`WORD_DATA_BUS]  id_mem_wr_data,// Memory write data
-    output wire [`REG_ADDR_BUS]   id_rd_addr, // GPR write address
-    output wire                   id_gpr_we_, // GPR write enable
+    output wire [`MEM_OP_BUS]     id_mem_op,      // Memory Operation
+    output wire [`WORD_DATA_BUS]  id_mem_wr_data, // Memory write data
+    output wire [`REG_ADDR_BUS]   id_rd_addr,     // GPR write address
+    output wire                   id_gpr_we_,     // GPR write enable
     output wire [`EX_OUT_SEL_BUS] id_ex_out_sel,
     output wire [`WORD_DATA_BUS]  id_gpr_wr_data,
-    output wire [`HART_STATE_B]   id_hart_st,   // ID stage hart state
+    output wire [`HART_STATE_B]   id_hart_st,     // ID stage hart state
     // output to Control Unit
-    output wire                   is_eret, // is ERET instruction
+    output wire                   is_eret,        // is ERET instruction
     output wire [`INSN_OP_BUS]    op,
     output wire [`REG_ADDR_BUS]   id_rs1_addr,
     output wire [`REG_ADDR_BUS]   id_rs2_addr,
     output wire [`REG_ADDR_BUS]   rs1_addr,
     output wire [`REG_ADDR_BUS]   rs2_addr,
-    output wire [1:0]             src_reg_used, // How many source registers instruction used
+    output wire [1:0]             src_reg_used,   // How many source registers instruction used
     // output to Hart Control Unit
     output wire                   is_branch,
     output wire                   is_load,
@@ -131,7 +131,7 @@ module id_stage (
                 rs2_data = mem_fwd_data;  // Forward from MEM stage
             end
             default      : begin
-                rs2_data = gpr_rs2_data; // Don't need forward
+                rs2_data = gpr_rs2_data;  // Don't need forward
             end
         endcase
     end

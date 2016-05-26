@@ -208,7 +208,7 @@ module cpu_top(
         .if_pc          (if_pc),            // Next Program count
         .if_insn        (if_insn),          // Instruction
         .if_en          (if_en),            // Pipeline data enable
-        .if_hart_st     (if_hart_st),     // IF stage hart state
+        .if_hart_st     (if_hart_st),       // IF stage hart state
         /********** ID/EX Pipeline  Register **********/
         .id_is_jalr     (id_is_jalr),       // is JALR instruction
         .id_exp_code    (id_exp_code),      // Exception code
@@ -227,7 +227,7 @@ module cpu_top(
         .id_gpr_we_     (id_gpr_we_),       // GPRWrite enable
         .id_ex_out_sel  (id_ex_out_sel),
         .id_gpr_wr_data (id_gpr_wr_data),
-        .id_hart_st     (id_hart_st),     // ID stage hart state
+        .id_hart_st     (id_hart_st),       // ID stage hart state
         /********** output to Control Unit **********/
         .is_eret        (is_eret),          // is ERET instruction
         .op             (op),
@@ -418,15 +418,15 @@ module cpu_top(
         .clk            (clk),              // Clock
         .reset          (reset),            // Asynchronous Reset
         /********** Read Port  0 **********/
-        .rs1_addr       (gpr_rs1_addr),     // Read  address
+        .rs1_addr       (gpr_rs1_addr),     // Read address
         .rs1_data       (gpr_rs1_data),     // Read data
         /********** Read Port  1 **********/
-        .rs2_addr       (gpr_rs2_addr),     // Read  address
+        .rs2_addr       (gpr_rs2_addr),     // Read address
         .rs2_data       (gpr_rs2_data),     // Read data
         /********** Write Port  **********/
         .we_            (mem_gpr_we_),      // Write enable
-        .wr_addr        (mem_rd_addr),      // Write  address
-        .wr_data        (mem_out)           //  Write data
+        .wr_addr        (mem_rd_addr),      // Write address
+        .wr_data        (mem_out)           // Write data
     );
 
     /********** Scratch Pad Memory **********/
