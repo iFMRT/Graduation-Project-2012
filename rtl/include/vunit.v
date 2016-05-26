@@ -38,8 +38,8 @@ module vunit #(parameter WIDTH = 32) (
 		input [WIDTH-1:0] value;
 		begin
 			is_right <= true;
-			if (true) $display("%m: Successful! (%h)", value, $time);
-			else      $display("%m: Failed!     (%h)", value, $time);
+			if (true) $display("Successful! (%b)", value, $time);
+			else      $display("Failed!     (%b)", value, $time);
 		end
 	endtask
 	
