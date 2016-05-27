@@ -17,8 +17,8 @@ lb   x28,1024(x27)   # [x27 + 1024] byte --> x28
 lh   x29,1027(x26)   # [x26 + 1027] half_word --> x29
 jump2:
 sw   x26,1027(x26)   # x26 --> [x26 + 1027] = 1025 --> [2052]
-lbu  x27,1027(x26)   # [x26 + 1027] --> x27 = 1     (load hazard)
 lhu  x30,1027(x26)   # [x26 + 1027] --> x30 = 1025  (load hazard)
+lbu  x27,1027(x26)   # [x26 + 1027] --> x27 = 1     (load hazard)
 add  x29,x26,x27     # x29 = x26 + x27 = 1026     (x27 data hazard)
 addi x28,x0,14       # x28 = 14
 
@@ -37,8 +37,11 @@ add  x27,x27,x29     # x27 = x27 + x29
 branch3:
 bltu x29,x28,branch4 # if x29 < x28, jump to insn(add  x30,x26,x28)
 bgeu x29,x28,branch5 # if x29 > x28, jump to insn(add  x27,x27,x29)
-add  x30,x26,x28     # x30 = x26 + x28
+add  x30,x26,x28     # x30 = 1025 + 14
 branch4:
-add  x30,x26,x28     # x30 = x26 + x28
+add  x30,x26,x27     # x30 = x26 + x27
 branch5:
 add  x27,x27,x29     # x27 = x27 + x29 = 3079
+lw   x27,1027(x26)   # x27 = 1025
+sw   x27, 1027(x27)  # [2052] --> 1025
+lw   x10, 1027(x27)   # x10 = 1025
