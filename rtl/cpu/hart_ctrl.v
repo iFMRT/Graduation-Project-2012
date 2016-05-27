@@ -22,14 +22,13 @@ module hart_ctrl (
 
     input  wire                  is_branch,          // conditional branch ins
     input  wire                  is_load,            // load ins
-    input  wire [`HART_STATE_B]  id_hstate,
+    input  wire [`HART_ID_B]     if_hart_id,         // if_hart_id => current id stage hart id
 
     output wire [`HART_STATE_B]  hart_acti_hstate,   // 3:0
     output wire [`HART_STATE_B]  hart_idle_hstate,   // 3:0
 
     // IF stage part
     input  wire                  i_cache_miss,
-    input  wire [`HART_STATE_B]  if_hstate,          // IF stage hart state 3:0
     input  wire                  i_cache_fin,        // i cache access finish
     input  wire [`HART_STATE_B]  i_cache_fin_hstate,
 
@@ -44,8 +43,6 @@ module hart_ctrl (
 );
     assign hart_acti_hstate = acti_hstate;
 
-    wire [`HART_STATE_B] set_hstate;
-    decoder_n #(`HART_ID_W) hart_id_decoder_i(set_hart_id, set_hstate);
     hart_id_encoder hart_id_encoder_i(hart_issue_hstate, hart_issue_hid);
 
     wire [`HART_STATE_B] prim_hstate;
@@ -62,12 +59,11 @@ module hart_ctrl (
         .set_hart_id        (set_hart_id),
         .get_hart_val       (get_hart_val),
         .get_hart_idle      (get_hart_idle),
-
         .idle_hstate        (hart_idle_hstate),
 
         // IF stage part
         .i_cache_miss       (i_cache_miss),
-        .if_hstate          (if_hstate),
+        .if_hstate          (hart_issue_hstate),
         .i_cache_fin        (i_cache_fin),
         .i_cache_fin_hstate (i_cache_fin_hstate),
 
@@ -89,17 +85,17 @@ module hart_ctrl (
 
         //_ cpu_part _________________________________________________________//
         .hkill              (hkill),
-        .set_hstate         (set_hstate),
+        .set_hart_id        (set_hart_id),
 
         .is_branch          (is_branch),
         .is_load            (is_load),
-        .id_hstate          (id_hstate),
+        .if_hart_id         (if_hart_id),
 
         .hart_issue_hstate  (hart_issue_hstate),
 
         //_ hstu_part ________________________________________________________//
         .prim_hstate        (prim_hstate),
-        .acti_hstate        (acti_hstate)
+        .acti_hstate        (acti_hstate),
     );
 endmodule
 

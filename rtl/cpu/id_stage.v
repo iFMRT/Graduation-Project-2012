@@ -46,7 +46,7 @@ module id_stage (
     input  wire [`WORD_DATA_BUS]  if_pc,          // Next PC
     input  wire [`WORD_DATA_BUS]  if_insn,        // Instruction
     input  wire                   if_en,          // Pipeline data enable
-    input  reg  [`HART_STATE_B]   if_hart_st,     // Hart state
+    input  wire [`HART_ID_B]      if_hart_id,     // Hart state
     /********** ID/EX Pipeline Register  **********/
     output wire                   id_is_jalr,     // is JALR instruction
     output wire [`EXP_CODE_BUS]   id_exp_code,    // Exception code
@@ -65,7 +65,7 @@ module id_stage (
     output wire                   id_gpr_we_,     // GPR write enable
     output wire [`EX_OUT_SEL_BUS] id_ex_out_sel,
     output wire [`WORD_DATA_BUS]  id_gpr_wr_data,
-    output wire [`HART_STATE_B]   id_hart_st,     // ID stage hart state
+    output wire [`HART_ID_B]      id_hart_id,     // ID stage hart state
     // output to Control Unit
     output wire                   is_eret,        // is ERET instruction
     output wire [`INSN_OP_BUS]    op,
@@ -83,7 +83,6 @@ module id_stage (
     // output to Hart Control
     output wire                   is_branch,
     output wire                   is_load,
-    output wire [`HART_STATE_B]   id_hstate,
 
     output wire                   hstart,
     output wire                   hkill,
@@ -111,11 +110,7 @@ module id_stage (
     wire                   is_jalr;         // is JALR instruction
     wire [`EXP_CODE_BUS]   exp_code;
 
-    wire [`HART_ID_B]      if_hart_id;
-    hart_id_encoder get_if_hart_id_i (if_hart_st, if_hart_id);
-
     /********** To Hart Control Unit **********/
-    assign id_hstate = if_hart_st;
     assign is_branch = (op == `OP_LD) 1'b1 : 1'b0;
     assign is_load   = (op == `OP_BR) 1'b1 : 1'b0;
 
@@ -241,7 +236,7 @@ module id_stage (
         /********** IF/ID Pipeline  Register  **********/
         .pc             (pc),             // Current program counter
         .if_en          (if_en),          // Pipeline data enable
-        .if_hart_st     (if_hart_st),     // IF stage hart state
+        .if_hart_id     (if_hart_id),     // IF stage hart id
         /********** ID/EX Pipeline  Register  **********/
         .id_is_jalr     (id_is_jalr),     // is JALR instruction
         .id_exp_code    (id_exp_code),    // Exception code
@@ -264,7 +259,7 @@ module id_stage (
         .id_gpr_we_     (id_gpr_we_),     // General purpose Register write enable
         .id_gpr_wr_data (id_gpr_wr_data),
 
-        .id_hart_st     (id_hart_st)      // ID stage hart state
+        .id_hart_id     (id_hart_id)      // ID stage hart id
     );
 
 endmodule

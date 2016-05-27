@@ -46,7 +46,7 @@ module id_reg (
     /********** IF/ID Pipeline  Register  **********/
     input wire [`WORD_DATA_BUS]  pc,            // Current program counter
     input wire                   if_en,         // IF stage register enable
-    input reg  [`HART_STATE_B]   if_hart_st,    // Hart state
+    input reg  [`HART_ID_B]      if_hart_id,    // Hart state
     /********** ID/EX Register Output **********/
     output reg                   id_is_jalr,
     output reg [`EXP_CODE_BUS]   id_exp_code,   // Exception code
@@ -69,7 +69,7 @@ module id_reg (
     output reg                   id_gpr_we_,
     output reg [`WORD_DATA_BUS]  id_gpr_wr_data,
 
-    output reg [`HART_STATE_B]   id_hart_st    // ID stage hart state
+    output reg [`HART_ID_B]      id_hart_id    // ID stage hart id
 );
 
     always @(posedge clk) begin
@@ -95,7 +95,7 @@ module id_reg (
             id_rd_addr     <= #1 5'h0;
             id_gpr_we_     <= #1 `DISABLE_;
             id_gpr_wr_data <= #1 `WORD_DATA_W'h0;
-            id_hart_st     <= #1 `HART_STATE_W'h0;
+            id_hart_id     <= #1 `HART_ID_W'h0;
         end else begin
             /* Update Register's Data */
             if (stall == `DISABLE) begin
@@ -119,7 +119,7 @@ module id_reg (
                     id_rd_addr     <= #1 5'h0;
                     id_gpr_we_     <= #1 `DISABLE_;
                     id_gpr_wr_data <= #1 `WORD_DATA_W'h0;
-                    id_hart_st     <= #1 `HART_STATE_W'h0;
+                    id_hart_id     <= #1 `HART_ID_W'h0;
                 end else begin              // Assign to register
                     id_is_jalr     <= #1 is_jalr;
                     id_exp_code    <= #1 exp_code;
@@ -140,7 +140,7 @@ module id_reg (
                     id_rd_addr     <= #1 rd_addr;
                     id_gpr_we_     <= #1 gpr_we_;
                     id_gpr_wr_data <= #1 gpr_wr_data;
-                    id_hart_st     <= #1 if_hart_st;
+                    id_hart_id     <= #1 if_hart_id;
                 end
             end
         end

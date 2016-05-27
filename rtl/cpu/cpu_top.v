@@ -39,7 +39,7 @@ module cpu_top(
     wire [`WORD_DATA_BUS]  pc;             // Current Program count
     wire [`WORD_DATA_BUS]  if_insn;        // Instruction
     wire                   if_en;          // Pipeline data enable
-    wire [`HART_STATE_B]   if_hart_st;
+    wire [`HART_ID_B]      if_hart_id;
 
     // ID/EX Pipeline  Register
     wire                   id_is_jalr;     // is JALR instruction
@@ -57,7 +57,7 @@ module cpu_top(
     wire [`WORD_DATA_BUS]  id_mem_wr_data; // Memory Write data
     wire [`REG_ADDR_BUS]   id_rd_addr;     // GPRWrite address
     wire                   id_gpr_we_;     // GPRWrite enable
-    wire [`HART_STATE_B]   id_hart_st;
+    wire [`HART_ID_B]      id_hart_id;
     wire [`EX_OUT_SEL_BUS] id_ex_out_sel;
     wire [`WORD_DATA_BUS]  id_gpr_wr_data;
     // output to Control Unit
@@ -77,13 +77,13 @@ module cpu_top(
     wire [`REG_ADDR_BUS]   ex_rd_addr;    // General purpose RegisterWrite  address
     wire                   ex_gpr_we_;     // General purpose RegisterWrite enable
     wire [`WORD_DATA_BUS]  ex_out;         // Operating result
-    wire [`HART_STATE_B]   ex_hart_st;
+    wire [`HART_ID_B]      ex_hart_id;
     // MEM/WB Pipeline  Register
     wire [`EXP_CODE_BUS]   mem_exp_code;   // Exception code
     wire [`WORD_DATA_BUS]  mem_pc;
     wire                   mem_en;         // If Pipeline data enables
     wire                   mem_gpr_we_;    // General purpose register write enable
-    wire [`HART_STATE_B]   mem_hart_st;
+    wire [`HART_ID_B]      mem_hart_id;
     // Use to CPU TOP ports for test
     // wire [`REG_ADDR_BUS]   mem_rd_addr;    // General purpose register write  address
     // wire [`WORD_DATA_BUS]  mem_out;        // Operating result
@@ -146,7 +146,6 @@ module cpu_top(
     // from ID stage
     wire                   is_branch;
     wire                   is_load;
-    wire [`HART_STATE_B]   id_hstate;
 
     wire                   hstart;
     wire                   hkill;
@@ -179,21 +178,20 @@ module cpu_top(
         .new_pc         (new_pc),           // New PC
         .br_taken       (br_taken),         // Branch taken
         .br_addr        (br_addr),          // Branch address
+
+        /* Hart select ***************************/
+        .hart_id        (hart_issue_hid),    // Hart ID to issue ins
         .hstart         (hstart),           // Hart start
         .hidle          (hidle),            // Hart idle
         .hs_id          (hs_id),            // Hart start id
         .hs_pc          (hs_pc),            // Hart start pc
-
-        /* Hart select ***************************/
-        .hart_id        (hart_issue_hid),    // Hart ID to issue ins
-        .hart_st        (hart_issue_hstate), // Hart state
 
         /* IF/ID Pipeline Register ***************/
         .pc             (pc),               // Current Program count
         .if_pc          (if_pc),            // Next Program count
         .if_insn        (if_insn),          // Instruction
         .if_en          (if_en),            // Pipeline data enable
-        .if_hart_st     (if_hart_st)        // Hart state
+        .if_hart_id     (if_hart_id)        // Hart state
     );
 
     /********** ID Stage **********/
@@ -225,7 +223,7 @@ module cpu_top(
         .if_pc          (if_pc),            // Next Program count
         .if_insn        (if_insn),          // Instruction
         .if_en          (if_en),            // Pipeline data enable
-        .if_hart_st     (if_hart_st),       // IF stage hart state
+        .if_hart_id     (if_hart_id),       // IF stage hart state
         /********** ID/EX Pipeline  Register **********/
         .id_is_jalr     (id_is_jalr),       // is JALR instruction
         .id_exp_code    (id_exp_code),      // Exception code
@@ -244,7 +242,7 @@ module cpu_top(
         .id_gpr_we_     (id_gpr_we_),       // GPRWrite enable
         .id_ex_out_sel  (id_ex_out_sel),
         .id_gpr_wr_data (id_gpr_wr_data),
-        .id_hart_st     (id_hart_st),       // ID stage hart state
+        .id_hart_id     (id_hart_id),       // ID stage hart state
         /********** output to Control Unit **********/
         .is_eret        (is_eret),          // is ERET instruction
         .op             (op),
@@ -262,7 +260,6 @@ module cpu_top(
         // output to Hart Control
         .is_branch      (is_branch),
         .is_load        (is_load),
-        .id_hstate      (id_hstate),
 
         .hstart         (hstart),
         .hkill          (hkill),
@@ -295,7 +292,7 @@ module cpu_top(
         .id_mem_wr_data (id_mem_wr_data),
         .id_rd_addr     (id_rd_addr),
         .id_gpr_we_     (id_gpr_we_),
-        .id_hart_st     (id_hart_st),
+        .id_hart_id     (id_hart_id),
         .id_ex_out_sel  (id_ex_out_sel),
         .id_gpr_wr_data (id_gpr_wr_data),
         // Forward Data From MEM Stage
@@ -313,7 +310,7 @@ module cpu_top(
         .ex_rd_addr     (ex_rd_addr),
         .ex_gpr_we_     (ex_gpr_we_),
         .ex_out         (ex_out),
-        .ex_hart_st     (ex_hart_st),
+        .ex_hart_id     (ex_hart_id),
         // output to IF Stage
         .br_addr        (br_addr),
         .br_taken       (br_taken)
@@ -339,14 +336,14 @@ module cpu_top(
         .ex_rd_addr     (ex_rd_addr),
         .ex_gpr_we_     (ex_gpr_we_),
         .ex_out         (ex_out),
-        .ex_hart_st     (ex_hart_st),
+        .ex_hart_id     (ex_hart_id),
         .mem_exp_code   (mem_exp_code),
         .mem_pc         (mem_pc),
         .mem_en         (mem_en),
         .mem_rd_addr    (mem_rd_addr),
         .mem_gpr_we_    (mem_gpr_we_),
         .mem_out        (mem_out),
-        .mem_hart_st    (mem_hart_st)
+        .mem_hart_id    (mem_hart_id)
     );
 
     /********** hart control unit **********/
@@ -363,15 +360,13 @@ module cpu_top(
 
         .is_branch             (is_branch),           // √
         .is_load               (is_load),             // √
-        .id_hstate             (id_hstate),           // √
+        .if_hart_id            (if_hart_id),          // √
   
         .hart_acti_hstate      (hart_acti_hstate),
         .hart_idle_hstate      (hart_idle_hstate),
 
         /* IF stage part **************************/
         .i_cache_miss          (i_cache_miss),
-        .if_hstate             (if_hstate),
-
         .i_cache_fin           (i_cache_fin),
         .i_cache_fin_hstate    (i_cache_fin_hstate),
 

@@ -19,7 +19,6 @@ module hart_state (
     input  wire [`HART_STATE_B]  set_hart_id,
     output wire [`HART_SST_B]    get_hart_val,     // state value of set_hart_id 2: pend, 1: active, 0:idle
     output wire                  get_hart_idle,    // is hart idle 1: idle, 0: non-idle
-
     output reg  [`HART_STATE_B]  idle_hstate,      // 3:0
 
     // IF stage part
@@ -59,9 +58,9 @@ module hart_state (
             if      (i_cache_fin) prim_hstate <= i_cache_fin_hstate;
             else if (d_cache_fin) prim_hstate <= d_cache_fin_hstate;
         end
-        else if (  i_cache_miss & if_hstate  == prim_hstate
-               | use_cache_miss & use_hstate == prim_hstate
-               |          hkill & set_hart_id == prim_hstate)   // !!! hkill
+        else if (  i_cache_miss & if_hstate   == prim_hstate
+               | use_cache_miss & use_hstate  == prim_hstate
+               |          hkill & set_hart_id == prim_hstate)
             prim_hstate <= next_prim_hstate;
     end
 

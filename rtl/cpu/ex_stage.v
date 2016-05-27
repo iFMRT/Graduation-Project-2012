@@ -40,7 +40,7 @@ module ex_stage (
     input  wire [`WORD_DATA_BUS]  id_mem_wr_data,
     input  wire [`REG_ADDR_BUS]   id_rd_addr,    // bypass input wire
     input  wire                   id_gpr_we_,
-    input  wire [`HART_STATE_B]   id_hart_st,      // ID stage hart state
+    input  wire [`HART_ID_B]      id_hart_id,      // ID stage hart state
     input  wire [`EX_OUT_SEL_BUS] id_ex_out_sel,
     input  wire [`WORD_DATA_BUS]  id_gpr_wr_data,
     // Forward Data From MEM Stage
@@ -58,7 +58,7 @@ module ex_stage (
     output wire [`REG_ADDR_BUS]   ex_rd_addr,     // bypass output wire
     output wire                   ex_gpr_we_,
     output wire [`WORD_DATA_BUS]  ex_out,
-    output wire [`HART_STATE_B]   ex_hart_st,
+    output wire [`HART_ID_B]      ex_hart_id,
     // output to IF Stage
     output wire [`WORD_DATA_BUS]  br_addr,        // target pc value of branch or jump
     output wire                   br_taken        // ture - take branch or jump
@@ -127,7 +127,7 @@ module ex_stage (
         .id_mem_wr_data (mem_wr_data),
         .id_rd_addr     (id_rd_addr),     // bypass out
         .id_gpr_we_     (id_gpr_we_),
-        .id_hart_st     (id_hart_st),     // ID stage hart state
+        .id_hart_id     (id_hart_id),     // ID stage hart state
         // EX/MEM Pipeline Register
         .ex_exp_code    (ex_exp_code),
         .ex_pc          (ex_pc),
@@ -137,7 +137,7 @@ module ex_stage (
         .ex_mem_op      (ex_mem_op),
         .ex_mem_wr_data (ex_mem_wr_data),
         .ex_out         (ex_out),
-        .ex_hart_st     (ex_hart_st)
+        .ex_hart_id     (ex_hart_id)
     );
 
 endmodule

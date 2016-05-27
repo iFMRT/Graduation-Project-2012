@@ -38,21 +38,20 @@ module if_stage(
     input  wire [`WORD_DATA_BUS] new_pc,         // New value of program counter
     input  wire                  br_taken,       // Branch taken
     input  wire [`WORD_DATA_BUS] br_addr,        // Branch target
+
+    /* Hart Control ***************************/
+    input  wire [`HART_ID_B]     hart_id,        // Hart ID to issue ins
     input  wire                  hstart,         // Hart start
     input  wire                  hidle,          // Hart idle state 1: idle, 0: active/pend
     input  wire [`HART_ID_B]     hs_id,          // Hart start id
     input  wire [`WORD_DATA_BUS] hs_pc,          // Hart start pc
-
-    /* Hart select ***************************/
-    input  wire [`HART_ID_B]     hart_id,        // Hart ID to issue ins
-    input  wire [`HART_STATE_B]  hart_st,        // Hart state
 
     /* IF/ID Pipeline Register ***************/
     output wire [`WORD_DATA_BUS] pc,             // Current Program counter
     output wire [`WORD_DATA_BUS] if_pc,          // Next PC
     output wire [`WORD_DATA_BUS] if_insn,        // Instruction
     output wire                  if_en,          // Effective mark of pipeline
-    output wire [`HART_STATE_B]  if_hart_st      // Hart state
+    output wire [`HART_STATE_B]  if_hart_id      // Hart id
 );
 
     /********** Inner Signal **********/
@@ -90,20 +89,18 @@ module if_stage(
         .br_taken     (br_taken),             // Branch taken
         .br_addr      (br_addr),              // Branch target
 
+        .hart_id      (hart_id),              // Hart ID to issue ins
         .hstart       (hstart),               // Hart start
         .hidle        (hidle),                // Hart idle
         .hs_id        (hs_id),                // Hart start id
         .hs_pc        (hs_pc),                // Hart start pc
-
-        .hart_id      (hart_id),              // Hart ID to issue ins
-        .hart_st      (hart_st),              // Hart state
 
         /******** Output ********/
         .pc           (pc),                   // Current Program counter
         .if_pc        (if_pc),                // Next PC
         .if_insn      (if_insn),              // Instruction
         .if_en        (if_en),                // Effective mark of pipeline
-        .if_hart_st   (if_hart_st)            // Hart state to de_stage
+        .if_hart_id   (if_hart_id)            // Hart state to de_stage
     );
 
 endmodule

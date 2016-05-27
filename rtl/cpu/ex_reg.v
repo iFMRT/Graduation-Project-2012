@@ -37,7 +37,7 @@ module ex_reg (
     input  wire [`WORD_DATA_BUS] id_mem_wr_data,
     input  wire [`REG_ADDR_BUS]  id_rd_addr,      // bypass input 
     input  wire                  id_gpr_we_,
-    input  wire [`HART_STATE_B]  id_hart_st,      // ID stage hart state
+    input  wire [`HART_ID_B]     id_hart_id,      // ID stage hart id
 
     // EX/MEM Pipeline Register
     output reg  [`EXP_CODE_BUS]  ex_exp_code,     // Exception code
@@ -48,7 +48,7 @@ module ex_reg (
     output reg  [`REG_ADDR_BUS]  ex_rd_addr,      // bypass output
     output reg                   ex_gpr_we_,
     output reg  [`WORD_DATA_BUS] ex_out,
-    output reg  [`HART_STATE_B]  ex_hart_st       // EX stage hart state
+    output reg  [`HART_ID_B]     ex_hart_id       // EX stage hart id
 );
 
     always @(posedge clk) begin
@@ -61,7 +61,7 @@ module ex_reg (
             ex_rd_addr     <= #1 `REG_ADDR_W'd0;
             ex_gpr_we_     <= #1 `DISABLE_;
             ex_out         <= #1 `WORD_DATA_W'b0;
-            ex_hart_st     <= #1 `HART_STATE_W'h0;
+            ex_hart_id     <= #1 `HART_ID_W'h0;
         end else begin
             if (stall == `DISABLE) begin
                 if (flush == `ENABLE) begin
@@ -73,7 +73,7 @@ module ex_reg (
                     ex_rd_addr     <= #1 `REG_ADDR_W'd0;
                     ex_gpr_we_     <= #1 `DISABLE_;
                     ex_out         <= #1 `WORD_DATA_W'b0;
-                    ex_hart_st     <= #1 `HART_STATE_W'h0;
+                    ex_hart_id     <= #1 `HART_ID_W'h0;
                 end else begin
                     ex_en          <= #1 id_en;
                     ex_exp_code    <= #1 id_exp_code;
@@ -83,7 +83,7 @@ module ex_reg (
                     ex_gpr_we_     <= #1 id_gpr_we_;
                     ex_mem_op      <= #1 id_mem_op;
                     ex_mem_wr_data <= #1 id_mem_wr_data;
-                    ex_hart_st     <= #1 id_hart_st;
+                    ex_hart_id     <= #1 id_hart_id;
                 end
             end
         end

@@ -68,7 +68,7 @@ module decoder (
     output reg                    hkill,
     output reg  [`HART_ID_B]      set_hart_id,
     // input from IF stage
-    input  wire [`HART_STATE_B]   if_hart_id,
+    input  wire [`HART_ID_B]      if_hart_id,
     // output to IF stage
     output reg  [`HART_ID_B]      hs_id,          // Hart start id
     output reg  [`WORD_DATA_BUS]  hs_pc           // Hart start pc
