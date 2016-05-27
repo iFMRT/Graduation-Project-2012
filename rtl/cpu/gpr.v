@@ -47,7 +47,7 @@ module gpr (
 
     assign glob_rs1_addr = {if_hart_id, rs1_addr};
     assign glob_rs2_addr = {if_hart_id, rs2_addr};
-    assign glob_wr_addr  = {if_hart_id, wr_addr};
+    assign glob_wr_addr  = {mem_hart_id, wr_addr};
     assign rs1_data = (rs1_addr != 0) ? rs1_data_tmp : 0;
     assign rs2_data = (rs2_addr != 0) ? rs2_data_tmp : 0;
 
