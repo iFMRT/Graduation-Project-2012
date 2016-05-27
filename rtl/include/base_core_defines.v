@@ -209,9 +209,10 @@
 //            |___/                          //
 ///////////////////////////////////////////////
 
-`define REG_NUM_BUS     31:0     // Numbers of general purpose registers
-`define REG_ADDR_W			5	       // Register address width
-`define REG_ADDR_BUS		4:0      // Register address bus
+`define REG_NUM_TOTAL_BUS  32:0   // four gprs
+`define REG_NUM_BUS        30:0   // Numbers of general purpose registers
+`define REG_ADDR_W         5      // Register address width
+`define REG_ADDR_BUS       4:0    // Register address bus
 
 /////////////////////////////////////////////////////
 //   ____            _             _ _             //
