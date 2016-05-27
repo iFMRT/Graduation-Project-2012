@@ -1,2 +1,0 @@
-iverilog -s cpu_top_test -o cpu_top_test.out -I include cpu_top_test.v if_stage.v cache_ram.v ctrl.v if_reg.v icache_ctrl.v mem.v l2_cache_ctrl.v mem_stage.v mem_ctrl.v mem_reg.v dcache_ctrl.v id_stage.v id_reg.v ex_stage.v ex_reg.v alu.v cmp.v decoder.v gpr.v
-vvp cpu_top_test.out
