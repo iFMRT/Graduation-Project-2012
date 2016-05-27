@@ -442,6 +442,9 @@ module cpu_top(
         /********** Clock & Reset **********/
         .clk            (clk),              // Clock
         .reset          (reset),            // Asynchronous Reset
+        /********** Hart ID **********/
+        .if_hart_id     (if_hart_id),
+        .mem_hart_id    (mem_hart_id),
         /********** Read Port  0 **********/
         .rs1_addr       (gpr_rs1_addr),     // Read address
         .rs1_data       (gpr_rs1_data),     // Read data
