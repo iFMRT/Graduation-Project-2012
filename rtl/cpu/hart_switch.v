@@ -13,9 +13,8 @@ module hart_switch (
     input  wire                  clk,
     input  wire                  rst,
 
-    input  wire                  set_hart,
+    input  wire                  hkill,
     input  wire [`HART_STATE_B]  set_hstate,
-    input  wire                  set_hart_val,     // set hart state by value 1: active, 0: idle
 
     input  wire                  is_branch,        // conditional branch ins
     input  wire                  is_load,          // load ins
@@ -45,7 +44,7 @@ module hart_switch (
     cyclic_right_shifter cyclic_right_shifter_i(issue_hstate, shifted_issue_hstate);
 
     always @(*) begin
-        if      (set_hart & set_hstate == prim_hstate & ~set_hart_val)
+        if      (hkill & set_hstate == prim_hstate)
                                                           hart_issue_hstate = one_hot_hstate;
         else if (acti_hstate == `HART_STATE_W'b1111)      hart_issue_hstate = shifted_issue_hstate;
         else if (   minor_hstate == `HART_STATE_W'b0000)  hart_issue_hstate = prim_hstate;

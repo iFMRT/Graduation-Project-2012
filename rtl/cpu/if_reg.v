@@ -33,6 +33,11 @@ module if_reg (
     input  wire                       br_taken,  // Branch taken
     input  wire [`WORD_DATA_BUS]      br_addr,   // Branch target
 
+    input  wire                       hstart,    // Hart start
+    input  wire                       hidle,     // Hart idle state 1: idle, 0: active/pend
+    input  wire [`HART_ID_B]          hs_id,     // Hart start id
+    input  wire [`WORD_DATA_BUS]      hs_pc,     // Hart start pc
+
     input  wire [`HART_ID_B]          hart_id,   // Hart ID to issue ins
     input  wire [`HART_STATE_B]       hart_st,   // Hart state
 
@@ -53,29 +58,37 @@ module if_reg (
             if_pcs[hart_id] <= `WORD_DATA_W'h0;
             if_insn         <= `OP_NOP;
             if_en           <= `DISABLE;
-            hart_st         <= `HART_STATE_B'h0;
+            if_hart_st      <= `HART_STATE_B'h0;
         end else begin
             /******** Update pipeline ********/
+            if (hstart & hidle & hart_id != hs_id) begin
+                if_pcs[hs_id] <= hs_pc;    // can't start other non-idle hart
+            end
             if (stall == `DISABLE) begin
                 if (flush == `ENABLE) begin
                     /* Flush */
                     if_pcs[hart_id] <= new_pc;
                     if_insn         <= `OP_NOP;
                     if_en           <= `DISABLE;
-                    hart_st         <= hart_st;
+                    if_hart_st      <= hart_st;
                 end else if (br_taken == `ENABLE) begin
                     /* Branch taken */
                     if_pcs[hart_id] <= br_addr;
                     if_insn         <= `OP_NOP;
                     if_en           <= `DISABLE;
-                    hart_st         <= hart_st;
+                    if_hart_st      <= hart_st;
+                end else if (hstart & hart_id == hs_id) begin
+                    if_pcs[hart_id] <= hs_pc;
+                    if_insn         <= `OP_NOP;
+                    if_en           <= `DISABLE;
+                    if_hart_st      <= hart_st;
                 end else begin
                     /* Next PC */
                     pc              <= if_pcs[hart_id];
                     if_pcs[hart_id] <= #1 if_pcs[hart_id] + `WORD_DATA_W'd4;
                     if_insn         <= insn;
                     if_en           <= `ENABLE;
-                    hart_st         <= hart_st;
+                    if_hart_st      <= hart_st;
                 end
             end
         end

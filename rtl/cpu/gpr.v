@@ -16,6 +16,7 @@
 
 `include "common_defines.v"
 `include "base_core_defines.v"
+`include "hart_ctrl.h"
 
 module gpr (
     /********** Clock & Reset **********/
@@ -28,9 +29,9 @@ module gpr (
     input  wire [`REG_ADDR_BUS]     rs2_addr,      // Read address
     output wire [`WORD_DATA_BUS]    rs2_data,      // Read data
     /********** Write Port **********/
-    input  wire                      we_,          // Write enable
-    input  wire [`REG_ADDR_BUS]      wr_addr,      // Write address
-    input  wire [`WORD_DATA_BUS]     wr_data       // Write data
+    input  wire                     we_,           // Write enable
+    input  wire [`REG_ADDR_BUS]     wr_addr,       // Write address
+    input  wire [`WORD_DATA_BUS]    wr_data        // Write data
 );
 
     wire [`WORD_DATA_BUS]     rs1_data_tmp;        // Read data temporary

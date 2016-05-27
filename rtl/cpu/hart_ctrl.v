@@ -13,28 +13,34 @@ module hart_ctrl (
     input  wire                  clk,
     input  wire                  rst,
 
-    input  wire                  set_hart,
+    // ID stage part
+    input  wire                  hstart,
+    input  wire                  hkill,
     input  wire [`HART_ID_B]     set_hart_id,
-    input  wire                  set_hart_val,     // set hart state by value 1: active, 0: idle
+    output wire [`HART_SST_B]    get_hart_val,      // state value of set_hart_id 2: pend, 1: active, 0:idle
+    output wire                  get_hart_idle,     // is hart idle 1: idle, 0: non-idle
 
-    input  wire                  is_branch,        // conditional branch ins
-    input  wire                  is_load,          // load ins
+    input  wire                  is_branch,          // conditional branch ins
+    input  wire                  is_load,            // load ins
     input  wire [`HART_STATE_B]  id_hstate,
 
+    output wire [`HART_STATE_B]  hart_acti_hstate,   // 3:0
+    output wire [`HART_STATE_B]  hart_idle_hstate,   // 3:0
+
+    // IF stage part
     input  wire                  i_cache_miss,
-    input  wire [`HART_STATE_B]  if_hstate,        // IF stage hart state 3:0
-    input  wire                  use_cache_miss,
-    input  wire [`HART_STATE_B]  use_hstate,       // Used hart state 3:0, 
-
-    input  wire                  i_cache_fin,      // memory access finish
+    input  wire [`HART_STATE_B]  if_hstate,          // IF stage hart state 3:0
+    input  wire                  i_cache_fin,        // i cache access finish
     input  wire [`HART_STATE_B]  i_cache_fin_hstate,
-    input  wire                  d_cache_fin,
-    input  wire [`HART_STATE_B]  d_cache_fin_hstate,
 
-    output wire [`HART_ID_B]     hart_issue_hid,         // 1:0
-    output wire [`HART_STATE_B]  hart_issue_hstate,      // 3:0
-    output wire [`HART_STATE_B]  hart_acti_hstate,       // 3:0
-    output wire [`HART_STATE_B]  hart_idle_hstate        // 3:0
+    output wire [`HART_ID_B]     hart_issue_hid,     // 1:0
+    output wire [`HART_STATE_B]  hart_issue_hstate,  // 3:0
+
+    // MEM stage part
+    input  wire                  use_cache_miss,
+    input  wire [`HART_STATE_B]  use_hstate,         // Used hart state 3:0
+    input  wire                  d_cache_fin,
+    input  wire [`HART_STATE_B]  d_cache_fin_hstate
 );
     assign hart_acti_hstate = acti_hstate;
 
@@ -50,21 +56,26 @@ module hart_ctrl (
         .clk                (clk),
         .rst                (rst),
 
-        .set_hart           (set_hart),
-        .set_hstate         (set_hstate),
-        .set_hart_val       (set_hart_val),
+        // ID stage part
+        .hstart             (hstart),
+        .hkill              (hkill),
+        .set_hart_id        (set_hart_id),
+        .get_hart_val       (get_hart_val),
+        .get_hart_idle      (get_hart_idle),
 
+        .idle_hstate        (hart_idle_hstate),
+
+        // IF stage part
         .i_cache_miss       (i_cache_miss),
         .if_hstate          (if_hstate),
-        .use_cache_miss     (use_cache_miss),
-        .use_hstate         (use_hstate),
-
         .i_cache_fin        (i_cache_fin),
         .i_cache_fin_hstate (i_cache_fin_hstate),
+
+        // MEM stage part
+        .use_cache_miss     (use_cache_miss),
+        .use_hstate         (use_hstate),
         .d_cache_fin        (d_cache_fin),
         .d_cache_fin_hstate (d_cache_fin_hstate),
-
-        .hart_idle_hstate   (hart_idle_hstate),
 
         //_ hstu_part ________________________________________________________//
         .prim_hstate        (prim_hstate),
@@ -77,9 +88,8 @@ module hart_ctrl (
         .rst                (rst),
 
         //_ cpu_part _________________________________________________________//
-        .set_hart           (set_hart),
+        .hkill              (hkill),
         .set_hstate         (set_hstate),
-        .set_hart_val       (set_hart_val),
 
         .is_branch          (is_branch),
         .is_load            (is_load),

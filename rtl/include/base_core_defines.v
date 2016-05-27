@@ -37,6 +37,7 @@
 
 // R Type
 `define OP_ALS		  7'b0110011   // Arithmetic Logic Shift
+`define OP_HART		  7'b0001011   // Hart Control
 
 // U Type
 `define OP_LUI		  7'b0110111   // Load Upper Immediate
@@ -93,6 +94,15 @@
 `define OP_BR_BGE	    3'b101	 // Register-register branch if greater than signed
 `define OP_BR_BLTU	  3'b110	 // Register-register branch if less than unsigned
 `define OP_BR_BGEU	  3'b111	 // Register-register branch if greater than unsigned
+
+// OP_HART
+`define OP_HART_STA    3'b000    // hart start
+`define OP_HART_STAC   3'b001    // current hart start
+`define OP_HART_KILL   3'b010    // hart kill
+`define OP_HART_KILLC  3'b011    // current hart kill
+`define OP_HART_READ   3'b100    // read hart state
+`define OP_HART_READA  3'b101    // read active hart state
+`define OP_HART_READI  3'b110    // read idel   hart state
 
 /******** FUNCTION CODE 7 FIELD ********/
 `define OP_Funct7_W	      7	         // Funct7's width

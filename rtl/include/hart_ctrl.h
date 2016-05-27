@@ -11,6 +11,8 @@
     `define HART_NUM_B               3:0
     `define HART_STATE_W             4
     `define HART_STATE_B             3:0
+    `define HART_SST_W               2
+    `define HART_SST_B               1:0
     `define HART_ID_W                2
     `define HART_ID_B                1:0
     `define HART_CYCLES_W            16

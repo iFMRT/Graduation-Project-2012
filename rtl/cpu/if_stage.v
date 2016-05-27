@@ -38,6 +38,10 @@ module if_stage(
     input  wire [`WORD_DATA_BUS] new_pc,         // New value of program counter
     input  wire                  br_taken,       // Branch taken
     input  wire [`WORD_DATA_BUS] br_addr,        // Branch target
+    input  wire                  hstart,         // Hart start
+    input  wire                  hidle,          // Hart idle state 1: idle, 0: active/pend
+    input  wire [`HART_ID_B]     hs_id,          // Hart start id
+    input  wire [`WORD_DATA_BUS] hs_pc,          // Hart start pc
 
     /* Hart select ***************************/
     input  wire [`HART_ID_B]     hart_id,        // Hart ID to issue ins
@@ -85,6 +89,11 @@ module if_stage(
 
         .br_taken     (br_taken),             // Branch taken
         .br_addr      (br_addr),              // Branch target
+
+        .hstart       (hstart),               // Hart start
+        .hidle        (hidle),                // Hart idle
+        .hs_id        (hs_id),                // Hart start id
+        .hs_pc        (hs_pc),                // Hart start pc
 
         .hart_id      (hart_id),              // Hart ID to issue ins
         .hart_st      (hart_st),              // Hart state

@@ -56,7 +56,22 @@ module decoder (
     output wire [`REG_ADDR_BUS]   rs1_addr,
     output wire [`REG_ADDR_BUS]   rs2_addr,
     output reg  [1:0]             src_reg_used,  // which source registers used
-    output reg                    is_eret        // is ERET instruction
+    output reg                    is_eret,       // is ERET instruction
+    /********** Hart Control Interface **********/
+    // input from Hart Control Unit
+    input  wire                   get_hart_idle,     // is hart idle 1: idle, 0: non-idle
+    input  wire [`HART_STT_B]     get_hart_val,      // is hart idle 1: idle, 0: non-idle
+    input  wire [`HART_STATE_B]   hart_acti_hstate,   // 3:0
+    input  wire [`HART_STATE_B]   hart_idle_hstate,   // 3:0
+    // output to Hart Control Unit
+    output reg                    hstart,
+    output reg                    hkill,
+    output reg  [`HART_ID_B]      set_hart_id,
+    // input from IF stage
+    input  wire [`HART_STATE_B]   if_hart_id,
+    // output to IF stage
+    output reg  [`HART_ID_B]      hs_id,          // Hart start id
+    output reg  [`WORD_DATA_BUS]  hs_pc           // Hart start pc
 );
 
     /********** Instruction Field **********/
@@ -66,8 +81,8 @@ module decoder (
     wire [`INSN_F3_BUS]  funct3   = if_insn[`INSN_F3];   // funct3
     wire [`INSN_F7_BUS]  funct7   = if_insn[`INSN_F7];   // funct7
     wire [`INSN_F12_BUS] funct12  = if_insn[`INSN_F12];  // funct12
-    assign rd_addr                = if_insn[`INSN_RD];  // Rc address
-    assign csr_addr               = if_insn[`INSN_CSR]; // CSRs address
+    assign rd_addr                = if_insn[`INSN_RD];   // Rc address
+    assign csr_addr               = if_insn[`INSN_CSR];  // CSRs address
 
 
     /********** Source Register Used State **********/
@@ -114,6 +129,12 @@ module decoder (
         is_eret      = `DISABLE;
         csr_op       = `CSR_OP_NOP;
         csr_wr_data  = `WORD_DATA_W'h0;
+
+        hstart       = `DISABLE;
+        hkill        = `DISABLE;
+        hs_id        = `HART_ID_W'h0;
+        hs_pc        = `WORD_DATA_W'h0;
+        set_hart_id  = `HART_ID_W'h0;
 
         /* Decode instruction type */
         if (if_en == `ENABLE) begin
@@ -394,6 +415,72 @@ module decoder (
                     exp_code = `EXP_ILLEGAL_INSN;
                     $display("OP error");
                 end
+
+                // Hart control
+                `OP_HART: begin
+                    case(funct3)
+                        `OP_HART_STA  : begin
+                            src_reg_used = 2'b11;     // use rs1 and rs2
+                            // to rd
+                            gpr_we_  = `ENABLE_;
+                            alu_op   = `ALU_OP_ADD;
+                            alu_in_0 = {'b0, get_hart_idle};
+                            // to IF stage: update pc
+                            hs_id    = rs1_data;
+                            hs_pc    = rs2_data;
+                            // to Hart Control Unit: update state
+                            hstart   = `ENABLE;
+                            set_hart_id = rs1_data;
+                        end
+                        `OP_HART_STAC : begin
+                            src_reg_used = 2'b10;     // use rs1 and rs2
+                            // to IF stage: update pc
+                            hs_id    = if_hart_id;
+                            hs_pc    = rs2_data;
+                            // to Hart Control Unit: update state
+                            hstart   = `ENABLE;
+                            set_hart_id = if_hart_id;
+                        end
+                        `OP_HART_KILL : begin
+                            src_reg_used = 2'b01;
+                            // to rd
+                            gpr_we_  = `ENABLE_;
+                            alu_op   = `ALU_OP_ADD;
+                            alu_in_0 = {'b0, ~get_hart_idle};
+                            // to Hart Control Unit: update state
+                            hkill    = `ENABLE;
+                            set_hart_id = rs1_data;
+                        end
+                        `OP_HART_KILLC: begin
+                            // to Hart Control Unit: update state
+                            hkill    = `ENABLE;
+                            set_hart_id = if_hart_id;
+                        end
+                        `OP_HART_READ : begin
+                            src_reg_used = 2'b01;
+                            // to rd
+                            gpr_we_  = `ENABLE_;
+                            alu_op   = `ALU_OP_ADD;
+                            alu_in_0 = {'b0, get_hart_val};
+                            // to Hart Control Unit: specify hart id
+                            set_hart_id = rs1_data;
+                        end
+                        `OP_HART_READA: begin
+                            // to rd
+                            gpr_we_  = `ENABLE_;
+                            alu_op   = `ALU_OP_ADD;
+                            alu_in_0 = {'b0, hart_acti_hstate};
+                        end
+                        `OP_HART_READI: begin
+                            // to rd
+                            gpr_we_  = `ENABLE_;
+                            alu_op   = `ALU_OP_ADD;
+                            alu_in_0 = {'b0, hart_idle_hstate};
+                        end
+                        default: exp_code = `EXP_ILLEGAL_INSN;
+                    endcase
+                end
+                
             endcase
         end
     end

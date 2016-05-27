@@ -74,10 +74,23 @@ module id_stage (
     output wire [`REG_ADDR_BUS]   rs1_addr,
     output wire [`REG_ADDR_BUS]   rs2_addr,
     output wire [1:0]             src_reg_used,   // How many source registers instruction used
-    // output to Hart Control Unit
+    /********** Hart Control Interface **********/
+    // input from Hart Control
+    input  wire                   get_hart_idle,     // is hart idle 1: idle, 0: non-idle
+    input  wire [`HART_SST_B]     get_hart_val,      // state value of get_hart_id 2: pend, 1: active, 0:idle
+    input  wire [`HART_STATE_B]   hart_acti_hstate,  // 3:0
+    input  wire [`HART_STATE_B]   hart_idle_hstate,  // 3:0
+    // output to Hart Control
     output wire                   is_branch,
     output wire                   is_load,
-    output wire [`HART_STATE_B]   id_hstate
+    output wire [`HART_STATE_B]   id_hstate,
+
+    output wire                   hstart,
+    output wire                   hkill,
+    output wire [`HART_ID_B]      set_hart_id,
+    // output to IF stage
+    output wire [`HART_ID_B]      hs_id,          // Hart start id
+    output wire [`WORD_DATA_BUS]  hs_pc           // Hart start pc
 );
 
     wire [`ALU_OP_BUS]     alu_op;          // ALU Operation
@@ -97,6 +110,9 @@ module id_stage (
     wire                   gpr_we_;         // GPR write enable
     wire                   is_jalr;         // is JALR instruction
     wire [`EXP_CODE_BUS]   exp_code;
+
+    wire [`HART_ID_B]      if_hart_id;
+    hart_id_encoder get_if_hart_id_i (if_hart_st, if_hart_id);
 
     /********** To Hart Control Unit **********/
     assign id_hstate = if_hart_st;
@@ -177,6 +193,22 @@ module id_stage (
         .rs1_addr       (rs1_addr),
         .rs2_addr       (rs2_addr),
         .src_reg_used   (src_reg_used)   // which source registers used
+
+        /********** Hart Control Interface **********/
+        // input from Hart Control
+        .get_hart_idle    (get_hart_idle),
+        .get_hart_val     (get_hart_val),
+        .hart_acti_hstate (hart_acti_hstate),
+        .hart_idle_hstate (hart_idle_hstate),
+        // output to Hart Control
+        .hstart         (hstart),
+        .hkill          (hkill),
+        .set_hart_id    (set_hart_id),
+        // input from IF stage
+        .if_hart_id     (if_hart_id),
+        // output to IF stage
+        .hs_id          (hs_id),          // Hart start id
+        .hs_pc          (hs_pc)           // Hart start pc
     );
 
     id_reg id_reg (

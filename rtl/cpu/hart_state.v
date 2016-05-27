@@ -13,26 +13,37 @@ module hart_state (
     input  wire                  clk,
     input  wire                  rst,
 
-    input  wire                  set_hart,
-    input  wire [`HART_STATE_B]  set_hstate,
-    input  wire                  set_hart_val,     // set hart state by value 1: active, 0: idle
+    // ID stage part
+    input  wire                  hstart,
+    input  wire                  hkill,
+    input  wire [`HART_STATE_B]  set_hart_id,
+    output wire [`HART_SST_B]    get_hart_val,     // state value of set_hart_id 2: pend, 1: active, 0:idle
+    output wire                  get_hart_idle,    // is hart idle 1: idle, 0: non-idle
 
+    output reg  [`HART_STATE_B]  idle_hstate,      // 3:0
+
+    // IF stage part
     input  wire                  i_cache_miss,
     input  wire [`HART_STATE_B]  if_hstate,        // IF stage hart state 3:0
-    input  wire                  use_cache_miss,
-    input  wire [`HART_STATE_B]  use_hstate,       // Used hart state 3:0, 
-
     input  wire                  i_cache_fin,      // memory access finish
     input  wire [`HART_STATE_B]  i_cache_fin_hstate,
+
+    // MEM stage part
+    input  wire                  use_cache_miss,
+    input  wire [`HART_STATE_B]  use_hstate,       // Used hart state 3:0, 
     input  wire                  d_cache_fin,
     input  wire [`HART_STATE_B]  d_cache_fin_hstate,
 
-    output reg  [`HART_STATE_B]  hart_idle_hstate,    // 3:0
-
     //_ hstu_part ____________________________________________________________//
     output reg  [`HART_STATE_B]  prim_hstate,
-    output reg  [`HART_STATE_B]  acti_hstate        // 3:0
+    output reg  [`HART_STATE_B]  acti_hstate       // 3:0
 );
+
+    //_ get_hart_val(for hart control ins.) ______________________________________________________//
+    assign get_hart_idle = idle_hstate[set_hart_id];
+    assign get_hart_val[0] =  acti_hstate[set_hart_id] & ~get_hart_idle;
+    assign get_hart_val[1] = ~acti_hstate[set_hart_id] & ~get_hart_idle;
+
 
     //_ hart_prim_hstate ______________________________________________________//
     wire [`HART_STATE_B] next_prim_hstate;
@@ -50,14 +61,14 @@ module hart_state (
         end
         else if (  i_cache_miss & if_hstate  == prim_hstate
                | use_cache_miss & use_hstate == prim_hstate
-               |       set_hart & set_hstate == prim_hstate & ~set_hart_val)
+               |          hkill & set_hart_id == prim_hstate)   // !!! hkill
             prim_hstate <= next_prim_hstate;
     end
 
     //_ acti_hstate ______________________________________________________//
     reg [`HART_STATE_B] next_acti_hstate;
     always @(i_cache_fin, d_cache_fin, i_cache_miss, use_cache_miss,
-             if_hstate, use_hstate, set_hart, set_hstate, set_hart_val) begin
+             if_hstate, use_hstate, hstart, set_hart_id) begin
         if (i_cache_fin)    next_acti_hstate =      acti_hstate | i_cache_fin_hstate;
         else                next_acti_hstate =      acti_hstate;
         if (d_cache_fin)    next_acti_hstate = next_acti_hstate | d_cache_fin_hstate;
@@ -66,11 +77,9 @@ module hart_state (
         else                next_acti_hstate = next_acti_hstate;
         if (use_cache_miss) next_acti_hstate = next_acti_hstate & ~use_hstate;
         else                next_acti_hstate = next_acti_hstate;
-        if (set_hart) begin
-            if (set_hart_val) next_acti_hstate = next_acti_hstate |  set_hstate;
-            else              next_acti_hstate = next_acti_hstate & ~set_hstate;
-        end
-        else next_acti_hstate = next_acti_hstate;
+        if      (hstart & get_hart_idle) next_acti_hstate[set_hart_id] = 1'b1;
+        else if (hkill & ~get_hart_idle) next_acti_hstate[set_hart_id] = 1'b0;
+        else                next_acti_hstate = next_acti_hstate;
     end
 
     always @(posedge clk) begin
@@ -78,10 +87,10 @@ module hart_state (
         else     acti_hstate <= next_acti_hstate;
     end
 
-    //_ hart_idle_hstate ______________________________________________________//
+    //_ idle_hstate ______________________________________________________//
     always @(posedge clk) begin
-        if (rst) hart_idle_hstate <= `HART_STATE_W'b1110;
-        else if (set_hart &  set_hart_val) hart_idle_hstate <= hart_idle_hstate & ~set_hstate;
-        else if (set_hart & ~set_hart_val) hart_idle_hstate <= hart_idle_hstate |  set_hstate;
+        if (rst) idle_hstate <= `HART_STATE_W'b1110;
+        else if (hstart) idle_hstate[set_hart_id] <= 1'b0;
+        else if (hkill)  idle_hstate[set_hart_id] <= 1'b1;
     end
 endmodule
