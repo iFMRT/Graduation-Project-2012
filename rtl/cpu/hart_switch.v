@@ -20,7 +20,17 @@ module hart_switch (
     input  wire                  is_load,          // load ins
     input  wire [`HART_ID_B]     if_hart_id,
 
+    output wire                  hart_ic_stall,    // Need to stall pipeline
+    output wire                  hart_dc_stall,    // Need to stall pipeline
     output reg  [`HART_STATE_B]  hart_issue_hstate,      // 3:0
+
+    // IF stage part
+    input  wire                  i_cache_miss,
+    input  wire                  i_cache_fin,        // i cache access finish
+
+    // MEM stage part
+    input  wire                  d_cache_miss,
+    input  wire                  d_cache_fin,
 
     //_ hstu_part ____________________________________________________________//
     input  wire [`HART_STATE_B]  prim_hstate,
@@ -29,6 +39,19 @@ module hart_switch (
     wire [`HART_STATE_B] set_hstate;
     decoder_n #(`HART_ID_W) set_hstate_i(set_hart_id, set_hstate);
     decoder_n #(`HART_ID_W) ids_hstate_i(if_hart_id, ids_hstate);    // current ID stage hart state
+
+    //_ pipeline stall _______________________________________________________//
+    wire no_more_active;
+    wire [`HART_STATE_B] ah;
+    assign ah = acti_hstate;
+    assign no_more_active = ~(ah[0] + ah[1] + ah[2]) +     // 1: only one or none active hart 0: two or more active harts
+                            ~(ah[0] + ah[1] + ah[3]) +
+                            ~(ah[0] + ah[2] + ah[3]) +
+                            ~(ah[1] + ah[2] + ah[3]);
+    wire hart_ic_stall;    // i cache miss and need to stall
+    wire hart_dc_stall;    // d cache miss and need to stall
+    assign hart_ic_stall = no_more_active & i_cache_miss & ~d_cache_fin;
+    assign hart_dc_stall = no_more_active & d_cache_miss & ~i_cache_fin;
 
     //_ minor_hstate _________________________________________________________//
     wire [`HART_STATE_B] minor_hstate;

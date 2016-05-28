@@ -36,6 +36,7 @@ module if_stage(
     input  wire                  stall,          // Stall
     input  wire                  flush,          // Flush
     input  wire [`WORD_DATA_BUS] new_pc,         // New value of program counter
+    input  wire [`HART_ID_B]     br_hart_id,     // Branch Hart ID (equal to id_hart_id)
     input  wire                  br_taken,       // Branch taken
     input  wire [`WORD_DATA_BUS] br_addr,        // Branch target
 
@@ -86,6 +87,7 @@ module if_stage(
         .flush        (flush),                // Flush
         .new_pc       (new_pc),               // New value of program counter
 
+        .br_hart_id   (br_hart_id),           // Branch Hart ID
         .br_taken     (br_taken),             // Branch taken
         .br_addr      (br_addr),              // Branch target
 

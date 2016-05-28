@@ -187,7 +187,7 @@ module id_stage (
         .op             (op),             // OpCode
         .rs1_addr       (rs1_addr),
         .rs2_addr       (rs2_addr),
-        .src_reg_used   (src_reg_used)   // which source registers used
+        .src_reg_used   (src_reg_used),   // which source registers used
 
         /********** Hart Control Interface **********/
         // input from Hart Control

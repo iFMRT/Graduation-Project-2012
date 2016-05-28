@@ -17,6 +17,7 @@
 
 `include "common_defines.v"
 `include "base_core_defines.v"
+`include "hart_ctrl.h"
 
 module ctrl (
     /********* pipeline control signals ********/
@@ -79,7 +80,18 @@ module ctrl (
     output reg [`FWD_CTRL_BUS]  rs1_fwd_ctrl,
     output reg [`FWD_CTRL_BUS]  rs2_fwd_ctrl,
     output reg                  ex_rs1_fwd_en,
-    output reg                  ex_rs2_fwd_en
+    output reg                  ex_rs2_fwd_en,
+
+    /********** Hart Control Unit **********/
+    // hart ID
+    input  wire [`HART_STATE_B] issue_id,     // IF  stage used
+    input  wire [`HART_STATE_B] if_hart_id,   // ID  stage used
+    input  wire [`HART_STATE_B] id_hart_id,   // EX  stage used
+    input  wire [`HART_STATE_B] ex_hart_id,   // MEM stage used
+    input  wire [`HART_STATE_B] mem_hart_id,  // WB  stage used
+    // stall
+    input  wire                   hart_ic_stall,     // Need to stall pipeline
+    input  wire                   hart_dc_stall      // Need to stall pipeline
 );
 
     reg     ld_hazard;       // LOAD hazard
@@ -94,9 +106,16 @@ module ctrl (
     // flush
     reg    flush, eret_flush;
     assign if_flush  = flush | eret_flush;
-    assign id_flush  = flush | ld_hazard | br_taken;
+    assign id_flush  = flush | ld_hazard | br_flush_id;
     assign ex_flush  = flush;
     assign mem_flush = flush;
+
+    always @(*) begin
+        if (br_taken && id_hart_id == if_hart_id)
+            br_flush_id <= `ENABLE;
+        else
+            br_flush_id <= `DISABLE;
+    end
 
     /********** Forward **********/
     always @(*) begin
@@ -105,6 +124,7 @@ module ctrl (
             (id_gpr_we_      == `ENABLE_) &&
             (src_reg_used[0] == 1'b1)     &&   // use ra register
             (rs1_addr         != 1'b0)     &&   // r0 always is 0, no need to forward
+            (id_hart_id     == if_hart_id) &&
             (id_rd_addr     == rs1_addr)
         ) begin
             rs1_fwd_ctrl = `FWD_CTRL_EX;        // Forward from EX stage
@@ -113,6 +133,7 @@ module ctrl (
             (ex_gpr_we_      == `ENABLE_) &&
             (src_reg_used[0] == 1'b1)     &&   // use ra register
             (rs1_addr         != 1'b0)     &&   // r0 always is 0, no need to forward
+            (ex_hart_id     == if_hart_id) &&
             (ex_rd_addr     == rs1_addr)
         ) begin
             rs1_fwd_ctrl = `FWD_CTRL_MEM;       // Forward from MEM stage
@@ -126,6 +147,7 @@ module ctrl (
             (ex_mem_op[3]    == 1'b1)     &&   // Check LOAD  in MEM, LOAD  Mem Op 1XXX
             (id_mem_op[3:2]  == 2'b01)    &&   // Check STORE in EX, STORE Mem Op 01XX
             (id_rs1_addr      != 1'b0)     &&   // r0 always is 0, no need to forward
+            (ex_hart_id     == if_hart_id) &&
             (ex_rd_addr     == id_rs1_addr)
         ) begin
             ex_rs1_fwd_en = `ENABLE;
@@ -138,6 +160,7 @@ module ctrl (
             (id_gpr_we_      == `ENABLE_) &&
             (src_reg_used[1] == 1'b1)     && // use rb register
             (rs2_addr         != 1'b0)     &&   // r0 always is 0, no need to forward
+            (id_hart_id     == if_hart_id) &&
             (id_rd_addr     == rs2_addr)
         ) begin
             rs2_fwd_ctrl = `FWD_CTRL_EX;        // Forward from EX stage
@@ -146,6 +169,7 @@ module ctrl (
             (ex_gpr_we_      == `ENABLE_) &&
             (src_reg_used[1] == 1'b1)     && // use rb register
             (rs2_addr         != 1'b0)     &&   // r0 always is 0, no need to forward
+            (ex_hart_id     == if_hart_id) &&
             (ex_rd_addr     == rs2_addr)
         ) begin
             rs2_fwd_ctrl = `FWD_CTRL_MEM;       // Forward from MEM stage
@@ -159,6 +183,7 @@ module ctrl (
             (ex_mem_op[3]    == 1'b1)     &&   // Check LOAD  in MEM, LOAD  Mem Op 1XXX
             (id_mem_op[3:2]  == 2'b01)    &&   // Check STORE in EX, STORE Mem Op 01XX
             (id_rs2_addr     != 1'b0)     &&   // r0 always is 0, no need to forward
+            (ex_hart_id     == if_hart_id) &&
             (ex_rd_addr     == id_rs2_addr)
         ) begin
             ex_rs2_fwd_en = `ENABLE;
@@ -172,6 +197,7 @@ module ctrl (
     always @(*) begin
         if ((id_en        == `ENABLE)         &&
             (id_gpr_we_   == `ENABLE_)        &&   // load must enable id_gpr_we_
+            (if_hart_id   == id_hart_id)      &&
             (id_mem_op[3] == 1'b1)            &&   // Check load in EX
             (   (op    != `OP_ST) ||
                 ( (op  == `OP_ST)  && (id_rd_addr == rs1_addr) )

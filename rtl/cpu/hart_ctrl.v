@@ -24,6 +24,8 @@ module hart_ctrl (
     input  wire                  is_load,            // load ins
     input  wire [`HART_ID_B]     if_hart_id,         // if_hart_id => current id stage hart id
 
+    output wire                  hart_ic_stall,    // Need to stall pipeline
+    output wire                  hart_dc_stall,    // Need to stall pipeline
     output wire [`HART_STATE_B]  hart_acti_hstate,   // 3:0
     output wire [`HART_STATE_B]  hart_idle_hstate,   // 3:0
 
@@ -36,8 +38,8 @@ module hart_ctrl (
     output wire [`HART_STATE_B]  hart_issue_hstate,  // 3:0
 
     // MEM stage part
-    input  wire                  use_cache_miss,
-    input  wire [`HART_STATE_B]  use_hstate,         // Used hart state 3:0
+    input  wire                  d_cache_miss,
+    input  wire [`HART_STATE_B]  ex_hstate,         // Used hart state 3:0
     input  wire                  d_cache_fin,
     input  wire [`HART_STATE_B]  d_cache_fin_hstate
 );
@@ -68,8 +70,8 @@ module hart_ctrl (
         .i_cache_fin_hstate (i_cache_fin_hstate),
 
         // MEM stage part
-        .use_cache_miss     (use_cache_miss),
-        .use_hstate         (use_hstate),
+        .d_cache_miss       (d_cache_miss),
+        .ex_hstate          (ex_hstate),
         .d_cache_fin        (d_cache_fin),
         .d_cache_fin_hstate (d_cache_fin_hstate),
 
@@ -91,11 +93,20 @@ module hart_ctrl (
         .is_load            (is_load),
         .if_hart_id         (if_hart_id),
 
+        .hart_ic_stall      (hart_ic_stall),
+        .hart_dc_stall      (hart_dc_stall),
         .hart_issue_hstate  (hart_issue_hstate),
 
+        // IF stage part
+        .i_cache_miss       (i_cache_miss),
+        .i_cache_fin        (i_cache_fin),
+
+        // MEM stage part
+        .d_cache_miss       (d_cache_miss),
+        .d_cache_fin        (d_cache_fin),
         //_ hstu_part ________________________________________________________//
         .prim_hstate        (prim_hstate),
-        .acti_hstate        (acti_hstate),
+        .acti_hstate        (acti_hstate)
     );
 endmodule
 

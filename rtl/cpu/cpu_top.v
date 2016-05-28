@@ -141,6 +141,9 @@ module cpu_top(
     // to ID stage
     wire [`HART_SST_B]     get_hart_val;      // state value of set_hart_id 2: pend, 1: active, 0:idle
     wire                   get_hart_idle;     // is hart idle 1: idle, 0: non-idle
+
+    wire                   hart_ic_stall,     // Need to stall pipeline
+    wire                   hart_dc_stall,     // Need to stall pipeline
     wire [`HART_STATE_B]   hart_acti_hstate;  // 3:0
     wire [`HART_STATE_B]   hart_idle_hstate;  // 3:0
     // from ID stage
@@ -176,11 +179,12 @@ module cpu_top(
         .stall          (if_stall),         // Stall
         .flush          (if_flush),         // Flush
         .new_pc         (new_pc),           // New PC
+        .br_hart_id     (id_hart_id),       // Branch Hart ID
         .br_taken       (br_taken),         // Branch taken
         .br_addr        (br_addr),          // Branch address
 
         /* Hart select ***************************/
-        .hart_id        (hart_issue_hid),    // Hart ID to issue ins
+        .hart_id        (hart_issue_hid),   // Hart ID to issue ins
         .hstart         (hstart),           // Hart start
         .hidle          (hidle),            // Hart idle
         .hs_id          (hs_id),            // Hart start id
@@ -361,7 +365,9 @@ module cpu_top(
         .is_branch             (is_branch),           // √
         .is_load               (is_load),             // √
         .if_hart_id            (if_hart_id),          // √
-  
+   
+        .hart_ic_stall         (hart_ic_stall),
+        .hart_dc_stall         (hart_dc_stall),
         .hart_acti_hstate      (hart_acti_hstate),
         .hart_idle_hstate      (hart_idle_hstate),
 
@@ -418,7 +424,9 @@ module cpu_top(
         .rs1_fwd_ctrl   (rs1_fwd_ctrl),
         .rs2_fwd_ctrl   (rs2_fwd_ctrl),
         .ex_rs1_fwd_en  (ex_rs1_fwd_en),
-        .ex_rs2_fwd_en  (ex_rs2_fwd_en)
+        .ex_rs2_fwd_en  (ex_rs2_fwd_en),
+        .hart_ic_stall  (hart_ic_stall),
+        .hart_dc_stall  (hart_dc_stall)
     );
 
     /********** Control & State Registers **********/
