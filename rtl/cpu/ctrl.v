@@ -21,7 +21,7 @@
 module ctrl (
     /********* pipeline control signals ********/
     //  State of Pipeline
-    input wire                  br_taken,    // branch hazard mark
+    input wire                  br_taken,    // branch hazard mark (branch mispredict)
 
     /********** Data Forward **********/
     input wire [1:0]            src_reg_used,
@@ -31,7 +31,7 @@ module ctrl (
 
     // LOAD Hazard
     input wire                  id_en,       // Pipeline Register enable
-    input wire [`REG_ADDR_BUS]  id_rd_addr, // GPR write address
+    input wire [`REG_ADDR_BUS]  id_rd_addr,  // GPR write address
     input wire                  id_gpr_we_,  // GPR write enable
     input wire [`MEM_OP_BUS]    id_mem_op,   // Mem operation
 

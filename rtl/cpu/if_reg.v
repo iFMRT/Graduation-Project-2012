@@ -75,11 +75,6 @@ module if_reg (
                     if_insn         <= `OP_NOP;
                     if_en           <= `DISABLE;
                     if_hart_id      <= hart_id;
-                end else if (hstart & hart_id == hs_id) begin
-                    if_pcs[hart_id] <= hs_pc;
-                    if_insn         <= `OP_NOP;
-                    if_en           <= `DISABLE;
-                    if_hart_id      <= hart_id;
                 end else begin
                     /* Next PC */
                     pc              <= if_pcs[hart_id];

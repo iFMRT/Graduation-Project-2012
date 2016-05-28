@@ -432,15 +432,6 @@ module decoder (
                             hstart   = `ENABLE;
                             set_hart_id = rs1_data;
                         end
-                        `OP_HART_STAC : begin
-                            src_reg_used = 2'b10;     // use rs1 and rs2
-                            // to IF stage: update pc
-                            hs_id    = if_hart_id;
-                            hs_pc    = rs2_data;
-                            // to Hart Control Unit: update state
-                            hstart   = `ENABLE;
-                            set_hart_id = if_hart_id;
-                        end
                         `OP_HART_KILL : begin
                             src_reg_used = 2'b01;
                             // to rd
@@ -455,6 +446,12 @@ module decoder (
                             // to Hart Control Unit: update state
                             hkill    = `ENABLE;
                             set_hart_id = if_hart_id;
+                        end
+                        `OP_HART_ID   : begin
+                            // to rd
+                            gpr_we_  = `ENABLE_;
+                            alu_op   = `ALU_OP_ADD;
+                            alu_in_0 = {'b0, if_hart_id};
                         end
                         `OP_HART_READ : begin
                             src_reg_used = 2'b01;

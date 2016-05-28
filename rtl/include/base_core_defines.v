@@ -97,9 +97,9 @@
 
 // OP_HART
 `define OP_HART_STA    3'b000    // hart start
-`define OP_HART_STAC   3'b001    // current hart start
-`define OP_HART_KILL   3'b010    // hart kill
-`define OP_HART_KILLC  3'b011    // current hart kill
+`define OP_HART_KILL   3'b001    // hart kill
+`define OP_HART_KILLC  3'b010    // current hart kill
+`define OP_HART_ID     3'b011    // read hart id
 `define OP_HART_READ   3'b100    // read hart state
 `define OP_HART_READA  3'b101    // read active hart state
 `define OP_HART_READI  3'b110    // read idel   hart state
