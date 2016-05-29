@@ -30,9 +30,13 @@ module data_ram(
     input      [127:0] data_wd_l2_mem,
     input              data_wd_l2_en,
     input              data_wd_l2_en_mem,
+    input              data_wd_dc_en_mem,    
+    input      [31:0]  dc_wd_mem, 
+    input              data_wd_dc_en_l2,    
+    input      [31:0]  dc_wd_l2, 
     input              data_wd_dc_en,    
     input      [31:0]  dc_wd,       
-    input      [1:0]   offset,          
+    input      [1:0]   dc_offset,dc_offset_l2,dc_offset_mem,          
     output     [127:0] data0_rd,         // read data of cache_data0
     output     [127:0] data1_rd          // read data of cache_data1
     );
@@ -48,7 +52,7 @@ module data_ram(
     reg         [7:0]  index;
     reg                block0_we;       // write signal of block0
     reg                block1_we;       // write signal of block1
-
+    reg         [1:0]  offset;
     always @(*) begin
         block0_we = `DISABLE;
         block1_we = `DISABLE;
@@ -62,11 +66,12 @@ module data_ram(
             index     = dc_index_mem;
             block0_we = dc_block0_we_mem;
             block1_we = dc_block1_we_mem;
-        end else if (data_wd_dc_en == `ENABLE ) begin
+        end else if(data_wd_dc_en == `ENABLE ) begin
             index     = dc_index;
             block0_we = dc_block0_we;
             block1_we = dc_block1_we;
-            case(offset)
+            offset    = dc_offset;
+            case(dc_offset)
                 `WORD0:begin
                     data_wd[31:0]   = dc_wd;
                 end
@@ -78,6 +83,44 @@ module data_ram(
                 end
                 `WORD3:begin
                     data_wd[127:96] = dc_wd;
+                end
+            endcase
+        end else if(data_wd_dc_en_l2 == `ENABLE )begin
+            index     = dc_index_l2;
+            block0_we = dc_block0_we_l2;
+            block1_we = dc_block1_we_l2;
+            offset    = dc_offset_l2;
+            case(dc_offset_l2)
+                `WORD0:begin
+                    data_wd[31:0]   = dc_wd_l2;
+                end
+                `WORD1:begin
+                    data_wd[63:32]  = dc_wd_l2;
+                end
+                `WORD2:begin
+                    data_wd[95:64]  = dc_wd_l2;
+                end
+                `WORD3:begin
+                    data_wd[127:96] = dc_wd_l2;
+                end
+            endcase
+        end else if(data_wd_dc_en_mem == `ENABLE )begin
+            index     = dc_index_mem;
+            block0_we = dc_block0_we_mem;
+            block1_we = dc_block1_we_mem;
+            offset    = dc_offset_mem;
+            case(dc_offset_mem)
+                `WORD0:begin
+                    data_wd[31:0]   = dc_wd_mem;
+                end
+                `WORD1:begin
+                    data_wd[63:32]  = dc_wd_mem;
+                end
+                `WORD2:begin
+                    data_wd[95:64]  = dc_wd_mem;
+                end
+                `WORD3:begin
+                    data_wd[127:96] = dc_wd_mem;
                 end
             endcase
         end else begin

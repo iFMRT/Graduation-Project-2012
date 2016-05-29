@@ -12,7 +12,12 @@ module mem_stage (
     input                        stall,          // Stall
     input                        flush,          // Flush
     /************ Forward *************/
-    output     [`WORD_DATA_BUS]  fwd_data,                   
+    output     [`WORD_DATA_BUS]  fwd_data,  
+    /******** Memory part *********/
+    input                        memory_en,
+    input                        l2_en,
+    input      [27:0]            dc_addr_mem,
+    input      [27:0]            dc_addr_l2,                 
     /*********** Data_cache ***********/
     /* CPU part */
     input                        access_mem,
@@ -20,6 +25,7 @@ module mem_stage (
     output                       access_l2_clean,
     output                       access_l2_dirty,
     output                       dc_choose_way,
+    // output                       memwrite_m,
     /****** Thread choose part *****/
     input      [1:0]             l2_thread,
     input      [1:0]             mem_thread,
@@ -46,11 +52,15 @@ module mem_stage (
     output                       tagcomp_hit,
     output     [1:0]             offset, 
     output     [20:0]            tag_wd,        // write data of L1_tag
+    output     [27:0]            dc_addr,
     output                       data_wd_dc_en, // choose signal of data_wd           
     input                        mem_wr_dc_en,
     output     [7:0]             index,         // address of L1_cache
     output     [`WORD_DATA_BUS]  dc_wd,         // Write data
+    output                       dc_rw, 
     /* L2_cache part */
+    input                        l2_idle,
+    input                        l2_busy,
     input                        dc_en,         // busy signal of L2_cache
     input                        l2_rdy,        // ready signal of L2_cache  
     output                       drq,           // icache request
@@ -105,18 +115,25 @@ module mem_stage (
         .clk            (clk),           // clock
         .rst            (reset),         // reset
         /* CPU part */
+        .memory_en      (memory_en),
+        .l2_en          (l2_en),
+        .dc_addr_mem    (dc_addr_mem),
+        .dc_addr_l2     (dc_addr_l2),
         .access_l2_clean(access_l2_clean),
         .access_l2_dirty(access_l2_dirty),
-        .next_addr      (alu_out[31:2]), // address of fetching instruction
-        .addr           (ex_out[31:2]),
+        .next_addr      (alu_out), // address of fetching instruction
+        .addr           (ex_out),
         .memwrite_m     (memwrite_m),    // Read/Write 
         .wr_data        (wr_data),       // read / write signal of CPU
         .dc_wd          (dc_wd),
         .access_mem     (access_mem), 
         .out_rdy        (out_rdy),
+        .store_op       (ex_mem_op[3:2]),
         .read_data_m    (read_data_m),   // read data of CPU
         .miss_stall     (miss_stall),    // the signal of stall caused by cache miss
         .choose_way     (dc_choose_way),
+        .dc_addr        (dc_addr),
+        .dc_rw          (dc_rw),
         /*thread part*/
         .l2_thread      (l2_thread),
         .mem_thread     (mem_thread),
@@ -145,6 +162,8 @@ module mem_stage (
         .tag_wd         (tag_wd),        // write data of L1_tag
         .data_wd_dc_en  (data_wd_dc_en),
         /* l2_cache part */
+        .l2_idle        (l2_idle), 
+        .l2_busy        (l2_busy), 
         .dc_en          (dc_en),         // busy signal of l2_cache
         .l2_rdy         (l2_rdy),        // ready signal of l2_cache
         .mem_wr_dc_en   (mem_wr_dc_en), 

@@ -155,61 +155,62 @@ module icache_ctrl(
                 end else begin // cache miss
                     miss_stall = `ENABLE; 
                     irq        = `ENABLE; 
-                    nextstate  = `IC_ACCESS_L2;
+                    if (ic_en == `ENABLE) begin
+                        nextstate  = `IC_ACCESS_L2;
+                    end else begin
+                        nextstate  = `WAIT_L2_BUSY;
+                    end
                 end
             end
             `IC_ACCESS_L2:begin // access L2, wait L2 reading right 
                 // read l2_block ,write to l1 and cpu
-                if(ic_en == `ENABLE) begin
-                    ic_busy = `DISABLE;
-                    /* write l1 part */
-                    nextstate  = `IC_ACCESS_L2;
-                    if(l2_rdy == `ENABLE || mem_wr_ic_en == `ENABLE)begin
-                        miss_stall = `ENABLE;
-                        ic_busy    = `ENABLE;
-                        if(l2_rdy == `ENABLE && (l2_thread == ic_thread)) begin
-                            miss_stall = `DISABLE;
-                            data_rdy    = `ENABLE;
-                            case(if_addr[1:0])
-                                `WORD0:begin
-                                    cpu_data = data_wd_l2[31:0];
-                                end
-                                `WORD1:begin
-                                    cpu_data = data_wd_l2[63:32];
-                                end
-                                `WORD2:begin 
-                                    cpu_data = data_wd_l2[95:64];
-                                end
-                                `WORD3:begin
-                                    cpu_data = data_wd_l2[127:96];
-                                end
-                            endcase // case(if_addr[1:0])   
-                            nextstate  = `WRITE_IC;
-                        end
-                        if (mem_wr_ic_en == `ENABLE && (mem_thread == ic_thread)) begin
-                            nextstate  = `MEM_WRITE_IC;
-                            /* write cpu part */ 
-                            miss_stall = `DISABLE;
-                            data_rdy    = `ENABLE;
-                            case(if_addr[1:0])
-                                `WORD0:begin
-                                    cpu_data = data_wd_l2_mem[31:0];
-                                end
-                                `WORD1:begin
-                                    cpu_data = data_wd_l2_mem[63:32];
-                                end
-                                `WORD2:begin 
-                                    cpu_data = data_wd_l2_mem[95:64];
-                                end
-                                `WORD3:begin
-                                    cpu_data = data_wd_l2_mem[127:96];
-                                end
-                            endcase // case(if_addr[1:0])   
-                        end                                 
+                ic_busy = `DISABLE;
+                irq     = `DISABLE; 
+                /* write l1 part */
+                nextstate  = `IC_ACCESS_L2;
+                if(l2_rdy == `ENABLE || mem_wr_ic_en == `ENABLE)begin
+                    miss_stall = `ENABLE;
+                    ic_busy    = `ENABLE;
+                    if(l2_rdy == `ENABLE && (l2_thread == ic_thread)) begin
+                        miss_stall = `DISABLE;
+                        data_rdy    = `ENABLE;
+                        case(if_addr[1:0])
+                            `WORD0:begin
+                                cpu_data = data_wd_l2[31:0];
+                            end
+                            `WORD1:begin
+                                cpu_data = data_wd_l2[63:32];
+                            end
+                            `WORD2:begin 
+                                cpu_data = data_wd_l2[95:64];
+                            end
+                            `WORD3:begin
+                                cpu_data = data_wd_l2[127:96];
+                            end
+                        endcase // case(if_addr[1:0])   
+                        nextstate  = `WRITE_IC;
                     end
-                end else begin
-                    nextstate   = `WAIT_L2_BUSY;
-                end    
+                    if (mem_wr_ic_en == `ENABLE && (mem_thread == ic_thread)) begin
+                        nextstate  = `MEM_WRITE_IC;
+                        /* write cpu part */ 
+                        miss_stall = `DISABLE;
+                        data_rdy    = `ENABLE;
+                        case(if_addr[1:0])
+                            `WORD0:begin
+                                cpu_data = data_wd_l2_mem[31:0];
+                            end
+                            `WORD1:begin
+                                cpu_data = data_wd_l2_mem[63:32];
+                            end
+                            `WORD2:begin 
+                                cpu_data = data_wd_l2_mem[95:64];
+                            end
+                            `WORD3:begin
+                                cpu_data = data_wd_l2_mem[127:96];
+                            end
+                        endcase // case(if_addr[1:0])   
+                    end                                 
+                end   
             end
             `WAIT_L2_BUSY:begin
                 if(ic_en == `ENABLE) begin

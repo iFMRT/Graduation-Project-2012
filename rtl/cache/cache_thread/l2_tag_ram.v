@@ -14,6 +14,7 @@ module l2_tag_ram(
     input               clk,               // clock
     input               rst,               // clock
     input               wd_from_l1_en,
+    input               wd_from_l1_en_mem,
     input               wd_from_mem_en,
     input               l2_block0_we_mem,    // write signal of block0
     input               l2_block1_we_mem,    // write signal of block1
@@ -104,7 +105,7 @@ module l2_tag_ram(
             l2_thread_wd = l2_thread;
             l2_tag_wd    = l2_tag_wd_l2;
             l2_dirty_wd  = 1'b1;
-        end else if (wd_from_mem_en == `ENABLE) begin
+        end else if (wd_from_mem_en == `ENABLE || wd_from_l1_en_mem == `ENABLE) begin
             l2_dirty_wd  =  1'b0;
             l2_block0_we = l2_block0_we_mem;
             l2_block1_we = l2_block1_we_mem;

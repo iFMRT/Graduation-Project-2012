@@ -15,8 +15,11 @@ module l2_data_ram(
     input      [8:0]   l2_index_mem,
     input      [8:0]   l2_index_l2,        // address of cache     
     input      [511:0] mem_rd,          
-    input      [1:0]   offset,          
-    input      [127:0] rd_to_l2,        
+    input      [1:0]   offset_l2,
+    input      [1:0]   offset_mem,
+    input      [127:0] rd_to_l2,    
+    input              wd_from_l1_en_mem,
+    input      [127:0] rd_to_l2_mem,    
     input              wd_from_mem_en,
     input              wd_from_l1_en,
     input              tagcomp_hit,
@@ -59,6 +62,7 @@ module l2_data_ram(
     reg           wr3_en1;
     reg           wr3_en2;
     reg           wr3_en3;
+    reg   [1:0]   offset;
     always @(*) begin
         wr0_en0       = `DISABLE;
         wr0_en1       = `DISABLE;
@@ -178,12 +182,14 @@ module l2_data_ram(
             l2_block2_we = l2_block2_we_mem;
             l2_block3_we = l2_block3_we_mem;
             l2_index     = l2_index_mem;
+            offset       = offset_mem;
         end else if (wd_from_l1_en == `ENABLE) begin
             l2_block0_we = l2_block0_we_l2;
             l2_block1_we = l2_block1_we_l2;
             l2_block2_we = l2_block2_we_l2;
             l2_block3_we = l2_block3_we_l2;
             l2_index     = l2_index_l2;
+            offset       = offset_l2;
             case(offset)
                 `WORD0:begin
                     l2_data_wd[127:0]  = rd_to_l2;
@@ -196,6 +202,27 @@ module l2_data_ram(
                 end
                 `WORD3:begin
                     l2_data_wd[511:384] = rd_to_l2;
+                end
+            endcase // case(offset)  
+        end else if (wd_from_l1_en_mem == `ENABLE) begin
+            l2_block0_we = l2_block0_we_mem;
+            l2_block1_we = l2_block1_we_mem;
+            l2_block2_we = l2_block2_we_mem;
+            l2_block3_we = l2_block3_we_mem;
+            l2_index     = l2_index_mem;
+            offset       = offset_mem;
+            case(offset)
+                `WORD0:begin
+                    l2_data_wd[127:0]  = rd_to_l2_mem;
+                end
+                `WORD1:begin
+                    l2_data_wd[255:128] = rd_to_l2_mem;
+                end
+                `WORD2:begin
+                    l2_data_wd[383:256] = rd_to_l2_mem;
+                end
+                `WORD3:begin
+                    l2_data_wd[511:384] = rd_to_l2_mem;
                 end
             endcase // case(offset)  
         end else begin

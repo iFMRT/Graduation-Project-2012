@@ -23,6 +23,7 @@
     `define ACCESS_L2            3'h1  // access L2_cache
     `define MEM_BUSY             3'h2
     `define L2_WRITE_L1          3'h3
-    `define COMPLETE_ACCESS_MEM  3'h4
-    `define L2_WRITE_HIT         3'h5  // write block to L2_cache from L1
+    // `define COMPLETE_ACCESS_MEM  3'h6
+    `define L2_WRITE_HIT         3'h4  // write block to L2_cache from L1
+    `define WRITE_DC_W           3'h5  // write block to L1_dcache,CPU wr signal is write
 `endif
