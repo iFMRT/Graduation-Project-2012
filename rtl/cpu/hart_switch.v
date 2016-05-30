@@ -13,6 +13,7 @@ module hart_switch (
     input  wire                  clk,
     input  wire                  rst,
 
+    // ID stage part
     input  wire                  hkill,
     input  wire [`HART_ID_B]     set_hart_id,
 
@@ -22,11 +23,13 @@ module hart_switch (
 
     output wire                  hart_ic_stall,    // Need to stall pipeline
     output wire                  hart_dc_stall,    // Need to stall pipeline
-    output reg  [`HART_STATE_B]  hart_issue_hstate,      // 3:0
+    output wire                  hart_ic_flush,    // Need to flush pipeline
+    output wire                  hart_dc_flush,    // Need to flush pipeline
 
     // IF stage part
     input  wire                  i_cache_miss,
     input  wire                  i_cache_fin,        // i cache access finish
+    output reg  [`HART_STATE_B]  hart_issue_hstate,      // 3:0
 
     // MEM stage part
     input  wire                  d_cache_miss,
@@ -52,6 +55,10 @@ module hart_switch (
     wire hart_dc_stall;    // d cache miss and need to stall
     assign hart_ic_stall = no_more_active & i_cache_miss & ~d_cache_fin;
     assign hart_dc_stall = no_more_active & d_cache_miss & ~i_cache_fin;
+
+    //_ pipeline flush _______________________________________________________//
+    assign hart_ic_flush = ~no_more_active & i_cache_miss;
+    assign hart_dc_flush = ~no_more_active & d_cache_miss;
 
     //_ minor_hstate _________________________________________________________//
     wire [`HART_STATE_B] minor_hstate;

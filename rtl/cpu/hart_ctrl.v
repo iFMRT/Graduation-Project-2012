@@ -24,8 +24,10 @@ module hart_ctrl (
     input  wire                  is_load,            // load ins
     input  wire [`HART_ID_B]     if_hart_id,         // if_hart_id => current id stage hart id
 
-    output wire                  hart_ic_stall,    // Need to stall pipeline
-    output wire                  hart_dc_stall,    // Need to stall pipeline
+    output wire                  hart_ic_stall,      // Need to stall pipeline (caused by i-cache miss)
+    output wire                  hart_dc_stall,      // Need to stall pipeline (caused by d-cache miss)
+    output wire                  hart_ic_flush,      // Need to flush pipeline (caused by i-cache miss)
+    output wire                  hart_dc_flush,      // Need to flush pipeline (caused by d-cache miss)
     output wire [`HART_STATE_B]  hart_acti_hstate,   // 3:0
     output wire [`HART_STATE_B]  hart_idle_hstate,   // 3:0
 
@@ -82,10 +84,11 @@ module hart_ctrl (
 
 
     hart_switch hart_switch_i (
+        //_ cpu_part _____________________________________________________________//
         .clk                (clk),
         .rst                (rst),
 
-        //_ cpu_part _________________________________________________________//
+        // ID stage part
         .hkill              (hkill),
         .set_hart_id        (set_hart_id),
 
@@ -95,15 +98,18 @@ module hart_ctrl (
 
         .hart_ic_stall      (hart_ic_stall),
         .hart_dc_stall      (hart_dc_stall),
-        .hart_issue_hstate  (hart_issue_hstate),
+        .hart_ic_flush      (hart_ic_flush),
+        .hart_dc_flush      (hart_dc_flush),
 
         // IF stage part
         .i_cache_miss       (i_cache_miss),
         .i_cache_fin        (i_cache_fin),
+        .hart_issue_hstate  (hart_issue_hstate),
 
         // MEM stage part
         .d_cache_miss       (d_cache_miss),
         .d_cache_fin        (d_cache_fin),
+
         //_ hstu_part ________________________________________________________//
         .prim_hstate        (prim_hstate),
         .acti_hstate        (acti_hstate)

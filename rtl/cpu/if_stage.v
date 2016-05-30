@@ -36,6 +36,9 @@ module if_stage(
     input  wire                  stall,          // Stall
     input  wire                  flush,          // Flush
     input  wire [`WORD_DATA_BUS] new_pc,         // New value of program counter
+    input  wire                  cache_miss,     // Cache miss occur
+    input  wire [`HART_ID_B]     cm_hart_id,     // Cache miss hart id
+    input  wire [`WORD_DATA_BUS] cm_addr,        // Cache miss address
     input  wire [`HART_ID_B]     br_hart_id,     // Branch Hart ID (equal to id_hart_id)
     input  wire                  br_taken,       // Branch taken
     input  wire [`WORD_DATA_BUS] br_addr,        // Branch target
@@ -86,6 +89,10 @@ module if_stage(
         .stall        (stall),                // Stall
         .flush        (flush),                // Flush
         .new_pc       (new_pc),               // New value of program counter
+
+        .cache_miss   (cache_miss),           // Cache miss occur
+        .cm_hart_id   (cm_hart_id),           // Cache miss hart ID
+        .cm_addr      (cm_addr),              // Cache miss address
 
         .br_hart_id   (br_hart_id),           // Branch Hart ID
         .br_taken     (br_taken),             // Branch taken

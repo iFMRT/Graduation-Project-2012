@@ -100,6 +100,9 @@ module cpu_top(
     wire                   mem_flush;      // MEM Stage
     // Control Signal
     wire [`WORD_DATA_BUS]  new_pc;         // New PC
+    wire                   cache_miss;     // Cache miss occur
+    wire [`HART_ID_B]      cm_hart_id;     // Cache miss hart id
+    wire [`WORD_DATA_BUS]  cm_addr;        // Cache miss address
     wire [`WORD_DATA_BUS]  br_addr;        // Branch  address
     wire                   br_taken;       // Branch taken
     wire                   ld_hazard;      // Hazard
@@ -142,8 +145,10 @@ module cpu_top(
     wire [`HART_SST_B]     get_hart_val;      // state value of set_hart_id 2: pend, 1: active, 0:idle
     wire                   get_hart_idle;     // is hart idle 1: idle, 0: non-idle
 
-    wire                   hart_ic_stall,     // Need to stall pipeline
-    wire                   hart_dc_stall,     // Need to stall pipeline
+    wire                   hart_ic_stall;     // Need to stall pipeline
+    wire                   hart_dc_stall;     // Need to stall pipeline
+    wire                   hart_ic_flush;     // Need to flush pipeline
+    wire                   hart_dc_flush;     // Need to flush pipeline
     wire [`HART_STATE_B]   hart_acti_hstate;  // 3:0
     wire [`HART_STATE_B]   hart_idle_hstate;  // 3:0
     // from ID stage
@@ -179,6 +184,9 @@ module cpu_top(
         .stall          (if_stall),         // Stall
         .flush          (if_flush),         // Flush
         .new_pc         (new_pc),           // New PC
+        .cache_miss     (cache_miss),       // Cache miss occur
+        .cm_hart_id     (cm_hart_id),       // Cache miss hart ID
+        .cm_addr        (cm_addr),          // Cache miss address
         .br_hart_id     (id_hart_id),       // Branch Hart ID
         .br_taken       (br_taken),         // Branch taken
         .br_addr        (br_addr),          // Branch address
@@ -368,6 +376,8 @@ module cpu_top(
    
         .hart_ic_stall         (hart_ic_stall),
         .hart_dc_stall         (hart_dc_stall),
+        .hart_ic_flush         (hart_ic_flush),
+        .hart_dc_flush         (hart_dc_flush),
         .hart_acti_hstate      (hart_acti_hstate),
         .hart_idle_hstate      (hart_idle_hstate),
 
@@ -425,8 +435,23 @@ module cpu_top(
         .rs2_fwd_ctrl   (rs2_fwd_ctrl),
         .ex_rs1_fwd_en  (ex_rs1_fwd_en),
         .ex_rs2_fwd_en  (ex_rs2_fwd_en),
+        /********** Hart Control Unit **********/
+        // hart ID
+        .issue_id       (hart_issue_hid), // IF  stage used
+        .if_hart_id     (if_hart_id),     // ID  stage used
+        .id_hart_id     (id_hart_id),     // EX  stage used
+        .ex_hart_id     (ex_hart_id),     // MEM stage used
+        // stall
         .hart_ic_stall  (hart_ic_stall),
-        .hart_dc_stall  (hart_dc_stall)
+        .hart_dc_stall  (hart_dc_stall),
+        .hart_ic_flush  (hart_ic_flush),
+        .hart_dc_flush  (hart_dc_flush)
+        // to IF stage
+        .if_pc          (if_pc),
+        .ex_pc          (ex_pc),
+        .cache_miss     (cache_miss),     // Cache miss occur
+        .cm_hart_id     (cm_hart_id),     // Cache miss hart id
+        .cm_addr        (cm_addr)         // Cache miss address
     );
 
     /********** Control & State Registers **********/

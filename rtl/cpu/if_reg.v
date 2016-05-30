@@ -30,6 +30,9 @@ module if_reg (
     input  wire                       stall,     // Stall
     input  wire                       flush,     // Flush
     input  wire [`WORD_DATA_BUS]      new_pc,    // New value of program counter
+    input  wire                       cache_miss,// Cache miss occur
+    input  wire [`HART_ID_B]          cm_hart_id,// Cache miss hart id
+    input  wire [`WORD_DATA_BUS]      cm_addr,        // Cache miss address
     input  wire [`HART_ID_B]          br_hart_id,// Branch Hart ID (equal to id_hart_id)
     input  wire                       br_taken,  // Branch taken
     input  wire [`WORD_DATA_BUS]      br_addr,   // Branch target
@@ -60,16 +63,26 @@ module if_reg (
             if_hart_id      <= `HART_ID_W'h0;
         end else begin
             /******** Update pipeline ********/
-            if (hstart & hidle & hart_id != hs_id) begin
-                if_pcs[hs_id] <= hs_pc;    // can't start other non-idle hart
-            end
             if (stall == `DISABLE) begin
+                if (hstart & hidle & hart_id != hs_id) begin
+                    if_pcs[hs_id] <= hs_pc;    // can't start other non-idle hart
+                end
                 if (flush == `ENABLE) begin
                     /* Flush */
-                    if_pcs[hart_id]    <= new_pc;
+                    if_pcs[hart_id]    <= cm_addr;
                     if_insn            <= `OP_NOP;
                     if_en              <= `DISABLE;
                     if_hart_id         <= hart_id;
+                end else if (cache_miss) begin
+                    if_pcs[cm_hart_id] <= new_pc;
+                    if_hart_id         <= hart_id;
+                    if (cm_hart_id == hart_id) begin
+                        if_insn        <= `OP_NOP;
+                        if_en          <= `DISABLE;
+                    end else begin
+                        if_insn        <= insn;
+                        if_en          <= `ENABLE;
+                    end
                 end else if (br_taken == `ENABLE) begin
                     /* Branch taken */
                     if (hart_id == br_hart_id) begin

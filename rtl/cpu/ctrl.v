@@ -84,38 +84,66 @@ module ctrl (
 
     /********** Hart Control Unit **********/
     // hart ID
-    input  wire [`HART_STATE_B] issue_id,     // IF  stage used
-    input  wire [`HART_STATE_B] if_hart_id,   // ID  stage used
-    input  wire [`HART_STATE_B] id_hart_id,   // EX  stage used
-    input  wire [`HART_STATE_B] ex_hart_id,   // MEM stage used
-    input  wire [`HART_STATE_B] mem_hart_id,  // WB  stage used
+    input  wire [`HART_STATE_B]  issue_id,     // IF  stage used
+    input  wire [`HART_STATE_B]  if_hart_id,   // ID  stage used
+    input  wire [`HART_STATE_B]  id_hart_id,   // EX  stage used
+    input  wire [`HART_STATE_B]  ex_hart_id,   // MEM stage used
     // stall
-    input  wire                   hart_ic_stall,     // Need to stall pipeline
-    input  wire                   hart_dc_stall      // Need to stall pipeline
+    input  wire                  hart_ic_stall,     // Need to stall pipeline
+    input  wire                  hart_dc_stall,     // Need to stall pipeline
+    input  wire                  hart_ic_flush,     // Need to flush pipeline
+    input  wire                  hart_dc_flush      // Need to flush pipeline
+    // to IF stage
+    input  wire [`WORD_DATA_BUS] if_pc,
+    input  wire [`WORD_DATA_BUS] ex_pc,
+    output reg                   cache_miss,     // Cache miss occur
+    output reg  [`HART_ID_B]     cm_hart_id,     // Cache miss hart id
+    output reg  [`WORD_DATA_BUS] cm_addr         // Cache miss address
 );
 
     reg     ld_hazard;       // LOAD hazard
 
     /********** pipeline control **********/
     // stall
-    assign if_stall  = ld_hazard;
-    assign id_stall  = `DISABLE;
-    assign ex_stall  = `DISABLE;
+    assign if_stall  = ld_hazard | hart_dc_stall;
+    assign id_stall  = hart_dc_stall;
+    assign ex_stall  = hart_dc_stall;
     assign mem_stall = `DISABLE;
 
     // flush
     reg    flush, eret_flush;
     assign if_flush  = flush | eret_flush;
-    assign id_flush  = flush | ld_hazard | br_flush_id;
-    assign ex_flush  = flush;
-    assign mem_flush = flush;
+    assign id_flush  = flush | ld_hazard | br_flush_id | dc_flush_id;
+    assign ex_flush  = flush | dc_flush_ex;
+    assign mem_flush = flush | dc_flush_mem | hart_dc_stall;
+
+    // d_cache_flush
+    wire dc_flush_id;     // d_cache_miss flush id_reg
+    wire dc_flush_ex;     // d_cache_miss flush ex_reg
+    wire dc_flush_mem;    // d_cache_miss flush mem_reg
+
+    assign dc_flush_id  = hart_dc_flush & (ex_hart_id == if_hart_id);
+    assign dc_flush_ex  = hart_dc_flush & (ex_hart_id == id_hart_id);
+    assign dc_flush_mem = hart_dc_flush;
 
     always @(*) begin
-        if (br_taken && id_hart_id == if_hart_id)
-            br_flush_id <= `ENABLE;
-        else
-            br_flush_id <= `DISABLE;
+        cache_miss = `DISABLE;
+        cm_hart_id = `HART_ID_W'h0;
+        cm_addr    = `WORD_DATA_W'h0;
+        if (hart_dc_flush) begin
+            cache_miss = `ENABLE;
+            cm_hart_id = ex_hart_id;
+            cm_addr    = ex_pc;
+        end else if (hart_ic_flush | hart_ic_stall) begin
+            cache_miss = `ENABLE;
+            cm_hart_id = issue_id;
+            cm_addr    = if_pc;
+        end
     end
+
+    // branch
+    wire br_flush_id;
+    assign br_flush_id = br_taken & (id_hart_id == if_hart_id);
 
     /********** Forward **********/
     always @(*) begin
