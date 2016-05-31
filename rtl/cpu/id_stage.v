@@ -83,13 +83,13 @@ module id_stage (
     // output to Hart Control
     output wire                   is_branch,
     output wire                   is_load,
-
-    output wire                   hstart,
-    output wire                   hkill,
-    output wire [`HART_ID_B]      set_hart_id,
+    output wire                   id_hkill,
+    output wire [`HART_ID_B]      id_set_hid,        // ID_reg set hart id
     // output to IF stage
-    output wire [`HART_ID_B]      hs_id,          // Hart start id
-    output wire [`WORD_DATA_BUS]  hs_pc           // Hart start pc
+    output wire                   id_hstart,
+    output wire                   id_hidle,
+    output wire [`HART_ID_B]      id_hs_id,          // Hart start id
+    output wire [`WORD_DATA_BUS]  id_hs_pc           // Hart start pc
 );
 
     wire [`ALU_OP_BUS]     alu_op;          // ALU Operation
@@ -111,8 +111,8 @@ module id_stage (
     wire [`EXP_CODE_BUS]   exp_code;
 
     /********** To Hart Control Unit **********/
-    assign is_branch = (op == `OP_LD) 1'b1 : 1'b0;
-    assign is_load   = (op == `OP_BR) 1'b1 : 1'b0;
+    assign is_branch = (op == `OP_LD) ? 1'b1 : 1'b0;
+    assign is_load   = (op == `OP_BR) ? 1'b1 : 1'b0;
 
     /********** Two Operand **********/
     reg  [`WORD_DATA_BUS] rs1_data;         // The first operand
@@ -195,13 +195,12 @@ module id_stage (
         .get_hart_val     (get_hart_val),
         .hart_acti_hstate (hart_acti_hstate),
         .hart_idle_hstate (hart_idle_hstate),
-        // output to Hart Control
-        .hstart         (hstart),
-        .hkill          (hkill),
-        .set_hart_id    (set_hart_id),
         // input from IF stage
         .if_hart_id     (if_hart_id),
-        // output to IF stage
+        // output to id_reg
+        .hkill          (hkill),
+        .hstart         (hstart),
+        .set_hid        (set_hid),
         .hs_id          (hs_id),          // Hart start id
         .hs_pc          (hs_pc)           // Hart start pc
     );
@@ -259,7 +258,21 @@ module id_stage (
         .id_gpr_we_     (id_gpr_we_),     // General purpose Register write enable
         .id_gpr_wr_data (id_gpr_wr_data),
 
-        .id_hart_id     (id_hart_id)      // ID stage hart id
+        .id_hart_id     (id_hart_id),     // ID stage hart id
+        //from Hart Control Unit
+        .hkill          (hkill),
+        .hstart         (hstart),
+        .hidle          (get_hart_idle),
+        .set_hid        (set_hid),
+        .hs_id          (hs_id),
+        .hs_pc          (hs_pc),
+        //to IF stage
+        .id_hkill       (id_hkill),
+        .id_hstart      (id_hstart),
+        .id_hidle       (id_hidle),
+        .id_set_hid     (id_set_hid),
+        .id_hs_id       (id_hs_id),
+        .id_hs_pc       (id_hs_pc)
     );
 
 endmodule

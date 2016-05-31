@@ -69,7 +69,22 @@ module id_reg (
     output reg                   id_gpr_we_,
     output reg [`WORD_DATA_BUS]  id_gpr_wr_data,
 
-    output reg [`HART_ID_B]      id_hart_id    // ID stage hart id
+    output reg [`HART_ID_B]      id_hart_id,   // ID stage hart id
+
+    //from Hart Control Unit
+    input  wire                  hkill,
+    input  wire                  hstart,
+    input  wire [`HART_ID_B]     set_hid,
+    input  wire                  hidle,
+    input  wire [`HART_ID_B]     hs_id,
+    input  wire [`WORD_DATA_BUS] hs_pc,
+    //to IF stage
+    output reg                   id_hkill,
+    output reg                   id_hstart,
+    output reg                   id_hidle,
+    output reg  [`HART_ID_B]     id_set_hid,        // ID_reg set hart id
+    output reg  [`HART_ID_B]     id_hs_id,
+    output reg  [`WORD_DATA_BUS] id_hs_pc
 );
 
     always @(posedge clk) begin
@@ -96,6 +111,12 @@ module id_reg (
             id_gpr_we_     <= #1 `DISABLE_;
             id_gpr_wr_data <= #1 `WORD_DATA_W'h0;
             id_hart_id     <= #1 `HART_ID_W'h0;
+            id_hkill       <= #1 `DISABLE;
+            id_hstart      <= #1 `DISABLE;
+            id_hidle       <= #1 `DISABLE; 
+            id_set_hid     <= #1 `HART_ID_W'h0;
+            id_hs_id       <= #1 `HART_ID_W'h0; 
+            id_hs_pc       <= #1 `WORD_DATA_W'h0; 
         end else begin
             /* Update Register's Data */
             if (stall == `DISABLE) begin
@@ -120,6 +141,12 @@ module id_reg (
                     id_gpr_we_     <= #1 `DISABLE_;
                     id_gpr_wr_data <= #1 `WORD_DATA_W'h0;
                     id_hart_id     <= #1 `HART_ID_W'h0;
+                    id_hkill       <= #1 `DISABLE;
+                    id_hstart      <= #1 `DISABLE;
+                    id_hidle       <= #1 `DISABLE; 
+                    id_set_hid     <= #1 `HART_ID_W'h0;
+                    id_hs_id       <= #1 `HART_ID_W'h0; 
+                    id_hs_pc       <= #1 `WORD_DATA_W'h0; 
                 end else begin              // Assign to register
                     id_is_jalr     <= #1 is_jalr;
                     id_exp_code    <= #1 exp_code;
@@ -141,6 +168,12 @@ module id_reg (
                     id_gpr_we_     <= #1 gpr_we_;
                     id_gpr_wr_data <= #1 gpr_wr_data;
                     id_hart_id     <= #1 if_hart_id;
+                    id_hkill       <= #1 hkill;
+                    id_hstart      <= #1 hstart;
+                    id_hidle       <= #1 hidle; 
+                    id_set_hid     <= #1 set_hid;
+                    id_hs_id       <= #1 hs_id; 
+                    id_hs_pc       <= #1 hs_pc; 
                 end
             end
         end

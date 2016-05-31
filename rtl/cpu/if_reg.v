@@ -38,10 +38,10 @@ module if_reg (
     input  wire [`WORD_DATA_BUS]      br_addr,   // Branch target
 
     input  wire [`HART_ID_B]          hart_id,   // Hart ID to issue ins
-    input  wire                       hstart,    // Hart start
-    input  wire                       hidle,     // Hart idle state 1: idle, 0: active/pend
-    input  wire [`HART_ID_B]          hs_id,     // Hart start id
-    input  wire [`WORD_DATA_BUS]      hs_pc,     // Hart start pc
+    input  wire                       id_hstart, // Hart start
+    input  wire                       id_hidle,  // Hart idle state 1: idle, 0: active/pend
+    input  wire [`HART_ID_B]          id_hs_id,  // Hart start id
+    input  wire [`WORD_DATA_BUS]      id_hs_pc,  // Hart start pc
 
     output reg  [`WORD_DATA_BUS]      pc,        // Current Program counter
     output wire [`WORD_DATA_BUS]      if_pc,     // Next Program counter
@@ -64,8 +64,8 @@ module if_reg (
         end else begin
             /******** Update pipeline ********/
             if (stall == `DISABLE) begin
-                if (hstart & hidle & hart_id != hs_id) begin
-                    if_pcs[hs_id] <= hs_pc;    // can't start other non-idle hart
+                if (id_hstart & id_hidle & hart_id != id_hs_id) begin
+                    if_pcs[id_hs_id] <= id_hs_pc;    // can't start other non-idle hart
                 end
                 if (flush == `ENABLE) begin
                     /* Flush */

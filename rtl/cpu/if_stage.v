@@ -45,10 +45,10 @@ module if_stage(
 
     /* Hart Control ***************************/
     input  wire [`HART_ID_B]     hart_id,        // Hart ID to issue ins
-    input  wire                  hstart,         // Hart start
-    input  wire                  hidle,          // Hart idle state 1: idle, 0: active/pend
-    input  wire [`HART_ID_B]     hs_id,          // Hart start id
-    input  wire [`WORD_DATA_BUS] hs_pc,          // Hart start pc
+    input  wire                  id_hstart,      // Hart start
+    input  wire                  id_hidle,       // Hart idle state 1: idle, 0: active/pend
+    input  wire [`HART_ID_B]     id_hs_id,       // Hart start id
+    input  wire [`WORD_DATA_BUS] id_hs_pc,       // Hart start pc
 
     /* IF/ID Pipeline Register ***************/
     output wire [`WORD_DATA_BUS] pc,             // Current Program counter
@@ -99,10 +99,10 @@ module if_stage(
         .br_addr      (br_addr),              // Branch target
 
         .hart_id      (hart_id),              // Hart ID to issue ins
-        .hstart       (hstart),               // Hart start
-        .hidle        (hidle),                // Hart idle
-        .hs_id        (hs_id),                // Hart start id
-        .hs_pc        (hs_pc),                // Hart start pc
+        .id_hstart    (id_hstart),            // Hart start
+        .id_hidle     (id_hidle),             // Hart idle
+        .id_hs_id     (id_hs_id),             // Hart start id
+        .id_hs_pc     (id_hs_pc),             // Hart start pc
 
         /******** Output ********/
         .pc           (pc),                   // Current Program counter

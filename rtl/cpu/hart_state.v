@@ -14,34 +14,43 @@ module hart_state (
     input  wire                  rst,
 
     // ID stage part
-    input  wire                  hstart,
-    input  wire                  hkill,
-    input  wire [`HART_STATE_B]  set_hart_id,
-    output wire [`HART_SST_B]    get_hart_val,     // state value of set_hart_id 2: pend, 1: active, 0:idle
+    input  wire                  id_hstart,
+    input  wire                  id_hkill,
+    input  wire [`HART_STATE_B]  id_set_hid,
+    output wire [`HART_SST_B]    get_hart_val,     // state value of id_set_hid 2: pend, 1: active, 0:idle
     output wire                  get_hart_idle,    // is hart idle 1: idle, 0: non-idle
     output reg  [`HART_STATE_B]  idle_hstate,      // 3:0
 
     // IF stage part
     input  wire                  i_cache_miss,
-    input  wire [`HART_STATE_B]  if_hstate,        // IF stage hart state 3:0
+    input  wire [`HART_STATE_B]  issue_hid,        // IF stage hart state 3:0
     input  wire                  i_cache_fin,      // memory access finish
-    input  wire [`HART_STATE_B]  i_cache_fin_hstate,
+    input  wire [`HART_STATE_B]  i_cache_fin_hid,
 
     // MEM stage part
-    input  wire                  use_cache_miss,
-    input  wire [`HART_STATE_B]  use_hstate,       // Used hart state 3:0, 
+    input  wire                  d_cache_miss,
+    input  wire [`HART_STATE_B]  ex_hart_id,
     input  wire                  d_cache_fin,
-    input  wire [`HART_STATE_B]  d_cache_fin_hstate,
+    input  wire [`HART_STATE_B]  d_cache_fin_hid,
 
     //_ hstu_part ____________________________________________________________//
     output reg  [`HART_STATE_B]  prim_hstate,
     output reg  [`HART_STATE_B]  acti_hstate       // 3:0
 );
+    // hart id => hart state
+    wire [`HART_STATE_B] ic_fin_hstate;
+    wire [`HART_STATE_B] dc_fin_hstate;
+    decoder_n #(`HART_ID_W) ic_fin_hstate_i(i_cache_fin_hid, ic_fin_hstate);
+    decoder_n #(`HART_ID_W) dc_fin_hstate_i(d_cache_fin_hid, dc_fin_hstate);
+
+    // hart state => hart id
+    wire [`HART_ID_B] prim_hid;
+    hart_id_encoder  prim_id_encoder_i(prim_hstate, prim_hid);
 
     //_ get_hart_val(for hart control ins.) ______________________________________________________//
-    assign get_hart_idle = idle_hstate[set_hart_id];
-    assign get_hart_val[0] =  acti_hstate[set_hart_id] & ~get_hart_idle;
-    assign get_hart_val[1] = ~acti_hstate[set_hart_id] & ~get_hart_idle;
+    assign get_hart_idle   =  idle_hstate[id_set_hid];
+    assign get_hart_val[0] =  acti_hstate[id_set_hid] & ~get_hart_idle;
+    assign get_hart_val[1] = ~acti_hstate[id_set_hid] & ~get_hart_idle;
 
 
     //_ hart_prim_hstate ______________________________________________________//
@@ -55,30 +64,30 @@ module hart_state (
     always @(posedge clk) begin
         if (rst) prim_hstate <= `HART_STATE_W'b0001;
         else if (prim_hstate == `HART_STATE_W'b0000) begin
-            if      (i_cache_fin) prim_hstate <= i_cache_fin_hstate;
-            else if (d_cache_fin) prim_hstate <= d_cache_fin_hstate;
+            if      (i_cache_fin) prim_hstate <= ic_fin_hstate;
+            else if (d_cache_fin) prim_hstate <= dc_fin_hstate;
         end
-        else if (  i_cache_miss & if_hstate   == prim_hstate
-               | use_cache_miss & use_hstate  == prim_hstate
-               |          hkill & set_hart_id == prim_hstate)
+        else if ( i_cache_miss & issue_hid  == prim_hid
+               |  d_cache_miss & ex_hart_id == prim_hid
+               |      id_hkill & id_set_hid == prim_hid)
             prim_hstate <= next_prim_hstate;
     end
 
     //_ acti_hstate ______________________________________________________//
     reg [`HART_STATE_B] next_acti_hstate;
-    always @(i_cache_fin, d_cache_fin, i_cache_miss, use_cache_miss,
-             if_hstate, use_hstate, hstart, set_hart_id) begin
-        if (i_cache_fin)    next_acti_hstate =      acti_hstate | i_cache_fin_hstate;
-        else                next_acti_hstate =      acti_hstate;
-        if (d_cache_fin)    next_acti_hstate = next_acti_hstate | d_cache_fin_hstate;
-        else                next_acti_hstate = next_acti_hstate;
-        if (i_cache_miss)   next_acti_hstate = next_acti_hstate & ~if_hstate;
-        else                next_acti_hstate = next_acti_hstate;
-        if (use_cache_miss) next_acti_hstate = next_acti_hstate & ~use_hstate;
-        else                next_acti_hstate = next_acti_hstate;
-        if      (hstart & get_hart_idle) next_acti_hstate[set_hart_id] = 1'b1;
-        else if (hkill & ~get_hart_idle) next_acti_hstate[set_hart_id] = 1'b0;
-        else                next_acti_hstate = next_acti_hstate;
+    always @(i_cache_fin, d_cache_fin, i_cache_miss, d_cache_miss,
+             issue_hid, ex_hart_id, id_hstart, id_set_hid) begin
+        if (i_cache_fin)  next_acti_hstate =      acti_hstate | ic_fin_hstate;
+        else              next_acti_hstate =      acti_hstate;
+        if (d_cache_fin)  next_acti_hstate = next_acti_hstate | dc_fin_hstate;
+        else              next_acti_hstate = next_acti_hstate;
+        if (i_cache_miss) next_acti_hstate[issue_hid]  = 1'b0;
+        else              next_acti_hstate = next_acti_hstate;
+        if (d_cache_miss) next_acti_hstate[ex_hart_id] = 1'b0;
+        else              next_acti_hstate = next_acti_hstate;
+        if      (id_hstart & get_hart_idle) next_acti_hstate[id_set_hid] = 1'b1;
+        else if (id_hkill & ~get_hart_idle) next_acti_hstate[id_set_hid] = 1'b0;
+        else              next_acti_hstate = next_acti_hstate;
     end
 
     always @(posedge clk) begin
@@ -89,7 +98,7 @@ module hart_state (
     //_ idle_hstate ______________________________________________________//
     always @(posedge clk) begin
         if (rst) idle_hstate <= `HART_STATE_W'b1110;
-        else if (hstart) idle_hstate[set_hart_id] <= 1'b0;
-        else if (hkill)  idle_hstate[set_hart_id] <= 1'b1;
+        else if (id_hstart) idle_hstate[id_set_hid] <= 1'b0;
+        else if (id_hkill)  idle_hstate[id_set_hid] <= 1'b1;
     end
 endmodule

@@ -142,7 +142,7 @@ module cpu_top(
 
     /********** Hart control signal **********/
     // to ID stage
-    wire [`HART_SST_B]     get_hart_val;      // state value of set_hart_id 2: pend, 1: active, 0:idle
+    wire [`HART_SST_B]     get_hart_val;      // state value of id_set_hid 2: pend, 1: active, 0:idle
     wire                   get_hart_idle;     // is hart idle 1: idle, 0: non-idle
 
     wire                   hart_ic_stall;     // Need to stall pipeline
@@ -155,15 +155,21 @@ module cpu_top(
     wire                   is_branch;
     wire                   is_load;
 
-    wire                   hstart;
-    wire                   hkill;
-    wire [`HART_ID_B]      set_hart_id;
+    wire                   id_hstart;
+    wire                   id_hkill;
+    wire [`HART_ID_B]      id_set_hid;
     // to IF stage
     wire [`HART_ID_B]      hart_issue_hid;
     wire [`HART_STATE_B]   hart_issue_hstate;
     wire                   hidle;
     wire [`HART_ID_B]      hs_id;          // Hart start id
     wire [`WORD_DATA_BUS]  hs_pc;          // Hart start pc
+    wire                   i_cache_miss;
+    wire                   i_cache_fin;
+    wire [`HART_ID_B]      i_cache_fin_hid;
+    wire                   d_cache_miss;
+    wire                   d_cache_fin;
+    wire [`HART_ID_B]      d_cache_fin_hid;
 
     assign clk_ = ~clk;
 
@@ -193,10 +199,10 @@ module cpu_top(
 
         /* Hart select ***************************/
         .hart_id        (hart_issue_hid),   // Hart ID to issue ins
-        .hstart         (hstart),           // Hart start
-        .hidle          (hidle),            // Hart idle
-        .hs_id          (hs_id),            // Hart start id
-        .hs_pc          (hs_pc),            // Hart start pc
+        .id_hstart      (id_hstart),        // Hart start
+        .id_hidle       (id_hidle),         // Hart idle
+        .id_hs_id       (id_hs_id),         // Hart start id
+        .id_hs_pc       (id_hs_pc),         // Hart start pc
 
         /* IF/ID Pipeline Register ***************/
         .pc             (pc),               // Current Program count
@@ -262,7 +268,7 @@ module cpu_top(
         .id_rs2_addr    (id_rs2_addr),
         .rs1_addr       (rs1_addr),
         .rs2_addr       (rs2_addr),
-        .src_reg_used   (src_reg_used)
+        .src_reg_used   (src_reg_used),
         /********** Hart Control Interface **********/
         // input from Hart Control
         .get_hart_idle    (get_hart_idle),
@@ -272,13 +278,13 @@ module cpu_top(
         // output to Hart Control
         .is_branch      (is_branch),
         .is_load        (is_load),
-
-        .hstart         (hstart),
-        .hkill          (hkill),
-        .set_hart_id    (set_hart_id),
+        .id_hkill       (id_hkill),
+        .id_set_hid     (id_set_hid),
         // output to IF stage
-        .hs_id          (hs_id),            // Hart start id
-        .hs_pc          (hs_pc)             // Hart start pc
+        .id_hstart      (id_hstart),
+        .id_hidle       (id_hidle),
+        .id_hs_id       (id_hs_id),         // Hart start id
+        .id_hs_pc       (id_hs_pc)          // Hart start pc
     );
 
     /********** EX Stage **********/
@@ -364,36 +370,36 @@ module cpu_top(
         .rst                   (rst),                 // √
 
         /* ID stage part ***********************/
-        .hstart                (hstart),              // √
-        .hkill                 (hkill),               // √
-        .set_hart_id           (set_hart_id),         // √
+        .id_hstart             (id_hstart),           // √
+        .id_hkill              (id_hkill),            // √
+        .id_set_hid            (id_set_hid),          // √
         .get_hart_val          (get_hart_val),        // √
         .get_hart_idle         (hidle),               // √
 
         .is_branch             (is_branch),           // √
         .is_load               (is_load),             // √
         .if_hart_id            (if_hart_id),          // √
-   
-        .hart_ic_stall         (hart_ic_stall),
-        .hart_dc_stall         (hart_dc_stall),
-        .hart_ic_flush         (hart_ic_flush),
-        .hart_dc_flush         (hart_dc_flush),
-        .hart_acti_hstate      (hart_acti_hstate),
-        .hart_idle_hstate      (hart_idle_hstate),
+
+        .hart_ic_stall         (hart_ic_stall),       // √
+        .hart_dc_stall         (hart_dc_stall),       // √
+        .hart_ic_flush         (hart_ic_flush),       // √
+        .hart_dc_flush         (hart_dc_flush),       // √
+        .hart_acti_hstate      (hart_acti_hstate),    // √
+        .hart_idle_hstate      (hart_idle_hstate),    // √
 
         /* IF stage part **************************/
         .i_cache_miss          (i_cache_miss),
         .i_cache_fin           (i_cache_fin),
-        .i_cache_fin_hstate    (i_cache_fin_hstate),
+        .i_cache_fin_hid       (i_cache_fin_hid),
 
         .hart_issue_hid        (hart_issue_hid),      // √
         .hart_issue_hstate     (hart_issue_hstate),   // √
 
         /* MEM stage part ************************/
-        .use_cache_miss        (use_cache_miss),
-        .use_hstate            (use_hstate),
+        .d_cache_miss          (d_cache_miss),
+        .ex_hart_id            (ex_hart_id),          // √
         .d_cache_fin           (d_cache_fin),
-        .d_cache_fin_hstate    (d_cache_fin_hstate)
+        .d_cache_fin_hid       (d_cache_fin_hid)
     );
 
     /********** control unit **********/

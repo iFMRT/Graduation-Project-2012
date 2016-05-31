@@ -63,13 +63,12 @@ module decoder (
     input  wire [`HART_STT_B]     get_hart_val,      // is hart idle 1: idle, 0: non-idle
     input  wire [`HART_STATE_B]   hart_acti_hstate,   // 3:0
     input  wire [`HART_STATE_B]   hart_idle_hstate,   // 3:0
-    // output to Hart Control Unit
-    output reg                    hstart,
-    output reg                    hkill,
-    output reg  [`HART_ID_B]      set_hart_id,
     // input from IF stage
     input  wire [`HART_ID_B]      if_hart_id,
-    // output to IF stage
+    // output to ID_reg
+    output reg                    hkill,
+    output reg                    hstart,
+    output reg  [`HART_ID_B]      set_hid,
     output reg  [`HART_ID_B]      hs_id,          // Hart start id
     output reg  [`WORD_DATA_BUS]  hs_pc           // Hart start pc
 );
@@ -134,7 +133,7 @@ module decoder (
         hkill        = `DISABLE;
         hs_id        = `HART_ID_W'h0;
         hs_pc        = `WORD_DATA_W'h0;
-        set_hart_id  = `HART_ID_W'h0;
+        set_hid  = `HART_ID_W'h0;
 
         /* Decode instruction type */
         if (if_en == `ENABLE) begin
@@ -430,7 +429,7 @@ module decoder (
                             hs_pc    = rs2_data;
                             // to Hart Control Unit: update state
                             hstart   = `ENABLE;
-                            set_hart_id = rs1_data;
+                            set_hid = rs1_data;
                         end
                         `OP_HART_KILL : begin
                             src_reg_used = 2'b01;
@@ -440,12 +439,12 @@ module decoder (
                             alu_in_0 = {'b0, ~get_hart_idle};
                             // to Hart Control Unit: update state
                             hkill    = `ENABLE;
-                            set_hart_id = rs1_data;
+                            set_hid = rs1_data;
                         end
                         `OP_HART_KILLC: begin
                             // to Hart Control Unit: update state
                             hkill    = `ENABLE;
-                            set_hart_id = if_hart_id;
+                            set_hid = if_hart_id;
                         end
                         `OP_HART_ID   : begin
                             // to rd
@@ -460,7 +459,7 @@ module decoder (
                             alu_op   = `ALU_OP_ADD;
                             alu_in_0 = {'b0, get_hart_val};
                             // to Hart Control Unit: specify hart id
-                            set_hart_id = rs1_data;
+                            set_hid = rs1_data;
                         end
                         `OP_HART_READA: begin
                             // to rd

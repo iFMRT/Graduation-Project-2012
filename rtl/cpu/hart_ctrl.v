@@ -14,10 +14,10 @@ module hart_ctrl (
     input  wire                  rst,
 
     // ID stage part
-    input  wire                  hstart,
-    input  wire                  hkill,
-    input  wire [`HART_ID_B]     set_hart_id,
-    output wire [`HART_SST_B]    get_hart_val,      // state value of set_hart_id 2: pend, 1: active, 0:idle
+    input  wire                  id_hstart,
+    input  wire                  id_hkill,
+    input  wire [`HART_ID_B]     id_set_hid,
+    output wire [`HART_SST_B]    get_hart_val,      // state value of id_set_hid 2: pend, 1: active, 0:idle
     output wire                  get_hart_idle,     // is hart idle 1: idle, 0: non-idle
 
     input  wire                  is_branch,          // conditional branch ins
@@ -34,16 +34,16 @@ module hart_ctrl (
     // IF stage part
     input  wire                  i_cache_miss,
     input  wire                  i_cache_fin,        // i cache access finish
-    input  wire [`HART_STATE_B]  i_cache_fin_hstate,
+    input  wire [`HART_STATE_B]  i_cache_fin_hid,
 
     output wire [`HART_ID_B]     hart_issue_hid,     // 1:0
     output wire [`HART_STATE_B]  hart_issue_hstate,  // 3:0
 
     // MEM stage part
     input  wire                  d_cache_miss,
-    input  wire [`HART_STATE_B]  ex_hstate,         // Used hart state 3:0
+    input  wire [`HART_STATE_B]  ex_hart_id,         // Used hart state 3:0
     input  wire                  d_cache_fin,
-    input  wire [`HART_STATE_B]  d_cache_fin_hstate
+    input  wire [`HART_STATE_B]  d_cache_fin_hid
 );
     assign hart_acti_hstate = acti_hstate;
 
@@ -58,24 +58,24 @@ module hart_ctrl (
         .rst                (rst),
 
         // ID stage part
-        .hstart             (hstart),
-        .hkill              (hkill),
-        .set_hart_id        (set_hart_id),
+        .id_hstart          (id_hstart),
+        .id_hkill           (id_hkill),
+        .id_set_hid         (id_set_hid),
         .get_hart_val       (get_hart_val),
         .get_hart_idle      (get_hart_idle),
         .idle_hstate        (hart_idle_hstate),
 
         // IF stage part
         .i_cache_miss       (i_cache_miss),
-        .if_hstate          (hart_issue_hstate),
+        .issue_hid          (hart_issue_hid),
         .i_cache_fin        (i_cache_fin),
-        .i_cache_fin_hstate (i_cache_fin_hstate),
+        .i_cache_fin_hid    (i_cache_fin_hid),
 
         // MEM stage part
         .d_cache_miss       (d_cache_miss),
-        .ex_hstate          (ex_hstate),
+        .ex_hart_id         (ex_hart_id),
         .d_cache_fin        (d_cache_fin),
-        .d_cache_fin_hstate (d_cache_fin_hstate),
+        .d_cache_fin_hid    (d_cache_fin_hid),
 
         //_ hstu_part ________________________________________________________//
         .prim_hstate        (prim_hstate),
@@ -89,8 +89,8 @@ module hart_ctrl (
         .rst                (rst),
 
         // ID stage part
-        .hkill              (hkill),
-        .set_hart_id        (set_hart_id),
+        .id_hkill           (id_hkill),
+        .id_set_hid         (id_set_hid),
 
         .is_branch          (is_branch),
         .is_load            (is_load),
