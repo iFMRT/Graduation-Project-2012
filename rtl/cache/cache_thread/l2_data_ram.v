@@ -12,25 +12,16 @@
 
 module l2_data_ram(
     input              clk,             // clock
-    input      [8:0]   l2_index_mem,
-    input      [8:0]   l2_index_l2,        // address of cache     
-    input      [511:0] mem_rd,          
-    input      [1:0]   offset_l2,
-    input      [1:0]   offset_mem,
-    input      [127:0] rd_to_l2,    
-    input              wd_from_l1_en_mem,
-    input      [127:0] rd_to_l2_mem,    
-    input              wd_from_mem_en,
+    input      [8:0]   l2_index,    
+    input      [511:0] l2_data_wd_mem,          
+    input      [1:0]   offset,
+    input      [127:0] rd_to_l2,       
+    input              mem_wr_l2_en,
     input              wd_from_l1_en,
-    input              tagcomp_hit,
-    input              l2_block0_we_mem,    // write signal of block0
-    input              l2_block1_we_mem,    // write signal of block1
-    input              l2_block2_we_mem,    // write signal of block2
-    input              l2_block3_we_mem,    // write signal of block3
-    input              l2_block0_we_l2,    // write signal of block0
-    input              l2_block1_we_l2,    // write signal of block1
-    input              l2_block2_we_l2,    // write signal of block2
-    input              l2_block3_we_l2,    // write signal of block3
+    input              l2_block0_we,    // write signal of block0
+    input              l2_block1_we,    // write signal of block1
+    input              l2_block2_we,    // write signal of block2
+    input              l2_block3_we,    // write signal of block3k3
     input              l2_block0_re,    // read signal of block0
     input              l2_block1_re,    // read signal of block1
     input              l2_block2_re,    // read signal of block2
@@ -41,11 +32,6 @@ module l2_data_ram(
     output     [511:0] l2_data3_rd      // read data of cache_data3
     );
     reg   [511:0] l2_data_wd;
-    reg   [8:0]   l2_index;
-    reg           l2_block0_we;
-    reg           l2_block1_we;
-    reg           l2_block2_we;
-    reg           l2_block3_we;
     reg           wr0_en0;
     reg           wr0_en1;
     reg           wr0_en2;
@@ -62,7 +48,6 @@ module l2_data_ram(
     reg           wr3_en1;
     reg           wr3_en2;
     reg           wr3_en3;
-    reg   [1:0]   offset;
     always @(*) begin
         wr0_en0       = `DISABLE;
         wr0_en1       = `DISABLE;
@@ -80,72 +65,8 @@ module l2_data_ram(
         wr3_en1       = `DISABLE;
         wr3_en2       = `DISABLE;
         wr3_en3       = `DISABLE; 
-        if(tagcomp_hit == `ENABLE)begin
-            if (l2_block0_we == `ENABLE) begin
-                case(offset)
-                    `WORD0:begin
-                        wr0_en0 = `ENABLE;
-                    end
-                    `WORD1:begin
-                        wr0_en1 = `ENABLE;
-                    end
-                    `WORD2:begin
-                        wr0_en2 = `ENABLE;
-                    end
-                    `WORD3:begin
-                        wr0_en3 = `ENABLE;
-                    end
-                endcase
-            end
-            if (l2_block1_we == `ENABLE) begin
-                case(offset)
-                    `WORD0:begin
-                        wr1_en0 = `ENABLE;
-                    end
-                    `WORD1:begin
-                        wr1_en1 = `ENABLE;
-                    end
-                    `WORD2:begin
-                        wr1_en2 = `ENABLE;
-                    end
-                    `WORD3:begin
-                        wr1_en3 = `ENABLE;
-                    end
-                endcase
-            end
-            if (l2_block2_we == `ENABLE) begin
-                case(offset)
-                    `WORD0:begin
-                        wr2_en0 = `ENABLE;
-                    end
-                    `WORD1:begin
-                        wr2_en1 = `ENABLE;
-                    end
-                    `WORD2:begin
-                        wr2_en2 = `ENABLE;
-                    end
-                    `WORD3:begin
-                        wr2_en3 = `ENABLE;
-                    end
-                endcase
-            end
-            if (l2_block3_we == `ENABLE) begin
-                case(offset)
-                    `WORD0:begin
-                        wr3_en0 = `ENABLE;
-                    end
-                    `WORD1:begin
-                        wr3_en1 = `ENABLE;
-                    end
-                    `WORD2:begin
-                        wr3_en2 = `ENABLE;
-                    end
-                    `WORD3:begin
-                        wr3_en3 = `ENABLE;
-                    end
-                endcase
-            end
-        end else begin
+        if (mem_wr_l2_en == `ENABLE) begin
+            l2_data_wd   = l2_data_wd_mem;
             if (l2_block0_we == `ENABLE) begin
                 wr0_en0 = `ENABLE;
                 wr0_en1 = `ENABLE;
@@ -169,64 +90,58 @@ module l2_data_ram(
                 wr3_en1 = `ENABLE;
                 wr3_en2 = `ENABLE;
                 wr3_en3 = `ENABLE;    
-            end                    
-        end
-        l2_block0_we = `DISABLE;
-        l2_block1_we = `DISABLE;
-        l2_block2_we = `DISABLE;
-        l2_block3_we = `DISABLE;
-        if (wd_from_mem_en == `ENABLE) begin
-            l2_data_wd   = mem_rd;
-            l2_block0_we = l2_block0_we_mem;
-            l2_block1_we = l2_block1_we_mem;
-            l2_block2_we = l2_block2_we_mem;
-            l2_block3_we = l2_block3_we_mem;
-            l2_index     = l2_index_mem;
-            offset       = offset_mem;
+            end
         end else if (wd_from_l1_en == `ENABLE) begin
-            l2_block0_we = l2_block0_we_l2;
-            l2_block1_we = l2_block1_we_l2;
-            l2_block2_we = l2_block2_we_l2;
-            l2_block3_we = l2_block3_we_l2;
-            l2_index     = l2_index_l2;
-            offset       = offset_l2;
             case(offset)
                 `WORD0:begin
                     l2_data_wd[127:0]  = rd_to_l2;
+                    if (l2_block0_we == `ENABLE) begin
+                        wr0_en0 = `ENABLE;
+                    end else if (l2_block1_we == `ENABLE) begin
+                        wr1_en0 = `ENABLE;
+                    end else if (l2_block2_we == `ENABLE) begin
+                        wr2_en0 = `ENABLE;
+                    end else if (l2_block3_we == `ENABLE) begin
+                        wr3_en0 = `ENABLE;
+                    end
                 end
                 `WORD1:begin
                     l2_data_wd[255:128] = rd_to_l2;
+                    if (l2_block0_we == `ENABLE) begin
+                        wr0_en1 = `ENABLE;
+                    end else if (l2_block1_we == `ENABLE) begin
+                        wr1_en1 = `ENABLE;
+                    end else if (l2_block2_we == `ENABLE) begin
+                        wr2_en1 = `ENABLE;
+                    end else if (l2_block3_we == `ENABLE) begin
+                        wr3_en1 = `ENABLE;
+                    end
                 end
                 `WORD2:begin
                     l2_data_wd[383:256] = rd_to_l2;
+                    if (l2_block0_we == `ENABLE) begin
+                        wr0_en2 = `ENABLE;
+                    end else if (l2_block1_we == `ENABLE) begin
+                        wr1_en2 = `ENABLE;
+                    end else if (l2_block2_we == `ENABLE) begin
+                        wr2_en2 = `ENABLE;
+                    end else if (l2_block3_we == `ENABLE) begin
+                        wr3_en2 = `ENABLE;
+                    end
                 end
                 `WORD3:begin
                     l2_data_wd[511:384] = rd_to_l2;
+                    if (l2_block0_we == `ENABLE) begin
+                        wr0_en3 = `ENABLE;
+                    end else if (l2_block1_we == `ENABLE) begin
+                        wr1_en3 = `ENABLE;
+                    end else if (l2_block2_we == `ENABLE) begin
+                        wr2_en3 = `ENABLE;
+                    end else if (l2_block3_we == `ENABLE) begin
+                        wr3_en3 = `ENABLE;
+                    end
                 end
             endcase // case(offset)  
-        end else if (wd_from_l1_en_mem == `ENABLE) begin
-            l2_block0_we = l2_block0_we_mem;
-            l2_block1_we = l2_block1_we_mem;
-            l2_block2_we = l2_block2_we_mem;
-            l2_block3_we = l2_block3_we_mem;
-            l2_index     = l2_index_mem;
-            offset       = offset_mem;
-            case(offset)
-                `WORD0:begin
-                    l2_data_wd[127:0]  = rd_to_l2_mem;
-                end
-                `WORD1:begin
-                    l2_data_wd[255:128] = rd_to_l2_mem;
-                end
-                `WORD2:begin
-                    l2_data_wd[383:256] = rd_to_l2_mem;
-                end
-                `WORD3:begin
-                    l2_data_wd[511:384] = rd_to_l2_mem;
-                end
-            endcase // case(offset)  
-        end else begin
-            l2_index = l2_index_l2;
         end
     end
 

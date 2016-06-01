@@ -14,26 +14,18 @@ module l2_tag_ram(
     input               clk,               // clock
     input               rst,               // clock
     input               wd_from_l1_en,
-    input               wd_from_l1_en_mem,
-    input               wd_from_mem_en,
-    input               l2_block0_we_mem,    // write signal of block0
-    input               l2_block1_we_mem,    // write signal of block1
-    input               l2_block2_we_mem,    // write signal of block2
-    input               l2_block3_we_mem,    // write signal of block3
-    input               l2_block0_we_l2,    // write signal of block0
-    input               l2_block1_we_l2,    // write signal of block1
-    input               l2_block2_we_l2,    // write signal of block2
-    input               l2_block3_we_l2,    // write signal of block3
+    input               mem_wr_l2_en,
+    input               l2_block0_we,    // write signal of block0
+    input               l2_block1_we,    // write signal of block1
+    input               l2_block2_we,    // write signal of block2
+    input               l2_block3_we,    // write signal of block3
     input               l2_block0_re,      // read signal of block0
     input               l2_block1_re,      // read signal of block1
     input               l2_block2_re,      // read signal of block2
     input               l2_block3_re,      // read signal of block3
-    input       [8:0]   l2_index_mem,
-    input       [8:0]   l2_index_l2,       // address of cache     
-    input       [17:0]  l2_tag_wd_l2,      // write data of tag
-    input       [17:0]  l2_tag_wd_mem,     // write data of tag
-    input       [1:0]   l2_thread,
-    input       [1:0]   mem_thread,
+    input       [8:0]   l2_index,   
+    input       [17:0]  l2_tag_wd,         // write data of tag
+    input       [1:0]   l2_thread_wd,
     output      [17:0]  l2_tag0_rd,        // read data of tag0
     output      [17:0]  l2_tag1_rd,        // read data of tag1
     output      [17:0]  l2_tag2_rd,        // read data of tag2
@@ -50,13 +42,6 @@ module l2_tag_ram(
     output              l2_dirty2,         // dirty signal of L2 
     output              l2_dirty3          // dirty signal of L2 
     );
-    reg         [17:0]  l2_tag_wd;
-    reg         [8:0]   l2_index;
-    reg         [1:0]   l2_thread_wd;
-    reg                 l2_block0_we;
-    reg                 l2_block1_we;
-    reg                 l2_block2_we;
-    reg                 l2_block3_we;
     reg                 l2_dirty_wd;
     reg                 plru_re; 
     reg                 plru_we;           // read / write signal of plru_field
@@ -91,31 +76,10 @@ module l2_tag_ram(
         end else begin
             next_i = 1'b1;
         end
-
-        l2_block0_we = `DISABLE;
-        l2_block1_we = `DISABLE;
-        l2_block2_we = `DISABLE;
-        l2_block3_we = `DISABLE;
         if (wd_from_l1_en == `ENABLE) begin
-            l2_block0_we = l2_block0_we_l2;
-            l2_block1_we = l2_block1_we_l2;
-            l2_block2_we = l2_block2_we_l2;
-            l2_block3_we = l2_block3_we_l2;
-            l2_index     = l2_index_l2;
-            l2_thread_wd = l2_thread;
-            l2_tag_wd    = l2_tag_wd_l2;
             l2_dirty_wd  = 1'b1;
-        end else if (wd_from_mem_en == `ENABLE || wd_from_l1_en_mem == `ENABLE) begin
+        end else if (mem_wr_l2_en == `ENABLE) begin
             l2_dirty_wd  =  1'b0;
-            l2_block0_we = l2_block0_we_mem;
-            l2_block1_we = l2_block1_we_mem;
-            l2_block2_we = l2_block2_we_mem;
-            l2_block3_we = l2_block3_we_mem;
-            l2_tag_wd    = l2_tag_wd_mem;
-            l2_index     = l2_index_mem;
-            l2_thread_wd = mem_thread;
-        end else begin
-            l2_index     = l2_index_l2;
         end
     end
 

@@ -18,15 +18,17 @@ module cpu_top(
     input                  rst,             //  reset
     /*memory part*/
     input    [511:0]       mem_rd,
-
     output   [511:0]       mem_wd,
     output   [25:0]        mem_addr,        // address of memory
     output                 mem_re,          // read / write signal of memory
     output                 mem_we
     );
-    wire                   memory_busy;
+    wire     [1:0]         l2_thread_wd;
+    wire     [511:0]       l2_data_wd_mem;
+    wire                   mem_wr_l2_en;
     wire                   mem_complete_w;
     wire                   mem_complete_r;
+    wire                   memory_busy;
     wire                   memory_en;
     wire                   ic_en_mem,dc_en_mem,wd_from_l1_en_mem;
     wire                   thread_rdy_mem;
@@ -193,8 +195,10 @@ module cpu_top(
     wire                   l2_choose_l1,l2_choose_l1_read;
     wire                   l2_busy,l2_en,l2_cache_rw;
     wire                   thread_rdy_l2;
-    wire                   l2_tagcomp_hit;
     wire [1:0]             l2_choose_way;
+    wire [8:0]             l2_index;
+    wire [17:0]            l2_tag_wd;
+    wire [1:0]             offset;
     // l2_tag_ram part
     wire [17:0]            l2_tag0_rd;       // read data of tag0
     wire [17:0]            l2_tag1_rd;       // read data of tag1
@@ -205,7 +209,6 @@ module cpu_top(
     wire                   l2_complete_r;    // complete read from L2
     // l2_data_ram
     wire                   wd_from_mem_en;   
-    wire                   wd_from_l1_en;
     wire [511:0]           l2_data0_rd;       // read data of cache_data0
     wire [511:0]           l2_data1_rd;       // read data of cache_data1
     wire [511:0]           l2_data2_rd;       // read data of cache_data2
@@ -226,14 +229,10 @@ module cpu_top(
     wire  [1:0]            thread1_ic;
     wire  [1:0]            mem_thread_read;
     // l2_dirty
-    wire                   l2_block0_we_l2;
-    wire                   l2_block1_we_l2;
-    wire                   l2_block2_we_l2;
-    wire                   l2_block3_we_l2;
-    wire                   l2_block0_we_mem;
-    wire                   l2_block1_we_mem;
-    wire                   l2_block2_we_mem;
-    wire                   l2_block3_we_mem;
+    wire                   l2_block0_we;
+    wire                   l2_block1_we;
+    wire                   l2_block2_we;
+    wire                   l2_block3_we;
     wire                   l2_block0_re;
     wire                   l2_block1_re;
     wire                   l2_block2_re;
@@ -449,7 +448,6 @@ module cpu_top(
         .dc_wd          (dc_wd),
         .dc_rw          (dc_rw),
         /* l2_cache part */
-        // .l2_idle        (l2_idle), 
         .l2_busy        (l2_busy),  
         .dc_en          (dc_en),         // busy signal of l2_cache
         .l2_rdy         (l2_rdy),        // ready signal of l2_cache       
@@ -476,7 +474,6 @@ module cpu_top(
         .thread_rdy          (thread_rdy_l2),
         .l2_en               (l2_en),
         /********* L2_Cache part *********/
-        // .l2_idle             (l2_idle), 
         .l2_cache_rw         (l2_cache_rw),// read / write signal of CPU
         .l2_addr             (l2_addr), 
         .access_l2_clean     (access_l2_clean),
@@ -484,17 +481,16 @@ module cpu_top(
         .access_mem_clean    (access_mem_clean), 
         .access_mem_dirty    (access_mem_dirty), 
         .rd_to_l2            (rd_to_l2),
-        .l2_index            (l2_index_l2),
+        .l2_index            (l2_index),
         .offset              (l2_offset), 
         .l2_choose_l1        (l2_choose_l1),
-        .choose_way          (l2_choose_way),
-        .tagcomp_hit         (l2_tagcomp_hit),   
+        .choose_way          (l2_choose_way), 
         .l2_rdy              (l2_rdy),
         .l2_busy             (l2_busy),     
-        .l2_block0_we        (l2_block0_we_l2),  // write signal of block0
-        .l2_block1_we        (l2_block1_we_l2),  // write signal of block1
-        .l2_block2_we        (l2_block2_we_l2),  // write signal of block2
-        .l2_block3_we        (l2_block3_we_l2),  // write signal of block3
+        .l2_block0_we        (l2_block0_we),  // write signal of block0
+        .l2_block1_we        (l2_block1_we),  // write signal of block1
+        .l2_block2_we        (l2_block2_we),  // write signal of block2
+        .l2_block3_we        (l2_block3_we),  // write signal of block3
         .l2_block0_re        (l2_block0_re),  // read signal of block0
         .l2_block1_re        (l2_block1_re),  // read signal of block1
         .l2_block2_re        (l2_block2_re),  // read signal of block2
@@ -507,7 +503,7 @@ module cpu_top(
         .l2_tag1_rd          (l2_tag1_rd),    // read data of tag1
         .l2_tag2_rd          (l2_tag2_rd),    // read data of tag2
         .l2_tag3_rd          (l2_tag3_rd),    // read data of tag3
-        .l2_tag_wd           (l2_tag_wd_l2),     // write data of tag0                
+        .l2_tag_wd           (l2_tag_wd),     // write data of tag0                
         .l2_dirty0           (l2_dirty0),
         .l2_dirty1           (l2_dirty1),
         .l2_dirty2           (l2_dirty2), 
@@ -527,9 +523,9 @@ module cpu_top(
         .l2_thread1          (l2_thread1),
         .l2_thread2          (l2_thread2),
         .l2_thread3          (l2_thread3),
+        .l2_thread_wd        (l2_thread_wd),
         /*icache part*/
         .irq                 (irq),           // icache request
-        // .w_complete_ic  (w_complete_ic), // complete write to L1P
         .ic_addr             (if_pc[31:2]),
         .ic_choose_way       (ic_choose_way),
         .ic_addr_l2          (ic_addr_l2),
@@ -560,6 +556,19 @@ module cpu_top(
         .dc_addr_l2          (dc_addr_l2),
         .data_wd_l2          (data_wd_l2),    // write data to L1C       
         .data_wd_l2_en       (data_wd_l2_en),
+        .l2_block0_we_mem    (l2_block0_we_mem),  // write signal of block0
+        .l2_block1_we_mem    (l2_block1_we_mem),  // write signal of block1
+        .l2_block2_we_mem    (l2_block2_we_mem),  // write signal of block2
+        .l2_block3_we_mem    (l2_block3_we_mem),  // write signal of block3
+        .wd_from_mem_en      (wd_from_mem_en),
+        .wd_from_l1_en_mem   (wd_from_l1_en_mem),
+        .rd_to_l2_mem        (rd_to_l2_mem),
+        .offset_mem          (offset_mem), 
+        .l2_index_mem        (l2_index_mem),      // address of cache
+        .mem_rd              (mem_rd),
+        .l2_tag_wd_mem       (l2_tag_wd_mem),
+        .mem_wr_l2_en        (mem_wr_l2_en),
+        .l2_data_wd_mem      (l2_data_wd_mem),
         .l2_choose_l1_read   (l2_choose_l1_read), 
         .mem_thread_read     (mem_thread_read),    
         .dc_rw_read          (dc_rw_read),     
@@ -572,7 +581,7 @@ module cpu_top(
     // l2_cache
     memory_ctrl memory_ctrl(
         .clk                (clk),           // clock of L2C
-        .rst                (rst),           // reset
+        .rst                (rst),           // reset 
         /*l2_cache part*/
         .memory_en          (memory_en),
         .l2_busy            (l2_busy), 
@@ -585,7 +594,6 @@ module cpu_top(
         .l2_block2_we_mem   (l2_block2_we_mem),  // write signal of block2
         .l2_block3_we_mem   (l2_block3_we_mem),  // write signal of block3
         .l2_index_mem       (l2_index_mem),  
-        .l2_complete_w      (l2_complete_w), // complete write from MEM to L2
         .l2_tag0_rd         (l2_tag0_rd),    // read data of tag0
         .l2_tag1_rd         (l2_tag1_rd),    // read data of tag1
         .l2_tag2_rd         (l2_tag2_rd),    // read data of tag2
@@ -819,26 +827,17 @@ module cpu_top(
         .data1_rd          (data1_rd_ic)        // read data of cache_data1
     );
     l2_data_ram l2_data_ram(
-        .clk                (clk),           // clock of L2C
-        .l2_index_mem       (l2_index_mem),    
-        .l2_index_l2        (l2_index_l2),      // address of cache
-        .mem_rd             (mem_rd),
-        .offset_l2          (l2_offset),
-        .offset_mem         (offset_mem),
-        .rd_to_l2           (rd_to_l2),
-        .wd_from_mem_en     (wd_from_mem_en),
-        .rd_to_l2_mem       (rd_to_l2_mem),
-        .wd_from_l1_en_mem  (wd_from_l1_en_mem),
-        .wd_from_l1_en      (wd_from_l1_en),
-        .tagcomp_hit        (l2_tagcomp_hit),    
-        .l2_block0_we_mem   (l2_block0_we_mem),  // write signal of block0
-        .l2_block1_we_mem   (l2_block1_we_mem),  // write signal of block1
-        .l2_block2_we_mem   (l2_block2_we_mem),  // write signal of block2
-        .l2_block3_we_mem   (l2_block3_we_mem),  // write signal of block3
-        .l2_block0_we_l2    (l2_block0_we_l2),
-        .l2_block1_we_l2    (l2_block1_we_l2),
-        .l2_block2_we_l2    (l2_block2_we_l2),
-        .l2_block3_we_l2    (l2_block3_we_l2),
+        .clk                (clk),              // clock of L2C
+        .l2_index           (l2_index),         // address of cache
+        .l2_data_wd_mem     (l2_data_wd_mem),
+        .offset             (offset),        
+        .rd_to_l2           (rd_to_l2),  
+        .mem_wr_l2_en       (mem_wr_l2_en),      
+        .wd_from_l1_en      (wd_from_l1_en), 
+        .l2_block0_we       (l2_block0_we),
+        .l2_block1_we       (l2_block1_we),
+        .l2_block2_we       (l2_block2_we),
+        .l2_block3_we       (l2_block3_we),
         .l2_block0_re       (l2_block0_re),      // read signal of block0
         .l2_block1_re       (l2_block1_re),      // read signal of block1
         .l2_block2_re       (l2_block2_re),      // read signal of block2
@@ -851,27 +850,19 @@ module cpu_top(
     l2_tag_ram l2_tag_ram(    
         .clk                (clk),                   // clock of L2C
         .rst                (rst),                   // reset
-        .wd_from_mem_en     (wd_from_mem_en),
-        .wd_from_l1_en      (wd_from_l1_en),
-        .wd_from_l1_en_mem  (wd_from_l1_en_mem),
-        .l2_index_mem       (l2_index_mem),    
-        .l2_index_l2        (l2_index_l2),       // address of cache
-        .l2_tag_wd_l2       (l2_tag_wd_l2),    
-        .l2_tag_wd_mem      (l2_tag_wd_mem),     // write data of tag
-        .l2_block0_we_mem   (l2_block0_we_mem),  // write signal of block0
-        .l2_block1_we_mem   (l2_block1_we_mem),  // write signal of block1
-        .l2_block2_we_mem   (l2_block2_we_mem),  // write signal of block2
-        .l2_block3_we_mem   (l2_block3_we_mem),  // write signal of block3
-        .l2_block0_we_l2    (l2_block0_we_l2),
-        .l2_block1_we_l2    (l2_block1_we_l2),
-        .l2_block2_we_l2    (l2_block2_we_l2),
-        .l2_block3_we_l2    (l2_block3_we_l2),
+        .mem_wr_l2_en       (mem_wr_l2_en), 
+        .wd_from_l1_en      (wd_from_l1_en),   
+        .l2_index           (l2_index),       // address of cache
+        .l2_tag_wd          (l2_tag_wd),    
+        .l2_block0_we       (l2_block0_we),
+        .l2_block1_we       (l2_block1_we),
+        .l2_block2_we       (l2_block2_we),
+        .l2_block3_we       (l2_block3_we),
         .l2_block0_re       (l2_block0_re),       // read signal of block0
         .l2_block1_re       (l2_block1_re),       // read signal of block1
         .l2_block2_re       (l2_block2_re),       // read signal of block2
         .l2_block3_re       (l2_block3_re),       // read signal of block3
-        .l2_thread          (l2_thread),
-        .mem_thread         (mem_thread),
+        .l2_thread_wd       (l2_thread_wd),
         .l2_tag0_rd         (l2_tag0_rd),    // read data of tag0
         .l2_tag1_rd         (l2_tag1_rd),    // read data of tag1
         .l2_tag2_rd         (l2_tag2_rd),    // read data of tag2
