@@ -28,7 +28,7 @@ module l2_cache_ctrl(
     output reg          thread_rdy,
     output reg          l2_en,
     /********* L2_Cache part *********/
-    output reg          l2_idle,
+    // output reg          l2_idle,
     output reg  [27:0]  l2_addr,
     output reg          l2_cache_rw,
     input               access_l2_clean,
@@ -242,7 +242,7 @@ module l2_cache_ctrl(
         case(state)
             `L2_IDLE:begin
                 l2_en            = `DISABLE;
-                l2_idle          = `ENABLE;
+                // l2_idle          = `ENABLE;
                 thread_rdy       = `DISABLE;
                 l2_rdy           = `DISABLE;
                 data_wd_dc_en_l2 = `DISABLE;
@@ -333,7 +333,7 @@ module l2_cache_ctrl(
                 l2_tag_wd        = {1'b1,l2_addr[27:11]}; 
             end
             `ACCESS_L2:begin
-                l2_idle         = `DISABLE;
+                // l2_idle         = `DISABLE;
                 thread_rdy       = `DISABLE;
                 access_mem_clean = `DISABLE;
                 access_mem_dirty = `DISABLE;

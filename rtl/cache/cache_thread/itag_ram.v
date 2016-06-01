@@ -45,18 +45,18 @@ module itag_ram(
     reg          [1:0]  thread_wd;
     always @(*) begin
         if (block0_we == `ENABLE) begin 
-            lru_wd   <= 1'b1;
-            lru_we   <= `ENABLE;    
+            lru_wd   = 1'b1;
+            lru_we   = `ENABLE;    
         end else if (block1_we == `ENABLE) begin
-            lru_wd   <= 1'b0; 
-            lru_we   <= `ENABLE;    
+            lru_wd   = 1'b0; 
+            lru_we   = `ENABLE;    
         end else begin
-            lru_we   <= `READ;
+            lru_we   = `READ;
         end
         if (block0_re == `ENABLE || block1_re == `ENABLE) begin
-            lru_re = `ENABLE;
+            lru_re   = `ENABLE;
         end else begin
-            lru_re = `DISABLE;
+            lru_re   = `DISABLE;
         end
         block0_we = `DISABLE;    
         block1_we = `DISABLE; 

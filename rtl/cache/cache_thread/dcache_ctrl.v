@@ -30,13 +30,13 @@ module dcache_ctrl(
     input      [27:0]  dc_addr_mem,
     input      [27:0]  dc_addr_l2,
     /********** CPU part **********/
-    input      [31:0]  addr,          // address of accessing memory
-    input      [31:0]  next_addr,          // address of accessing memory
+    // input      [31:0]  addr,          // address of accessing memory
+    input      [29:0]  next_addr,          // address of accessing memory
     input              memwrite_m,    // read / write signal of CPU
     input              access_mem,    // access MEM mark
     input      [31:0]  wr_data,       // write data from CPU
     input              out_rdy,
-    input      [1:0]   store_op,
+    // input      [1:0]   store_op,
     output reg [31:0]  read_data_m,   // read data of CPU
     output reg         miss_stall,    // the signal of stall caused by cache miss
     output reg         access_l2_clean,
@@ -75,7 +75,7 @@ module dcache_ctrl(
     output reg [31:0]  dc_wd, 
     output reg         dc_rw,   
     /******* L2_Cache part *******/
-    input              l2_idle,
+    // input              l2_idle,
     input              l2_busy,
     input              dc_en,         // busy signal of L2_cache
     input              l2_rdy,        // ready signal of L2_cache
@@ -91,10 +91,10 @@ module dcache_ctrl(
     always @(*)begin // path choose
         hitway0 = (tag0_rd[19:0] == comp_addr) & tag0_rd[20];
         hitway1 = (tag1_rd[19:0] == comp_addr) & tag1_rd[20];
-        if(hitway0 == `ENABLE  && thread == thread0)begin
+        if(hitway0 == `ENABLE  && dc_thread == thread0)begin
             tagcomp_hit  = `ENABLE;
             hitway       = `WAY0;
-        end else if(hitway1 == `ENABLE  && thread == thread1)begin
+        end else if(hitway1 == `ENABLE  && dc_thread == thread1)begin
             tagcomp_hit  = `ENABLE;
             hitway       = `WAY1;
         end else begin
@@ -152,14 +152,7 @@ module dcache_ctrl(
                 block1_we  =  `DISABLE;
                 block0_re  =  `DISABLE;
                 block1_re  =  `DISABLE;
-                dc_thread  =  thread;
                 dc_busy    =  `DISABLE;
-                dc_addr    =  next_addr[31:4];
-                index      =  dc_addr[7:0];
-                offset     =  next_addr[3:2];
-                tag_wd     =  {1'b1,dc_addr[27:8]};
-                comp_addr  =  dc_addr[27:8];
-                data_wd_dc_en =  `DISABLE;
                 if (access_mem == `ENABLE) begin 
                     if ((memory_en == `ENABLE && dc_addr_mem == dc_addr)||(l2_en == `ENABLE && dc_addr_l2 == dc_addr))begin
                         miss_stall = `ENABLE;
@@ -169,6 +162,13 @@ module dcache_ctrl(
                         block1_re  =  `ENABLE;
                         nextstate  =  `DC_ACCESS;   
                         dc_busy    =  `ENABLE; 
+                        dc_thread  =  thread;
+                        dc_addr    =  next_addr[29:2];
+                        index      =  dc_addr[7:0];
+                        offset     =  next_addr[1:0];
+                        tag_wd     =  {1'b1,dc_addr[27:8]};
+                        comp_addr  =  dc_addr[27:8];
+                        data_wd_dc_en =  `DISABLE;
                     end               
                 end else begin 
                     nextstate  =  `DC_IDLE;
@@ -181,9 +181,9 @@ module dcache_ctrl(
                 block1_we     =  `DISABLE;                       
                 block0_re     =  `DISABLE;
                 block1_re     =  `DISABLE;
-                data_wd_dc_en = `DISABLE;
-                dc_wd         = wr_data;
-                dc_rw         = memwrite_m;
+                data_wd_dc_en =  `DISABLE;
+                dc_wd         =  wr_data;
+                dc_rw         =  memwrite_m;
                 // dc_choose_way = choose_way;
                 if (tagcomp_hit == `ENABLE) begin // cache hit
                     if(dc_rw == `READ) begin // read hit
@@ -194,12 +194,17 @@ module dcache_ctrl(
                         dc_thread   = thread;
                         if (out_rdy == `ENABLE) begin
                             if(access_mem == `ENABLE) begin
-                                dc_addr    =  next_addr[31:4];
-                                index      =  dc_addr[7:0];
-                                offset     =  next_addr[3:2];
-                                tag_wd     =  {1'b1,dc_addr[27:8]};
-                                comp_addr  =  dc_addr[27:8];
-                                nextstate  = `DC_ACCESS;
+                                if ((memory_en == `ENABLE && dc_addr_mem == dc_addr)||(l2_en == `ENABLE && dc_addr_l2 == dc_addr))begin
+                                    miss_stall = `ENABLE;
+                                    nextstate  =  `DC_IDLE;
+                                end else begin
+                                    dc_addr    =  next_addr[29:2];
+                                    index      =  dc_addr[7:0];
+                                    offset     =  next_addr[1:0];
+                                    tag_wd     =  {1'b1,dc_addr[27:8]};
+                                    comp_addr  =  dc_addr[27:8];
+                                    nextstate  = `DC_ACCESS;
+                                end
                             end else begin
                                 nextstate  = `DC_IDLE;
                             end
@@ -242,8 +247,6 @@ module dcache_ctrl(
                         endcase
                     end else if (dc_rw == `WRITE) begin  // begin: write hit
                         // cpu data write to l1
-                        // miss_stall     =  `DISABLE;
-                        miss_stall     =  `ENABLE;
                         data_wd_dc_en  =  `ENABLE;
                         case(hitway)
                             `WAY0:begin
@@ -253,11 +256,13 @@ module dcache_ctrl(
                                 block1_we = `ENABLE;
                             end // hitway == 1
                         endcase // case(hitway) 
-                        // if(access_mem == `ENABLE) begin
-                            // nextstate  =  `ACCESS_RDY;
-                        // end else begin
+                        if(access_mem == `ENABLE) begin
+                            miss_stall = `ENABLE;
                             nextstate  =  `DC_IDLE;
-                        // end 
+                        end else begin
+                            miss_stall =  `DISABLE;
+                            nextstate  =  `DC_IDLE;
+                        end 
                     end // end：write hit
                 end else begin // cache miss
                     miss_stall      = `ENABLE; 
@@ -270,20 +275,11 @@ module dcache_ctrl(
                             // dirty block of l1, write to l2
                             if(dc_en == `ENABLE) begin
                                 dc_busy         =  `DISABLE;
-                                if (store_op == 2'b01) begin
+                                if (dc_rw == `WRITE) begin
                                     miss_stall  = `DISABLE;
                                     if (access_mem == `ENABLE) begin 
-                                        if ((memory_en == `ENABLE && dc_addr_mem == dc_addr)||(l2_en == `ENABLE && dc_addr_l2 == dc_addr)) begin
-                                            miss_stall = `ENABLE;
-                                            nextstate  =  `DC_IDLE;
-                                        end else if (l2_idle == `ENABLE) begin
-                                            miss_stall = `ENABLE;
-                                            nextstate  = `DC_IDLE;
-                                        end else begin
-                                            miss_stall = `ENABLE;
-                                            nextstate  = `DC_IDLE;
-                                            // nextstate  = `P_RDY;
-                                        end       
+                                        miss_stall = `ENABLE;
+                                        nextstate  =  `DC_IDLE;    
                                     end else begin 
                                         nextstate  =  `DC_IDLE;
                                     end
@@ -300,20 +296,11 @@ module dcache_ctrl(
                                 dc_busy         =  `DISABLE;
                                 access_l2_clean = `ENABLE;
                                 // nextstate =  `DC_ACCESS_L2;
-                                if (store_op == 2'b01) begin
+                                if (dc_rw == `WRITE) begin
                                     miss_stall  = `DISABLE;
                                     if(access_mem == `ENABLE) begin
-                                        if ((memory_en == `ENABLE && dc_addr_mem == dc_addr)||(l2_en == `ENABLE && dc_addr_l2 == dc_addr)) begin
-                                            miss_stall = `ENABLE;
-                                            nextstate  =  `DC_IDLE;
-                                        end else if (l2_idle == `ENABLE) begin
-                                            miss_stall = `ENABLE;
-                                            nextstate  =  `DC_IDLE;
-                                        end else begin
-                                            // nextstate  = `P_RDY;
-                                            miss_stall = `ENABLE;
-                                            nextstate  = `DC_IDLE;
-                                        end 
+                                        miss_stall = `ENABLE;
+                                        nextstate  =  `DC_IDLE;
                                     end else begin
                                         nextstate  =  `DC_IDLE;
                                     end
@@ -328,59 +315,16 @@ module dcache_ctrl(
                     end   
                 end 
             end
-            `P_RDY:begin
-                if (dc_en == `ENABLE && l2_idle == `ENABLE) begin
-                    drq           =  `DISABLE;
-                    miss_stall    =  `ENABLE;
-                    nextstate     =  `DC_IDLE;
-                end else begin
-                    nextstate  = `P_RDY;
-                end
-            end
-            // `ACCESS_RDY:begin // Read from CPU. Write to L1
-            //     if ((memory_en == `ENABLE && dc_addr_mem == dc_addr)||(l2_en == `ENABLE && dc_addr_l2 == dc_addr)) begin
-            //         miss_stall = `ENABLE;
-            //         nextstate  =  `DC_IDLE;
-            //     end else begin
-            //         drq           =  `DISABLE;
-            //         data_wd_dc_en =  `DISABLE; 
-            //         block0_we     =  `DISABLE;
-            //         block1_we     =  `DISABLE;
-            //         miss_stall    =  `ENABLE;
-            //         index         =  addr[9:2];
-            //         offset        =  addr[1:0];
-            //         tag_wd        =  {1'b1,addr[29:10]};
-            //         comp_addr     =  addr[29:10];
-            //         dc_addr       =  addr[31:4];
-            //         block0_re     =  `ENABLE;
-            //         block1_re     =  `ENABLE;
-            //         nextstate     =  `DC_ACCESS;
-            //         dc_thread     =  thread;
-            //         dc_busy       =  `ENABLE; 
-            //     end
-                   
-            // end
             `WAIT_L2_BUSY_CLEAN:begin // can not go to L2
                 dc_busy   =  `ENABLE;
                 access_l2_clean = `DISABLE;
                 if(dc_en == `ENABLE) begin
-                    // l2_addr   =  addr[29:2]; 
                     dc_busy         =  `DISABLE;
-                    // nextstate       =  `DC_ACCESS_L2;
-                    if (store_op == 2'b01) begin
+                    if (dc_rw == `WRITE) begin
                         miss_stall  = `DISABLE;
                         if(access_mem == `ENABLE) begin
-                            if ((memory_en == `ENABLE && dc_addr_mem == dc_addr)||(l2_en == `ENABLE && dc_addr_l2 == dc_addr)) begin
-                                miss_stall = `ENABLE;
-                                nextstate  =  `DC_IDLE;
-                            end else if (l2_idle == `ENABLE) begin
-                                miss_stall = `ENABLE;
-                                nextstate  =  `DC_IDLE;
-                            end else begin
-                                // nextstate  = `P_RDY;
-                                miss_stall = `ENABLE;
-                                nextstate  = `DC_IDLE;
-                            end 
+                            miss_stall = `ENABLE;
+                            nextstate  =  `DC_IDLE;
                         end else begin
                             nextstate  =  `DC_IDLE;
                         end
@@ -397,22 +341,11 @@ module dcache_ctrl(
                 dc_busy   =  `ENABLE;
                 access_l2_dirty = `DISABLE;
                 if(dc_en == `ENABLE) begin
-                    // l2_cache_rw =  `WRITE; 
-                    // nextstate       =  `DC_ACCESS_L2; 
-                    if (store_op == 2'b01) begin
+                    if (dc_rw == `WRITE) begin
                         miss_stall  = `DISABLE;
                         if(access_mem == `ENABLE) begin
-                            if ((memory_en == `ENABLE && dc_addr_mem == dc_addr)||(l2_en == `ENABLE && dc_addr_l2 == dc_addr)) begin
-                                miss_stall = `ENABLE;
-                                nextstate  =  `DC_IDLE;
-                            end else if (l2_idle == `ENABLE) begin
-                                miss_stall = `ENABLE;
-                                nextstate  =  `DC_IDLE;
-                            end else begin
-                                // nextstate  = `P_RDY;
-                                miss_stall = `ENABLE;
-                                nextstate  = `DC_IDLE;
-                            end 
+                            miss_stall = `ENABLE;
+                            nextstate  =  `DC_IDLE;
                         end else begin
                             nextstate  = `DC_IDLE;
                         end
@@ -430,78 +363,71 @@ module dcache_ctrl(
                 drq             = `DISABLE;
                 access_l2_clean = `DISABLE;
                 access_l2_dirty = `DISABLE;
-                if (l2_thread == dc_thread || mem_thread == dc_thread) begin
-                    // l2 hit(l2_rdy), read l2_block ,write to l1
-                    // l2 miss(mem_wr_dc_en), read mem_block ,write to l1 and l2     
-                    if(l2_rdy == `ENABLE || mem_wr_dc_en == `ENABLE)begin
-                        dc_busy   =  `ENABLE;
-                        // wr signal is `READ in MEM stage,read l2_block ,write to l1 and cpu
-                        // wr signal is `WRITE in MEM stage,read l2_block ,write to l1
-                        /* write l1 part */ 
-
-                        /* write cpu part */ 
-                        if (dc_rw == `READ) begin
-                            nextstate =  `WRITE_DC_R;
-                            if(l2_rdy == `ENABLE && (l2_thread == dc_thread)) begin
-                                case(offset)
-                                    `WORD0:begin
-                                        read_data_m = data_wd_l2[31:0];
-                                    end
-                                    `WORD1:begin
-                                        read_data_m = data_wd_l2[63:32];
-                                    end
-                                    `WORD2:begin 
-                                        read_data_m = data_wd_l2[95:64];
-                                    end
-                                    `WORD3:begin
-                                        read_data_m = data_wd_l2[127:96];
-                                    end
-                                endcase // case(offset) 
-                            end
-                            if (mem_wr_dc_en == `ENABLE && (mem_thread == dc_thread)) begin
-                                case(offset)
-                                    `WORD0:begin
-                                        read_data_m = data_wd_l2_mem[31:0];
-                                    end
-                                    `WORD1:begin
-                                        read_data_m = data_wd_l2_mem[63:32];
-                                    end
-                                    `WORD2:begin 
-                                        read_data_m = data_wd_l2_mem[95:64];
-                                    end
-                                    `WORD3:begin
-                                        read_data_m = data_wd_l2_mem[127:96];
-                                    end
-                                endcase // case(offset) 
-                            end
-                        end                        
-                        // end else begin
-                        //     nextstate  =  `WRITE_DC_W;
-                        //     block0_re  =  `ENABLE;
-                        //     block1_re  =  `ENABLE; 
-                        // end
-                    end else begin
-                        nextstate  =  `DC_ACCESS_L2;
-                    end   
+                // l2 hit(l2_rdy), read l2_block ,write to l1
+                // l2 miss(mem_wr_dc_en), read mem_block ,write to l1 and l2     
+                // wr signal is `READ in MEM stage,read l2_block ,write to l1 and cpu
+                // wr signal is `WRITE in MEM stage,read l2_block ,write to l1
+                /* write l1 part */ 
+                /* write cpu part */ 
+                if(l2_rdy == `ENABLE && (l2_thread == dc_thread) && (l2_thread == thread)) begin
+                    dc_busy   =  `ENABLE;
+                    nextstate =  `WRITE_DC_R;
+                    case(offset)
+                        `WORD0:begin
+                            read_data_m = data_wd_l2[31:0];
+                        end
+                        `WORD1:begin
+                            read_data_m = data_wd_l2[63:32];
+                        end
+                        `WORD2:begin 
+                            read_data_m = data_wd_l2[95:64];
+                        end
+                        `WORD3:begin
+                            read_data_m = data_wd_l2[127:96];
+                        end
+                    endcase // case(offset) 
+                end else if (mem_wr_dc_en == `ENABLE && (mem_thread == dc_thread) && (mem_thread == thread)) begin
+                    dc_busy   =  `ENABLE;
+                    nextstate =  `WRITE_DC_R;
+                    case(offset)
+                        `WORD0:begin
+                            read_data_m = data_wd_l2_mem[31:0];
+                        end
+                        `WORD1:begin
+                            read_data_m = data_wd_l2_mem[63:32];
+                        end
+                        `WORD2:begin 
+                            read_data_m = data_wd_l2_mem[95:64];
+                        end
+                        `WORD3:begin
+                            read_data_m = data_wd_l2_mem[127:96];
+                        end
+                    endcase // case(offset) 
+                end else begin
+                    nextstate  =  `DC_ACCESS_L2;
                 end                    
             end
             `WRITE_DC_R:begin // Read from L2.Write to L1 & CPU
                 miss_stall  =  `DISABLE;
                 block0_we   =  `DISABLE;
                 block1_we   =  `DISABLE;
-                // drq         =  `DISABLE;
                 dc_busy     =  `DISABLE;
                 if(access_mem == `ENABLE) begin
-                    dc_addr    =  next_addr[31:4];
-                    index      =  dc_addr[7:0];
-                    offset     =  next_addr[3:2];
-                    tag_wd     =  {1'b1,dc_addr[27:8]};
-                    comp_addr  =  dc_addr[27:8];
-                    nextstate  =  `DC_ACCESS;
-                    dc_thread  = thread;
-                    block0_re  =  `ENABLE;
-                    block1_re  =  `ENABLE;
-                    dc_busy    =  `ENABLE;
+                    if ((memory_en == `ENABLE && dc_addr_mem == dc_addr)||(l2_en == `ENABLE && dc_addr_l2 == dc_addr))begin
+                        miss_stall = `ENABLE;
+                        nextstate  =  `DC_IDLE;
+                    end else begin
+                        dc_addr    =  next_addr[29:2];
+                        index      =  dc_addr[7:0];
+                        offset     =  next_addr[1:0];
+                        tag_wd     =  {1'b1,dc_addr[27:8]};
+                        comp_addr  =  dc_addr[27:8];
+                        nextstate  =  `DC_ACCESS;
+                        dc_thread  =  thread;
+                        block0_re  =  `ENABLE;
+                        block1_re  =  `ENABLE;
+                        dc_busy    =  `ENABLE;
+                    end
                 end else begin
                     nextstate  =  `DC_IDLE;
                 end        
