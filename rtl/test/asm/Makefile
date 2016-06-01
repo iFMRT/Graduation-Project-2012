@@ -9,11 +9,13 @@ ALU_SRC = alu.S
 CSR_SRC = csr.S
 J_B_HAZARD_SRC = j_b_hazard.S
 J_B_NO_HAZARD_SRC = j_b_no_hazard.S
+HCU_SRC = hcu_test.s
 
 ALU_OBJ = alu.o
 CSR_OBJ = csr.o
 J_B_HAZARD_OBJ = j_b_hazard.out
 J_B_NO_HAZARD_OBJ = j_b_no_hazard.out
+HCU_OBJ = hcu_test.o
 
 alu: $(ALU_SRC)
 	$(CC) -m32 $(ALU_SRC) -o $(ALU_OBJ)
@@ -31,3 +33,7 @@ j_b_hazard: $(J_B_HAZARD_SRC)
 j_b_no_hazard: $(J_B_NO_HAZARD_SRC)
 	$(CC) -m32 $(J_B_NO_HAZARD_SRC) -o $(J_B_NO_HAZARD_OBJ)
 	$(OBJCOPY) $(J_B_NO_HAZARD_OBJ) -O verilog ../test.dat
+
+hcu: $(HCU_SRC)
+	$(CC) -m32 $(HCU_SRC) -o $(HCU_OBJ)
+	$(OBJCOPY) $(HCU_OBJ) -O verilog ../test.dat

@@ -46,7 +46,7 @@ module id_reg (
     /********** IF/ID Pipeline  Register  **********/
     input wire [`WORD_DATA_BUS]  pc,            // Current program counter
     input wire                   if_en,         // IF stage register enable
-    input reg  [`HART_ID_B]      if_hart_id,    // Hart state
+    input wire [`HART_ID_B]      if_hart_id,    // Hart state
     /********** ID/EX Register Output **********/
     output reg                   id_is_jalr,
     output reg [`EXP_CODE_BUS]   id_exp_code,   // Exception code
@@ -74,7 +74,7 @@ module id_reg (
     //from Hart Control Unit
     input  wire                  hkill,
     input  wire                  hstart,
-    input  wire [`HART_ID_B]     set_hid,
+    input  wire [`HART_ID_B]     spec_hid,
     input  wire                  hidle,
     input  wire [`HART_ID_B]     hs_id,
     input  wire [`WORD_DATA_BUS] hs_pc,
@@ -171,7 +171,7 @@ module id_reg (
                     id_hkill       <= #1 hkill;
                     id_hstart      <= #1 hstart;
                     id_hidle       <= #1 hidle; 
-                    id_set_hid     <= #1 set_hid;
+                    id_set_hid     <= #1 spec_hid;
                     id_hs_id       <= #1 hs_id; 
                     id_hs_pc       <= #1 hs_pc; 
                 end

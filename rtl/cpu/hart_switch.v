@@ -14,8 +14,8 @@ module hart_switch (
     input  wire                  rst,
 
     // ID stage part
-    input  wire                  hkill,
-    input  wire [`HART_ID_B]     set_hart_id,
+    input  wire                  id_hkill,
+    input  wire [`HART_ID_B]     id_set_hid,
 
     input  wire                  is_branch,        // conditional branch ins
     input  wire                  is_load,          // load ins
@@ -37,10 +37,11 @@ module hart_switch (
 
     //_ hstu_part ____________________________________________________________//
     input  wire [`HART_STATE_B]  prim_hstate,
-    input  wire [`HART_STATE_B]  acti_hstate,
+    input  wire [`HART_STATE_B]  acti_hstate
 );
     wire [`HART_STATE_B] set_hstate;
-    decoder_n #(`HART_ID_W) set_hstate_i(set_hart_id, set_hstate);
+    wire [`HART_STATE_B] ids_hstate;
+    decoder_n #(`HART_ID_W) set_hstate_i(id_set_hid, set_hstate);
     decoder_n #(`HART_ID_W) ids_hstate_i(if_hart_id, ids_hstate);    // current ID stage hart state
 
     //_ pipeline stall _______________________________________________________//
@@ -51,8 +52,8 @@ module hart_switch (
                             ~(ah[0] + ah[1] + ah[3]) +
                             ~(ah[0] + ah[2] + ah[3]) +
                             ~(ah[1] + ah[2] + ah[3]);
-    wire hart_ic_stall;    // i cache miss and need to stall
-    wire hart_dc_stall;    // d cache miss and need to stall
+    // wire hart_ic_stall;    // i cache miss and need to stall
+    // wire hart_dc_stall;    // d cache miss and need to stall
     assign hart_ic_stall = no_more_active & i_cache_miss & ~d_cache_fin;
     assign hart_dc_stall = no_more_active & d_cache_miss & ~i_cache_fin;
 
@@ -78,7 +79,7 @@ module hart_switch (
     cyclic_right_shifter cyclic_right_shifter_i(issue_hstate, shifted_issue_hstate);
 
     always @(*) begin
-        if      (hkill & set_hstate == prim_hstate)
+        if      (id_hkill & set_hstate == prim_hstate)
                                                           hart_issue_hstate = one_hot_hstate;
         else if (acti_hstate == `HART_STATE_W'b1111)      hart_issue_hstate = shifted_issue_hstate;
         else if (   minor_hstate == `HART_STATE_W'b0000)  hart_issue_hstate = prim_hstate;
@@ -87,6 +88,10 @@ module hart_switch (
         else if (issue_minor &  issue_twice)              hart_issue_hstate = minor_hstate;
         else if (issue_minor & ~issue_twice)              hart_issue_hstate = ~issue_hstate & minor_hstate;
         else                                              hart_issue_hstate = prim_hstate;
+    end
+    always @(posedge clk) begin
+        if (rst) issue_hstate <= `HART_STATE_W'b0000;
+        else     issue_hstate <= hart_issue_hstate;
     end
 
     reg                  issue_minor;
@@ -113,11 +118,6 @@ module hart_switch (
                 ) 
             issue_twice <= 1'b1;
         else issue_twice <= 1'b0;
-    end
-
-    always @(posedge clk) begin
-        if (rst) issue_hstate <= `HART_STATE_W'b0000;
-        else     issue_hstate <= hart_issue_hstate;
     end
 
 endmodule

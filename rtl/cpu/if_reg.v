@@ -98,7 +98,7 @@ module if_reg (
                 end else begin
                     /* Next PC */
                     pc                 <= if_pcs[hart_id];
-                    if_pcs[hart_id]    <= #1 if_pcs[hart_id] + `WORD_DATA_W'd4;
+                    if_pcs[hart_id]    <= if_pcs[hart_id] + `WORD_DATA_W'd4;
                     if_insn            <= insn;
                     if_en              <= `ENABLE;
                     if_hart_id         <= hart_id;

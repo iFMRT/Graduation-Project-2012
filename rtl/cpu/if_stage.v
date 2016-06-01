@@ -55,7 +55,7 @@ module if_stage(
     output wire [`WORD_DATA_BUS] if_pc,          // Next PC
     output wire [`WORD_DATA_BUS] if_insn,        // Instruction
     output wire                  if_en,          // Effective mark of pipeline
-    output wire [`HART_STATE_B]  if_hart_id      // Hart id
+    output wire [`HART_ID_B]     if_hart_id      // Hart id
 );
 
     /********** Inner Signal **********/

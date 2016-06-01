@@ -6,8 +6,8 @@
 `include "stddef.h"
 `include "isa.h"
 `include "hart_ctrl.h"
-`include "hart_state.v"
-`include "hart_switch.v"
+// `include "hart_state.v"
+// `include "hart_switch.v"
 
 module hart_ctrl (
     input  wire                  clk,
@@ -17,6 +17,8 @@ module hart_ctrl (
     input  wire                  id_hstart,
     input  wire                  id_hkill,
     input  wire [`HART_ID_B]     id_set_hid,
+    input  wire                  id_hidle,
+    input  wire [`HART_ID_B]     spec_hid,
     output wire [`HART_SST_B]    get_hart_val,      // state value of id_set_hid 2: pend, 1: active, 0:idle
     output wire                  get_hart_idle,     // is hart idle 1: idle, 0: non-idle
 
@@ -34,16 +36,16 @@ module hart_ctrl (
     // IF stage part
     input  wire                  i_cache_miss,
     input  wire                  i_cache_fin,        // i cache access finish
-    input  wire [`HART_STATE_B]  i_cache_fin_hid,
+    input  wire [`HART_ID_B]     i_cache_fin_hid,
 
     output wire [`HART_ID_B]     hart_issue_hid,     // 1:0
     output wire [`HART_STATE_B]  hart_issue_hstate,  // 3:0
 
     // MEM stage part
     input  wire                  d_cache_miss,
-    input  wire [`HART_STATE_B]  ex_hart_id,         // Used hart state 3:0
+    input  wire [`HART_ID_B]     ex_hart_id,         // Used hart state 3:0
     input  wire                  d_cache_fin,
-    input  wire [`HART_STATE_B]  d_cache_fin_hid
+    input  wire [`HART_ID_B]     d_cache_fin_hid
 );
     assign hart_acti_hstate = acti_hstate;
 
@@ -61,6 +63,8 @@ module hart_ctrl (
         .id_hstart          (id_hstart),
         .id_hkill           (id_hkill),
         .id_set_hid         (id_set_hid),
+        .id_hidle           (id_hidle),
+        .spec_hid           (spec_hid),
         .get_hart_val       (get_hart_val),
         .get_hart_idle      (get_hart_idle),
         .idle_hstate        (hart_idle_hstate),

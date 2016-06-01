@@ -83,6 +83,8 @@ module id_stage (
     // output to Hart Control
     output wire                   is_branch,
     output wire                   is_load,
+    output wire [`HART_ID_B]      spec_hid,
+
     output wire                   id_hkill,
     output wire [`HART_ID_B]      id_set_hid,        // ID_reg set hart id
     // output to IF stage
@@ -111,8 +113,10 @@ module id_stage (
     wire [`EXP_CODE_BUS]   exp_code;
 
     /********** To Hart Control Unit **********/
-    assign is_branch = (op == `OP_LD) ? 1'b1 : 1'b0;
-    assign is_load   = (op == `OP_BR) ? 1'b1 : 1'b0;
+    wire                  hstart;
+    wire                  hkill;
+    wire [`HART_ID_B]     hs_id;
+    wire [`WORD_DATA_BUS] hs_pc;
 
     /********** Two Operand **********/
     reg  [`WORD_DATA_BUS] rs1_data;         // The first operand
@@ -197,10 +201,13 @@ module id_stage (
         .hart_idle_hstate (hart_idle_hstate),
         // input from IF stage
         .if_hart_id     (if_hart_id),
+        // output to Hart Control
+        .is_branch      (is_branch),
+        .is_load        (is_load),
         // output to id_reg
         .hkill          (hkill),
         .hstart         (hstart),
-        .set_hid        (set_hid),
+        .spec_hid       (spec_hid),
         .hs_id          (hs_id),          // Hart start id
         .hs_pc          (hs_pc)           // Hart start pc
     );
@@ -263,9 +270,9 @@ module id_stage (
         .hkill          (hkill),
         .hstart         (hstart),
         .hidle          (get_hart_idle),
-        .set_hid        (set_hid),
         .hs_id          (hs_id),
         .hs_pc          (hs_pc),
+        .spec_hid       (spec_hid),
         //to IF stage
         .id_hkill       (id_hkill),
         .id_hstart      (id_hstart),

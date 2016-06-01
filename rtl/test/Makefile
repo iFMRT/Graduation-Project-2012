@@ -20,7 +20,8 @@ UNITS_OBJS = ../cpu/if_stage.v ../cpu/if_reg.v ../cpu/bus_if.v               \
 						../cpu/ex_stage.v ../cpu/ex_reg.v ../cpu/alu.v  ../cpu/cmp.v     \
 						../cpu/mem_stage.v ../cpu/mem_reg.v ../cpu/mem_ctrl.v            \
 						../cpu/ctrl.v                                                    \
-						../cpu/spm.v ../cpu/dpram_sim.v ../cpu/gpr.v ../cpu/csr.v
+						../cpu/spm.v ../cpu/dpram_sim.v ../cpu/gpr.v ../cpu/csr.v        \
+						../cpu/hart_ctrl.v ../cpu/hart_state.v ../cpu/hart_switch.v
 
 CPU_TOP_SRC  = ../cpu/cpu_top.v
 CPU_TOP_OBJS =  cpu_top/cpu_top_test.v $(CPU_TOP_SRC) $(UNITS_OBJS)
@@ -71,7 +72,7 @@ cpu_top: $(CPU_TOP_OBJS)
 	vvp $(CPU_TOP_OBJ_NAME)
 
 # Testbench Generator
-TBGEN = ../../utils/tbgen/tbgen.py
+TBGEN = python3 ../../utils/tbgen/tbgen.py
 
 # Testbench Template
 TB_SEQ_TEMPLATE_OUTPUT = template/sequential_logic_output.v
@@ -87,6 +88,8 @@ CPU_TOP_TB_ALU = cpu_top/cpu_top.alu.yaml
 CPU_TOP_TB_CSR = cpu_top/cpu_top.csr.yaml
 # CPU Top CTRL and MEM Testbench
 CPU_TOP_TB_CTRL_MEM_HAZARD = cpu_top/cpu_top.ctrl_mem_hazard.yaml
+# CPU Top HCU Testbench
+CPU_TOP_TB_HCU = cpu_top/cpu_top.hart_ctrl.yaml
 
 # Generate yaml template file
 yaml_cpu_top_alu : $(CPU_TOP_TB_ALU)
@@ -107,6 +110,9 @@ tb_cpu_top_csr : $(CPU_TOP_TB_CSR)
 
 tb_cpu_top_ctrl_mem_hazard : $(CPU_TOP_TB_CTRL_MEM)
 	$(TBGEN) $(CPU_TOP_SRC) -y $(CPU_TOP_TB_CTRL_MEM_HAZARD) -t $(TB_SEQ_TEMPLATE_OUTPUT) -o cpu_top/cpu_top_test.v
+
+tb_cpu_top_hcu : $(CPU_TOP_TB_HCU)
+	$(TBGEN) $(CPU_TOP_SRC) -y $(CPU_TOP_TB_HCU) -t $(TB_SEQ_TEMPLATE_OUTPUT) -o cpu_top/cpu_top_test.v
 
 # ASM Compilation
 CC      = riscv64-unknown-elf-as

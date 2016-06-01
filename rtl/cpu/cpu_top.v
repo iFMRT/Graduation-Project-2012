@@ -142,6 +142,7 @@ module cpu_top(
 
     /********** Hart control signal **********/
     // to ID stage
+    wire [`HART_ID_B]      spec_hid;          // specified hart id to get hart val
     wire [`HART_SST_B]     get_hart_val;      // state value of id_set_hid 2: pend, 1: active, 0:idle
     wire                   get_hart_idle;     // is hart idle 1: idle, 0: non-idle
 
@@ -156,7 +157,10 @@ module cpu_top(
     wire                   is_load;
 
     wire                   id_hstart;
+    wire                   id_hidle;
     wire                   id_hkill;
+    wire [`HART_ID_B]      id_hs_id;
+    wire [`WORD_DATA_BUS]  id_hs_pc;
     wire [`HART_ID_B]      id_set_hid;
     // to IF stage
     wire [`HART_ID_B]      hart_issue_hid;
@@ -170,6 +174,14 @@ module cpu_top(
     wire                   d_cache_miss;
     wire                   d_cache_fin;
     wire [`HART_ID_B]      d_cache_fin_hid;
+
+    // on DEV
+    assign i_cache_miss = `DISABLE;
+    assign d_cache_miss = `DISABLE;
+    assign i_cache_fin = `DISABLE;
+    assign d_cache_fin = `DISABLE;
+    assign i_cache_fin_hid = 2'b0;
+    assign d_cache_fin_hid = 2'b0;
 
     assign clk_ = ~clk;
 
@@ -278,6 +290,7 @@ module cpu_top(
         // output to Hart Control
         .is_branch      (is_branch),
         .is_load        (is_load),
+        .spec_hid       (spec_hid),
         .id_hkill       (id_hkill),
         .id_set_hid     (id_set_hid),
         // output to IF stage
@@ -367,14 +380,16 @@ module cpu_top(
     /********** hart control unit **********/
     hart_ctrl hart_ctrl (
         .clk                   (clk),                 // √
-        .rst                   (rst),                 // √
+        .rst                   (reset),               // √
 
         /* ID stage part ***********************/
         .id_hstart             (id_hstart),           // √
         .id_hkill              (id_hkill),            // √
         .id_set_hid            (id_set_hid),          // √
+        .id_hidle              (id_hidle),
+        .spec_hid              (spec_hid),            // √
         .get_hart_val          (get_hart_val),        // √
-        .get_hart_idle         (hidle),               // √
+        .get_hart_idle         (get_hart_idle),       // √
 
         .is_branch             (is_branch),           // √
         .is_load               (is_load),             // √
@@ -451,7 +466,7 @@ module cpu_top(
         .hart_ic_stall  (hart_ic_stall),
         .hart_dc_stall  (hart_dc_stall),
         .hart_ic_flush  (hart_ic_flush),
-        .hart_dc_flush  (hart_dc_flush)
+        .hart_dc_flush  (hart_dc_flush),
         // to IF stage
         .if_pc          (if_pc),
         .ex_pc          (ex_pc),

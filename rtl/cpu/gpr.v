@@ -37,9 +37,9 @@ module gpr (
     input  wire [`WORD_DATA_BUS]    wr_data        // Write data
 );
 
-    wire [`REG_NUM_TOTAL_BUS] glob_rs1_addr;
-    wire [`REG_NUM_TOTAL_BUS] glob_rs2_addr;
-    wire [`REG_NUM_TOTAL_BUS] glob_wr_addr;
+    wire [`REG_GLOB_ADDR_BUS] glob_rs1_addr;
+    wire [`REG_GLOB_ADDR_BUS] glob_rs2_addr;
+    wire [`REG_GLOB_ADDR_BUS] glob_wr_addr;
     wire [`WORD_DATA_BUS]     rs1_data_tmp;        // Read data temporary
     wire [`WORD_DATA_BUS]     rs2_data_tmp;        // Read data temporary
     reg  [`WORD_DATA_BUS]     gpr [`REG_NUM_TOTAL_BUS];  // Register files
@@ -62,7 +62,7 @@ module gpr (
     always @ (posedge clk) begin
         if (reset != `ENABLE) begin
             if (we_ == `ENABLE_) begin
-                gpr[glob_wr_addr] <= #1 wr_data;
+                gpr[glob_wr_addr] <= wr_data;
             end
         end
     end

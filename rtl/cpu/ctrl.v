@@ -84,15 +84,15 @@ module ctrl (
 
     /********** Hart Control Unit **********/
     // hart ID
-    input  wire [`HART_STATE_B]  issue_id,     // IF  stage used
-    input  wire [`HART_STATE_B]  if_hart_id,   // ID  stage used
-    input  wire [`HART_STATE_B]  id_hart_id,   // EX  stage used
-    input  wire [`HART_STATE_B]  ex_hart_id,   // MEM stage used
+    input  wire [`HART_ID_B]     issue_id,     // IF  stage used
+    input  wire [`HART_ID_B]     if_hart_id,   // ID  stage used
+    input  wire [`HART_ID_B]     id_hart_id,   // EX  stage used
+    input  wire [`HART_ID_B]     ex_hart_id,   // MEM stage used
     // stall
     input  wire                  hart_ic_stall,     // Need to stall pipeline
     input  wire                  hart_dc_stall,     // Need to stall pipeline
     input  wire                  hart_ic_flush,     // Need to flush pipeline
-    input  wire                  hart_dc_flush      // Need to flush pipeline
+    input  wire                  hart_dc_flush,     // Need to flush pipeline
     // to IF stage
     input  wire [`WORD_DATA_BUS] if_pc,
     input  wire [`WORD_DATA_BUS] ex_pc,
