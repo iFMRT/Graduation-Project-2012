@@ -17,8 +17,6 @@
     // state of L1_icache
     `define IC_IDLE              3'h0  // L1_icache is idle
     `define IC_ACCESS            3'h1  // access L1_icache
-    `define IC_ACCESS_L2         3'h2  // access L2_icache
-    `define WAIT_L2_BUSY         3'h3  // wait for L2_cache
-    `define WRITE_IC             3'h4  // write block to L1_icache
-    `define MEM_WRITE_IC         3'h5  // write mem's block to L1_icache
+    `define WAIT_L2_BUSY         3'h2  // wait for L2_cache
+    `define WRITE_IC             3'h3  // write block to L1_icache
 `endif

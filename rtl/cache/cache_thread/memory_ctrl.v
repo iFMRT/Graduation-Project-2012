@@ -24,7 +24,7 @@
 module memory_ctrl(
     /*********** Clk & Reset *********/
     input               clk,                // clock
-    input               rst,                // reset 
+    input               rst,                // reset   
     output reg          memory_en,
     /********* L2_Cache part *********/
     input               l2_busy,
@@ -32,15 +32,12 @@ module memory_ctrl(
     input               l2_choose_l1,
     input       [1:0]   l2_choose_way,
     input               l2_cache_rw,    
-    // input               l2_tagcomp_hit,
-    // output reg          l2_hit_mem,
     output reg          l2_block0_we_mem,       // write signal mark of cache_block0
     output reg          l2_block1_we_mem,       // write signal mark of cache_block1 
     output reg          l2_block2_we_mem,       // write signal mark of cache_block2 
     output reg          l2_block3_we_mem,       // write signal mark of cache_block3
     output reg  [8:0]   l2_index_mem,
     // l2_tag part
-    // input               l2_complete_w,      // complete mark of writing into l2_cache 
     input       [17:0]  l2_tag0_rd,         // read data of tag0
     input       [17:0]  l2_tag1_rd,         // read data of tag1
     input       [17:0]  l2_tag2_rd,         // read data of tag2
@@ -60,24 +57,25 @@ module memory_ctrl(
     /********* I_Cache part **********/
     output reg          mem_wr_ic_en,       // mem write icache mark
     input               ic_en,              // icache request enable mark
+    output reg   [27:0] ic_addr_mem,     
+    input        [27:0] ic_addr_l2,
     output reg   [7:0]  ic_index_mem,
     output reg   [20:0] ic_tag_wd_mem,
     output reg          ic_block0_we_mem,
     output reg          ic_block1_we_mem,
     /********* D_Cache part **********/
     input               w_complete,
-    // input               dc_hitway;
     output reg          mem_wr_dc_en,       // mem write dcache mark
     input               read_en, 
     input               dc_en,              // dcache request enable mark
-    // output reg   [1:0]  dc_thread_wd,
     output reg   [7:0]  dc_index_mem,
     output reg   [20:0] dc_tag_wd_mem,
     output reg          dc_block0_we_mem,
     output reg          dc_block1_we_mem,
     output reg  [127:0] data_wd_l2_mem,         // write data to L1 from L2   
     output reg          data_wd_l2_en_mem,      // write data to L1 from L2 enable mark 
-    output reg          data_wd_dc_en, // choose signal of data_wd
+    output reg          dc_rw_mem,
+    // output reg          data_wd_dc_en, // choose signal of data_wd
     input       [31:0]  dc_wd_l2,
     output reg  [31:0]  dc_wd_mem,
     input       [127:0] rd_to_l2,
@@ -95,7 +93,6 @@ module memory_ctrl(
     input               dc_rw,
     input               access_mem_clean,
     input               access_mem_dirty,
-    // output reg          mem_access_complete,
     output reg          thread_rdy,
     output reg  [1:0]   offset_mem,
     output reg          read_l2_en,
@@ -115,14 +112,28 @@ module memory_ctrl(
     reg                 l2_cache_rw_mem;
     reg                 l2_choose_l1_mem;
     reg                 choose_way;
-    reg                 dc_rw_mem;
     always @(*) begin
         /*State Control Part*/
         case(state)
         	`MEM_IDLE:begin
+                // initial READ_MEM  write L1 enable signals
+                mem_wr_ic_en      = `DISABLE; 
+                mem_wr_dc_en      = `DISABLE; 
+                ic_block0_we_mem  = `DISABLE;
+                ic_block1_we_mem  = `DISABLE;
+                dc_block0_we_mem  = `DISABLE;
+                dc_block1_we_mem  = `DISABLE;
+                data_wd_l2_en_mem = `DISABLE;
+                // initial READ_MEM write L2 enable signals
+                wd_from_mem_en    = `DISABLE;  
+                l2_block0_we_mem  = `DISABLE;
+                l2_block1_we_mem  = `DISABLE;
+                l2_block2_we_mem  = `DISABLE;
+                l2_block3_we_mem  = `DISABLE;    
+                memory_busy       = `DISABLE;   
+                // 
                 memory_en        = `DISABLE;
-                read_l2_en       = `DISABLE;
-                data_wd_dc_en    =  `DISABLE;
+                read_l2_en       = `DISABLE; 
                 dc_block0_we_mem = `DISABLE;
                 dc_block1_we_mem = `DISABLE;
                 thread_rdy       = `DISABLE; 
@@ -142,6 +153,7 @@ module memory_ctrl(
                 dc_rw_mem        = dc_rw;
                 dc_wd_mem        = dc_wd_l2;
                 rd_to_l2_mem     = rd_to_l2;
+                ic_addr_mem      = ic_addr_l2;
                 dc_addr_mem      = dc_addr_l2;
                 dc_offset_mem    = dc_offset_l2;
         		if(access_mem_clean == `ENABLE)begin
@@ -151,7 +163,7 @@ module memory_ctrl(
                     mem_re       = `ENABLE;
                     mem_addr     = l2_addr_mem[27:2];
         		end else if(access_mem_dirty == `ENABLE)begin
-        			memory_en        = `ENABLE;
+        			memory_en    = `ENABLE;
         			mem_we       = `ENABLE; 
         			nextstate    = `WRITE_MEM;
                     case(choose_way)
@@ -177,12 +189,11 @@ module memory_ctrl(
         		end
         	end
             `WRITE_MEM:begin // load block of L2 with dirty to mem,then read mem to l2.                 
-                thread_rdy    = `DISABLE; 
-                data_wd_dc_en =  `DISABLE;
-                dc_block0_we_mem   = `DISABLE;
-                dc_block1_we_mem   = `DISABLE;
+                thread_rdy       = `DISABLE; 
+                dc_block0_we_mem = `DISABLE;
+                dc_block1_we_mem = `DISABLE;
                 read_l2_en       = `DISABLE;
-                memory_busy   = `ENABLE;
+                memory_busy      = `ENABLE;
                 if (mem_complete_w == `ENABLE) begin
                     mem_we    = `DISABLE;
                     /* read mem and write l2 part */ 
@@ -192,11 +203,10 @@ module memory_ctrl(
                 end
             end
             `READ_MEM:begin // read mem to l2. 
-                thread_rdy    = `DISABLE; 
-                data_wd_dc_en = `DISABLE;
+                thread_rdy         = `DISABLE; 
                 dc_block0_we_mem   = `DISABLE;
                 dc_block1_we_mem   = `DISABLE;
-                read_l2_en    = `DISABLE;
+                read_l2_en         = `DISABLE;
                 if (mem_complete_r == `ENABLE) begin
                     mem_re          = `DISABLE;
                     wd_from_mem_en  = `ENABLE;
@@ -252,14 +262,14 @@ module memory_ctrl(
                                     ic_block1_we_mem = `ENABLE;
                                 end
                             endcase  
-                            nextstate     = `MEM_WRITE_L1;       
+                            nextstate     = `MEM_IDLE;      
                         end
-                        if (dc_en_mem == `ENABLE) begin  
-                            mem_wr_dc_en     = `ENABLE;                        
+                        if (dc_en_mem == `ENABLE) begin                       
                             dc_tag_wd_mem    = {1'b1,l2_addr_mem[27:8]};
                             dc_index_mem     = l2_addr_mem[7:0];
                             dc_block0_we_mem = `DISABLE;
                             dc_block1_we_mem = `DISABLE;
+                            mem_wr_dc_en     = `ENABLE;
                             case(l2_choose_l1_mem)
                                 `WAY0:begin
                                     dc_block0_we_mem = `ENABLE;
@@ -268,12 +278,7 @@ module memory_ctrl(
                                     dc_block1_we_mem = `ENABLE;
                                 end
                             endcase 
-                            if (dc_rw_mem == `WRITE) begin
-                                nextstate = `MEM_WRITE_L1_W;
-                            end else begin
-                                nextstate = `MEM_WRITE_L1;
-                                mem_wr_dc_en = `ENABLE;
-                            end
+                            nextstate    = `MEM_IDLE;
                         end
                     end else begin
                         // DC dirty,write L2 miss,L2 dirty,write to MEM,read MEM,write L2,then L1 write L2
@@ -286,128 +291,6 @@ module memory_ctrl(
                         dc_addr_read      = dc_addr_mem;
                     end
                 end 
-            end
-            `MEM_WRITE_L1_W:begin // Read from L2. Write to L1，then CPU write L1
-                data_wd_l2_en_mem = `DISABLE;
-                data_wd_dc_en     =  `ENABLE; 
-                wd_from_mem_en    = `DISABLE; 
-                l2_block0_we_mem  = `DISABLE;
-                l2_block1_we_mem  = `DISABLE;
-                l2_block2_we_mem  = `DISABLE;
-                l2_block3_we_mem  = `DISABLE;
-                thread_rdy        = `ENABLE;  
-                memory_busy       = `DISABLE;   
-                mem_thread        = l2_thread;
-                l2_addr_mem       = l2_addr;
-                offset_mem        = l2_addr_mem[1:0];
-                l2_index_mem      = l2_addr_mem[7:0];
-                l2_choose_l1_mem  = l2_choose_l1;
-                ic_en_mem         = ic_en;
-                dc_en_mem         = dc_en | read_en;    
-                l2_tag_wd_mem     = {1'b1,l2_addr_mem[27:11]};
-                l2_cache_rw_mem   = l2_cache_rw;
-                choose_way        = l2_choose_way;
-                dc_rw_mem         = dc_rw;
-                dc_wd_mem         = dc_wd_l2;
-                rd_to_l2_mem      = rd_to_l2;
-                dc_addr_mem       = dc_addr_l2;   
-                memory_en         = `DISABLE;
-                dc_offset_mem     = dc_offset_l2;
-                if(access_mem_clean == `ENABLE)begin
-                    memory_en = `ENABLE;
-                    nextstate = `READ_MEM;
-                    /* Write l2 part */ 
-                    mem_re    = `ENABLE;
-                    mem_addr  = l2_addr_mem[27:2];
-                end else if(access_mem_dirty == `ENABLE)begin
-                    memory_en = `ENABLE;
-                    mem_we    = `ENABLE; 
-                    nextstate = `WRITE_MEM;
-                    case(choose_way)
-                        `L2_WAY0:begin
-                            mem_wd      = l2_data0_rd;
-                            mem_addr    = {l2_tag0_rd[16:0],l2_addr_mem[10:2]};  
-                        end
-                        `L2_WAY1:begin
-                            mem_wd      = l2_data1_rd;
-                            mem_addr    = {l2_tag1_rd[16:0],l2_addr_mem[10:2]};
-                        end
-                        `L2_WAY2:begin
-                            mem_wd      = l2_data2_rd;
-                            mem_addr    = {l2_tag2_rd[16:0],l2_addr_mem[10:2]};
-                        end
-                        `L2_WAY3:begin
-                            mem_wd      = l2_data3_rd;
-                            mem_addr    = {l2_tag3_rd[16:0],l2_addr_mem[10:2]};
-                        end
-                    endcase
-                end else begin
-                    nextstate = `MEM_IDLE;
-                end                                               
-            end
-            `MEM_WRITE_L1:begin // write into l2_cache from memory 
-                mem_wr_ic_en      = `DISABLE; 
-                mem_wr_dc_en      = `DISABLE; 
-                ic_block0_we_mem  = `DISABLE;
-                ic_block1_we_mem  = `DISABLE;
-                dc_block0_we_mem  = `DISABLE;
-                dc_block1_we_mem  = `DISABLE;
-                data_wd_l2_en_mem = `DISABLE;
-                //Initial signal after using
-                wd_from_mem_en    = `DISABLE;  
-                l2_block0_we_mem  = `DISABLE;
-                l2_block1_we_mem  = `DISABLE;
-                l2_block2_we_mem  = `DISABLE;
-                l2_block3_we_mem  = `DISABLE;
-                thread_rdy        = `ENABLE;    
-                memory_busy       = `DISABLE;   
-                mem_thread        = l2_thread;
-                l2_addr_mem       = l2_addr;
-                offset_mem        = l2_addr_mem[1:0];
-                l2_index_mem      = l2_addr_mem[7:0];
-                l2_choose_l1_mem  = l2_choose_l1;
-                ic_en_mem         = ic_en;
-                dc_en_mem         = dc_en | read_en;    
-                l2_tag_wd_mem     = {1'b1,l2_addr_mem[27:11]};
-                l2_cache_rw_mem   = l2_cache_rw;
-                choose_way        = l2_choose_way; 
-                dc_rw_mem         = dc_rw;   
-                dc_wd_mem         = dc_wd_l2;
-                rd_to_l2_mem      = rd_to_l2;
-                dc_addr_mem       = dc_addr_l2; 
-                memory_en         = `DISABLE;
-                dc_offset_mem     = dc_offset_l2;
-                if(access_mem_clean == `ENABLE)begin
-                    memory_en = `ENABLE;
-                    nextstate = `READ_MEM;
-                    /* Write l2 part */ 
-                    mem_re    = `ENABLE;
-                    mem_addr  = l2_addr_mem[27:2];
-                end else if(access_mem_dirty == `ENABLE)begin
-                    memory_en = `ENABLE;
-                    mem_we    = `ENABLE; 
-                    nextstate = `WRITE_MEM;
-                    case(choose_way)
-                        `L2_WAY0:begin
-                            mem_wd      = l2_data0_rd;
-                            mem_addr    = {l2_tag0_rd[16:0],l2_addr_mem[10:2]};  
-                        end
-                        `L2_WAY1:begin
-                            mem_wd      = l2_data1_rd;
-                            mem_addr    = {l2_tag1_rd[16:0],l2_addr_mem[10:2]};
-                        end
-                        `L2_WAY2:begin
-                            mem_wd      = l2_data2_rd;
-                            mem_addr    = {l2_tag2_rd[16:0],l2_addr_mem[10:2]};
-                        end
-                        `L2_WAY3:begin
-                            mem_wd      = l2_data3_rd;
-                            mem_addr    = {l2_tag3_rd[16:0],l2_addr_mem[10:2]};
-                        end
-                    endcase
-                end else begin
-                    nextstate = `MEM_IDLE;
-                end                               
             end
             `READ_NEW_L2:begin
                 wd_from_mem_en     = `DISABLE;
@@ -436,7 +319,7 @@ module memory_ctrl(
                     dc_addr_mem      = dc_addr_l2;
                     memory_en        = `DISABLE;
                     dc_offset_mem    = dc_offset_l2;
-                    // l2_hit_mem       = l2_tagcomp_hit;
+                    ic_addr_mem      = ic_addr_l2;
                     if(access_mem_clean == `ENABLE)begin
                         memory_en        = `ENABLE;
                         nextstate    = `READ_MEM;

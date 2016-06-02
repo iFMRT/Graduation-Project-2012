@@ -28,6 +28,10 @@ module if_stage(
     output                  ic_busy,
     output                  miss_stall,    // the signal of stall caused by cache miss
     output                  ic_choose_way,
+    input      [27:0]       ic_addr_mem,
+    input      [27:0]       ic_addr_l2,
+    input                   memory_en,
+    input                   l2_en,
     /****** Thread choose part *****/
     input      [1:0]        l2_thread,
     input      [1:0]        mem_thread,
@@ -43,11 +47,24 @@ module if_stage(
     input      [127:0]      data1_rd,      // read data of data1
     input      [127:0]      data_wd_l2,
     input      [127:0]      data_wd_l2_mem,       // wr_data from L2 
-    // input                   w_complete,    // complete op writing to L1
-    // input                   r_complete,    // complete op reading from L1
     output                  block0_re,     // read signal of block0
     output                  block1_re,     // read signal of block1
     output      [7:0]       index,         // address of L1_cache
+    output      [127:0]     data_wd,          // wr_data from L2 
+    output      [1:0]       ic_thread_wd,
+    output                  block0_we,
+    output                  block1_we,
+    output      [20:0]      tag_wd,
+    /******* Memory part *******/
+    input       [20:0]      ic_tag_wd_mem,
+    input       [7:0]       ic_index_mem,
+    input                   ic_block0_we_mem,
+    input                   ic_block1_we_mem,
+    /******* L2_Cache part *******/
+    input       [20:0]      ic_tag_wd,
+    input       [7:0]       ic_index_l2,
+    input                   ic_block0_we_l2,
+    input                   ic_block1_we_l2,
     /************* L2_Cache ************/
     input                   ic_en,         // busy signal of L2_cache
     input                   l2_rdy,        // ready signal of L2_cache
@@ -71,58 +88,75 @@ module if_stage(
     wire                     data_rdy;
 
 icache_ctrl icache_ctrl(
-        .clk            (clk),           // clock
-        .rst            (reset),         // reset
+        .clk                (clk),           // clock
+        .rst                (reset),         // reset
         /* CPU part */
-        .choose_way     (ic_choose_way),
-        .mem_busy       (mem_busy),
-        .if_addr        (if_pc[31:2]),   // address of fetching instruction
-        .rw             (`READ),         // read / write signal of CPU
-        .cpu_data       (insn),          // read data of CPU
-        .miss_stall     (miss_stall),    // the signal of stall caused by cache miss
-        .ic_busy        (ic_busy),
+        .ic_addr_mem        (ic_addr_mem),
+        .ic_addr_l2         (ic_addr_l2),
+        .memory_en          (memory_en),
+        .l2_en              (l2_en),
+        .choose_way         (ic_choose_way),
+        .mem_busy           (mem_busy),
+        .if_addr            (if_pc[31:2]),   // address of fetching instruction
+        .rw                 (`READ),         // read / write signal of CPU
+        .cpu_data           (insn),          // read data of CPU
+        .miss_stall         (miss_stall),    // the signal of stall caused by cache miss
+        .ic_busy            (ic_busy),
         /*thread part*/
-        .l2_thread      (l2_thread),
-        .mem_thread     (mem_thread),
-        .thread         (thread),
-        .ic_thread      (ic_thread),       
+        .l2_thread          (l2_thread),
+        .mem_thread         (mem_thread),
+        .thread             (thread),
+        .ic_thread          (ic_thread),       
         /* L1_cache part */
-        .lru            (lru),           // mark of replacing
-        .tag0_rd        (tag0_rd),       // read data of tag0
-        .tag1_rd        (tag1_rd),       // read data of tag1
-        .thread0        (thread0),
-        .thread1        (thread1),
-        .data0_rd       (data0_rd),      // read data of data0
-        .data1_rd       (data1_rd),      // read data of data1
-        .data_wd_l2     (data_wd_l2), 
-        .data_wd_l2_mem (data_wd_l2_mem), 
-        .block0_re      (block0_re),     // read signal of block0
-        .block1_re      (block1_re),     // read signal of block1
-        .index          (index),         // address of L1_cache
+        .lru                (lru),           // mark of replacing
+        .tag0_rd            (tag0_rd),       // read data of tag0
+        .tag1_rd            (tag1_rd),       // read data of tag1
+        .thread0            (thread0),
+        .thread1            (thread1),
+        .data0_rd           (data0_rd),      // read data of data0
+        .data1_rd           (data1_rd),      // read data of data1
+        .data_wd_l2         (data_wd_l2), 
+        .data_wd_l2_mem     (data_wd_l2_mem), 
+        .block0_re          (block0_re),     // read signal of block0
+        .block1_re          (block1_re),     // read signal of block1
+        .index              (index),         // address of L1_cache
+        .data_wd            (data_wd),
+        .ic_thread_wd       (ic_thread_wd),
+        .block0_we          (block0_we),
+        .block1_we          (block1_we),
+        .tag_wd             (tag_wd),
+        .ic_index_l2        (ic_index_l2),
+        .ic_tag_wd_l2       (ic_tag_wd),
+        .ic_block0_we_l2    (ic_block0_we_l2),
+        .ic_block1_we_l2    (ic_block1_we_l2),
+        .ic_index_mem       (ic_index_mem),
+        .ic_tag_wd_mem      (ic_tag_wd_mem), 
+        .ic_block0_we_mem   (ic_block0_we_mem),
+        .ic_block1_we_mem   (ic_block1_we_mem),
         /* l2_cache part */
-        .ic_en          (ic_en),         // busy signal of l2_cache
-        .l2_rdy         (l2_rdy),        // ready signal of l2_cache
-        .mem_wr_ic_en   (mem_wr_ic_en), 
-        .irq            (irq),
-        .data_rdy       (data_rdy)        
+        .ic_en              (ic_en),         // busy signal of l2_cache
+        .l2_rdy             (l2_rdy),        // ready signal of l2_cache
+        .mem_wr_ic_en       (mem_wr_ic_en), 
+        .irq                (irq),
+        .data_rdy           (data_rdy)        
         );
 
     if_reg if_reg(
         /******** Clock & Rest ********/
-        .clk          (clk),                  // Clk
-        .reset        (reset),                // Reset
+        .clk                (clk),                  // Clk
+        .reset              (reset),                // Reset
         /******** Read Instruction ********/
-        .insn         (insn),                 // Reading instruction
-        .stall        (stall),                // Stall
-        .data_rdy     (data_rdy),             // tag hit mark
-        .flush        (flush),                // Flush
-        .new_pc       (new_pc),               // New value of program counter
-        .br_taken     (br_taken),             // Branch taken
-        .br_addr      (br_addr),              // Branch target
+        .insn               (insn),                 // Reading instruction
+        .stall              (stall),                // Stall
+        .data_rdy           (data_rdy),             // tag hit mark
+        .flush              (flush),                // Flush
+        .new_pc             (new_pc),               // New value of program counter
+        .br_taken           (br_taken),             // Branch taken
+        .br_addr            (br_addr),              // Branch target
         /* Output */
-        .pc           (pc),                   // Current Program counter
-        .if_pc        (if_pc),                // Next PC
-        .if_insn      (if_insn),              // Instruction
-        .if_en        (if_en)                 // Effective mark of pipeline
+        .pc                 (pc),                   // Current Program counter
+        .if_pc              (if_pc),                // Next PC
+        .if_insn            (if_insn),              // Instruction
+        .if_en              (if_en)                 // Effective mark of pipeline
     ); 
 endmodule

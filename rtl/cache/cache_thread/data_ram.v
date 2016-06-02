@@ -12,31 +12,16 @@
 
 module data_ram(
     input              clk,              // clock
-    input              dc_en,
-    input              dc_en_mem,
-    input      [7:0]   dc_index,         // address of cache
-    input      [7:0]   dc_index_l2,      // address of cache
-    input      [7:0]   dc_index_mem,     // address of cache
-    input              tagcomp_hit,
-    input              dc_block0_we,     // write signal of block0
-    input              dc_block1_we,     // write signal of block1
-    input              dc_block0_we_l2,  // write signal of block0
-    input              dc_block1_we_l2,  // write signal of block1
-    input              dc_block0_we_mem, // write signal of block0
-    input              dc_block1_we_mem, // write signal of block1
+    input      [7:0]   index,            // address of cache
+    input              block0_we,        // write signal of block0
+    input              block1_we,        // write signal of block1
     input              block0_re,        // read signal of block0
     input              block1_re,        // read signal of block1
-    input      [127:0] data_wd_l2,       // read data of l2_cache
-    input      [127:0] data_wd_l2_mem,
-    input              data_wd_l2_en,
-    input              data_wd_l2_en_mem,
-    input              data_wd_dc_en_mem,    
-    input      [31:0]  dc_wd_mem, 
-    input              data_wd_dc_en_l2,    
-    input      [31:0]  dc_wd_l2, 
+    input              l2_wr_dc_en,
     input              data_wd_dc_en,    
     input      [31:0]  dc_wd,       
-    input      [1:0]   dc_offset,dc_offset_l2,dc_offset_mem,          
+    input      [1:0]   dc_offset,  
+    input      [127:0] dc_data_wd,      
     output     [127:0] data0_rd,         // read data of cache_data0
     output     [127:0] data1_rd          // read data of cache_data1
     );
@@ -49,83 +34,7 @@ module data_ram(
     reg                wr1_en1;
     reg                wr1_en2;
     reg                wr1_en3;
-    reg         [7:0]  index;
-    reg                block0_we;       // write signal of block0
-    reg                block1_we;       // write signal of block1
-    reg         [1:0]  offset;
     always @(*) begin
-        block0_we = `DISABLE;
-        block1_we = `DISABLE;
-        if(data_wd_l2_en == `ENABLE && dc_en == `ENABLE) begin 
-            data_wd   = data_wd_l2;
-            index     = dc_index_l2;
-            block0_we = dc_block0_we_l2;
-            block1_we = dc_block1_we_l2;
-        end else if(data_wd_l2_en_mem == `ENABLE  && dc_en_mem == `ENABLE) begin 
-            data_wd   = data_wd_l2_mem;
-            index     = dc_index_mem;
-            block0_we = dc_block0_we_mem;
-            block1_we = dc_block1_we_mem;
-        end else if(data_wd_dc_en == `ENABLE ) begin
-            index     = dc_index;
-            block0_we = dc_block0_we;
-            block1_we = dc_block1_we;
-            offset    = dc_offset;
-            case(dc_offset)
-                `WORD0:begin
-                    data_wd[31:0]   = dc_wd;
-                end
-                `WORD1:begin
-                    data_wd[63:32]  = dc_wd;
-                end
-                `WORD2:begin
-                    data_wd[95:64]  = dc_wd;
-                end
-                `WORD3:begin
-                    data_wd[127:96] = dc_wd;
-                end
-            endcase
-        end else if(data_wd_dc_en_l2 == `ENABLE )begin
-            index     = dc_index_l2;
-            block0_we = dc_block0_we_l2;
-            block1_we = dc_block1_we_l2;
-            offset    = dc_offset_l2;
-            case(dc_offset_l2)
-                `WORD0:begin
-                    data_wd[31:0]   = dc_wd_l2;
-                end
-                `WORD1:begin
-                    data_wd[63:32]  = dc_wd_l2;
-                end
-                `WORD2:begin
-                    data_wd[95:64]  = dc_wd_l2;
-                end
-                `WORD3:begin
-                    data_wd[127:96] = dc_wd_l2;
-                end
-            endcase
-        end else if(data_wd_dc_en_mem == `ENABLE )begin
-            index     = dc_index_mem;
-            block0_we = dc_block0_we_mem;
-            block1_we = dc_block1_we_mem;
-            offset    = dc_offset_mem;
-            case(dc_offset_mem)
-                `WORD0:begin
-                    data_wd[31:0]   = dc_wd_mem;
-                end
-                `WORD1:begin
-                    data_wd[63:32]  = dc_wd_mem;
-                end
-                `WORD2:begin
-                    data_wd[95:64]  = dc_wd_mem;
-                end
-                `WORD3:begin
-                    data_wd[127:96] = dc_wd_mem;
-                end
-            endcase
-        end else begin
-            index     = dc_index;
-        end
         // write signal
         wr0_en0       = `DISABLE;
         wr0_en1       = `DISABLE;
@@ -135,40 +44,8 @@ module data_ram(
         wr1_en1       = `DISABLE;
         wr1_en2       = `DISABLE;
         wr1_en3       = `DISABLE; 
-        if(tagcomp_hit == `ENABLE)begin
-            if (block0_we == `ENABLE) begin
-                case(offset)
-                    `WORD0:begin
-                        wr0_en0 = `ENABLE;
-                    end
-                    `WORD1:begin
-                        wr0_en1 = `ENABLE;
-                    end
-                    `WORD2:begin
-                        wr0_en2 = `ENABLE;
-                    end
-                    `WORD3:begin
-                        wr0_en3 = `ENABLE;
-                    end
-                endcase
-            end
-            if (block1_we == `ENABLE) begin
-                case(offset)
-                    `WORD0:begin
-                        wr1_en0 = `ENABLE;
-                    end
-                    `WORD1:begin
-                        wr1_en1 = `ENABLE;
-                    end
-                    `WORD2:begin
-                        wr1_en2 = `ENABLE;
-                    end
-                    `WORD3:begin
-                        wr1_en3 = `ENABLE;
-                    end
-                endcase
-            end
-        end else begin
+        if(l2_wr_dc_en == `ENABLE) begin 
+            data_wd   = dc_data_wd;
             if (block0_we == `ENABLE) begin
                 wr0_en0 = `ENABLE;
                 wr0_en1 = `ENABLE;
@@ -180,11 +57,46 @@ module data_ram(
                 wr1_en1 = `ENABLE;
                 wr1_en2 = `ENABLE;
                 wr1_en3 = `ENABLE;
-            end                    
+            end  
+        end else if(data_wd_dc_en == `ENABLE) begin
+            case(dc_offset)
+                `WORD0:begin
+                    data_wd[31:0]   = dc_wd;
+                    if (block0_we == `ENABLE) begin
+                        wr0_en0 = `ENABLE;
+                    end else if (block1_we == `ENABLE) begin
+                        wr1_en0 = `ENABLE;
+                    end 
+                end
+                `WORD1:begin
+                    data_wd[63:32]  = dc_wd;
+                    if (block0_we == `ENABLE) begin
+                        wr0_en1 = `ENABLE;
+                    end else if (block1_we == `ENABLE) begin
+                        wr1_en1 = `ENABLE;
+                    end 
+                end
+                `WORD2:begin
+                    data_wd[95:64]  = dc_wd;
+                    if (block0_we == `ENABLE) begin
+                        wr0_en2 = `ENABLE;
+                    end else if (block1_we == `ENABLE) begin
+                        wr1_en2 = `ENABLE;
+                    end 
+                end
+                `WORD3:begin
+                    data_wd[127:96] = dc_wd;
+                    if (block0_we == `ENABLE) begin
+                        wr0_en3 = `ENABLE;
+                    end else if (block1_we == `ENABLE) begin
+                        wr1_en3 = `ENABLE;
+                    end 
+                end
+            endcase
         end
     end
 
-     // sram_256x32
+    // sram_256x32
     ram256x32 data_way00(
         .clock    (clk),
         .address  (index),

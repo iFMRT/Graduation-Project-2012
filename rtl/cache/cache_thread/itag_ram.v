@@ -12,23 +12,13 @@
 
 module itag_ram(
     input               clk,                // clock
-    input               ic_en,
-    input               ic_en_mem,
-    input               data_wd_l2_en,
-    input               data_wd_l2_en_mem,
-    input               ic_block0_we,       // the mark of cache_block0 write signal 
-    input               ic_block1_we,       // the mark of cache_block1 write signal 
-    input               ic_block0_we_mem,   // the mark of cache_block0 write signal 
-    input               ic_block1_we_mem,   // the mark of cache_block1 write signal 
+    input               block0_we,       // the mark of cache_block0 write signal 
+    input               block1_we,       // the mark of cache_block1 write signal 
     input               block0_re,          // read signal of block0
     input               block1_re,          // read signal of block1
-    input       [1:0]   l2_thread,
-    input       [1:0]   mem_thread,
-    input       [7:0]   ic_index_mem,       // address of cache
-    input       [7:0]   ic_index_l2,        // address of cache
-    input       [7:0]   ic_index,           // address of cache
-    input       [20:0]  ic_tag_wd,          // write data of tag
-    input       [20:0]  ic_tag_wd_mem,      // write data of tag
+    input       [1:0]   thread_wd,
+    input       [7:0]   index,           // address of cache
+    input       [20:0]  tag_wd,          // write data of tag
     output      [20:0]  tag0_rd,            // read data of tag0
     output      [20:0]  tag1_rd,            // read data of tag1
     output      [1:0]   thread0,
@@ -38,11 +28,7 @@ module itag_ram(
     reg                 lru_we;             // read / write signal of lru_field
     reg                 lru_wd;             // write data of lru_field
     reg                 lru_re;
-    reg          [20:0] tag_wd;
-    reg          [7:0]  index;
-    reg                 block0_we;
-    reg                 block1_we;
-    reg          [1:0]  thread_wd;
+
     always @(*) begin
         if (block0_we == `ENABLE) begin 
             lru_wd   = 1'b1;
@@ -57,23 +43,6 @@ module itag_ram(
             lru_re   = `ENABLE;
         end else begin
             lru_re   = `DISABLE;
-        end
-        block0_we = `DISABLE;    
-        block1_we = `DISABLE; 
-        if (data_wd_l2_en == `ENABLE && ic_en == `ENABLE) begin
-            thread_wd = l2_thread;
-            index     = ic_index_l2;
-            tag_wd    = ic_tag_wd;   
-            block0_we = ic_block0_we;    
-            block1_we = ic_block1_we; 
-        end else if (data_wd_l2_en_mem == `ENABLE  && ic_en_mem == `ENABLE) begin
-            thread_wd = mem_thread;
-            index     = ic_index_mem;
-            tag_wd    = ic_tag_wd_mem;
-            block0_we = ic_block0_we_mem;    
-            block1_we = ic_block1_we_mem; 
-        end else begin
-            index     = ic_index;
         end
     end
 
