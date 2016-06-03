@@ -79,11 +79,19 @@ module cpu_top_test;
     end
 
     integer END = 0;
-    integer TOTAL = 4000;
+    integer MAX = 4000;
+    integer USE_CYCLES = 0;
+    always @(posedge clk) begin
+        if (!reset) begin
+            USE_CYCLES = USE_CYCLES + 1;
+        end
+    end
     always @(negedge clk) begin
-        TOTAL = TOTAL - 1;
-        if (TOTAL === 0)
+        MAX = MAX - 1;
+        if (MAX === 0) begin
+            $display("MAX!!!");
             $finish;
+        end
         else if (mem_spm_addr === 32'd2560 || mem_spm_addr === 32'd5632) begin
             if (mem_spm_rw == `WRITE) begin
                 if (mem_spm_wr_data === 32'd1) begin
@@ -95,42 +103,21 @@ module cpu_top_test;
         end else if (if_pc === 32'd512 || if_pc === 32'd768) begin
             END = END + 1;
             $display("a hart stop");
-            if (END === 2) begin
+            if (END === 1) begin
+                $display("use_cycles = %d", USE_CYCLES);
                 $finish;
             end
         end
     end
     always @(negedge clk) begin
-        if (mem_hart_id === 2'b01) begin
-            $display("id stage pc: %8d, (%d) : %d", pc, mem_rd_addr, mem_out);
+        // if (mem_hart_id === 2'b01) begin
+        if (if_hart_id === 2'b01) begin
+            // $display("id stage pc: %8d, (%d) : %d", pc, mem_rd_addr, mem_out);
+            $display("id stage pc: %h", pc);
         end
     end
-    // always @(negedge clk) begin
-    //     if (!reset) begin
-    //         if (if_pc === 32'b0) begin
-    //             END = END + 1;
-    //             $display("END = %d.", END);
-    //             if (END === 2) begin
-    //                 $display("Failed");
-    //                 $finish;
-    //             end
-    //         end else if (if_pc === 32'd768) begin
-    //             $display("END = %d.", END);
-    //             $display("Success.");
-    //             $finish;
-    //             // end
-    //         end
-    //     end
-    // end
-    // always @(negedge clk) begin
-    //     if (if_spm_rw == `WRITE) begin
-    //         if (if_spm_addr === ) begin
-    //             $display("%d.write_mem[%h] = %d", i, if_spm_addr, if_spm_wr_data);
-    //         end
-    //     end
-    // end
  
-	/******** Output Waveform ********/
+    /******** Output Waveform ********/
     initial begin
        $dumpfile("cpu_top.vcd");
        $dumpvars(0, cpu_top);

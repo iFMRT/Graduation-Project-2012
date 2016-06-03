@@ -186,6 +186,14 @@ module cpu_top(
     wire                   d_cache_miss;
     wire                   d_cache_fin;
     wire [`HART_ID_B]      d_cache_fin_hid;
+    /********** Branch Predict **********/
+    // to IF stage
+    wire [`WORD_DATA_BUS]  bran_addr;
+    wire                   pr_pip_flush;
+    wire                   pr_br_en;       // the target data is enable
+    wire [`WORD_DATA_BUS]  pr_tar_data;    // a pc to if stage to jump
+    wire                   if_pr_br_en;
+    wire [`WORD_DATA_BUS]  if_pr_tar_data;
 
     // on DEV
     assign i_cache_miss = `DISABLE;
@@ -218,8 +226,8 @@ module cpu_top(
         .cm_hart_id     (cm_hart_id),       // Cache miss hart ID
         .cm_addr        (cm_addr),          // Cache miss address
         .br_hart_id     (id_hart_id),       // Branch Hart ID
-        .br_taken       (br_taken),         // Branch taken
-        .br_addr        (br_addr),          // Branch address
+        .br_taken       (pr_pip_flush),     // Branch taken
+        .br_addr        (bran_addr),        // Branch address
 
         /* Hart select ***************************/
         .hart_id        (hart_issue_hid),   // Hart ID to issue ins
@@ -234,7 +242,13 @@ module cpu_top(
         .if_npc         (if_npc),           // Next PC in if_reg
         .if_insn        (if_insn),          // Instruction
         .if_en          (if_en),            // Pipeline data enable
-        .if_hart_id     (if_hart_id)        // Hart state
+        .if_hart_id     (if_hart_id),       // Hart state
+
+        /* Branch Predict ***************************/
+        .pr_br_en       (pr_br_en),
+        .pr_tar_data    (pr_tar_data),
+        .if_pr_br_en    (if_pr_br_en),
+        .if_pr_tar_data (if_pr_tar_data)
     );
 
     /********** ID Stage **********/
@@ -355,7 +369,7 @@ module cpu_top(
         .ex_gpr_we_     (ex_gpr_we_),
         .ex_out         (ex_out),
         .ex_hart_id     (ex_hart_id),
-        // output to IF Stage
+        // output to branch predict
         .br_addr        (br_addr),
         .br_taken       (br_taken)
     );
@@ -432,7 +446,7 @@ module cpu_top(
 
     /********** control unit **********/
     ctrl ctrl (
-        .br_taken       (br_taken),
+        .br_taken       (pr_pip_flush),
         .src_reg_used   (src_reg_used),
         .is_eret        (is_eret),
         .id_en          (id_en),
@@ -540,6 +554,33 @@ module cpu_top(
 	      .mem_spm_rw      (mem_spm_rw),      // Read/Write
 	      .mem_spm_wr_data (mem_spm_wr_data), // Write data
 	      .mem_spm_rd_data (mem_spm_rd_data)  // Read data
+    );
+
+    /********** Branch Predict **********/
+    bra_pred bra_pred (
+        /****** from pipeline ******/
+        .clk                (clk_),           // clock
+        .reset              (reset),          // reset
+        .pc                 (if_pc),          // current pc
+        .id_pc              (id_pc),          // the pc from id_reg
+        .tar_pc             (br_addr),        // the branch target pc from ex
+        .pre_pc             (if_pr_tar_data),         
+        .bran_en            (br_taken),       // ex stage that branch taken
+        .stall_if           (if_stall),       // the stall signal of if reg
+        .flush_if           (if_flush),       // the flush signal of if reg
+        .stall_id           (id_stall),       // the stall signal of id reg
+        .flush_id           (id_flush),       // the flush signal of id reg
+        .pip_tr_bran        (if_pr_br_en),
+        .id_cmp_op          (id_cmp_op),
+        .id_gpr_we_         (id_gpr_we_),
+        .id_jump_taken      (id_jump_taken),
+        .thread_num         (hart_issue_hid),
+
+        /****** output to pipeline to change the next pc ******/
+        .bran_addr          (bran_addr),    
+        .pr_tar_data        (pr_tar_data),     // a pc to if stage to jump
+        .pr_br_en           (pr_br_en),        // the target data is enable
+        .pr_pip_flush       (pr_pip_flush)     // flush pipeline regists
     );
 
 endmodule

@@ -43,19 +43,26 @@ module if_reg (
     input  wire [`HART_ID_B]          id_hs_id,  // Hart start id
     input  wire [`WORD_DATA_BUS]      id_hs_pc,  // Hart start pc
 
+    /* Branch Predict ***************************/
+    input  wire                       pr_br_en,       // the target data is enable
+    input  wire [`WORD_DATA_BUS]      pr_tar_data,    // a pc to if stage to jump
+
+    /* Output ***************************/
     output wire [`WORD_DATA_BUS]      if_pc,     // PC
     output reg  [`WORD_DATA_BUS]      pc,        // PC in if_reg
     output reg  [`WORD_DATA_BUS]      if_npc,    // Next PC in if_reg
     output reg  [`WORD_DATA_BUS]      if_insn,   // Instruction
     output reg                        if_en,     // Effective mark of pipeline
-    output reg  [`HART_ID_B]          if_hart_id // Hart id
+    output reg  [`HART_ID_B]          if_hart_id,// Hart id
+    output reg                        if_pr_br_en,
+    output reg  [`WORD_DATA_BUS]      if_pr_tar_data 
 );
 
     reg  [`WORD_DATA_BUS] if_pcs [`HART_NUM_B];    // four if_pcs
-    assign if_pc = if_pcs[hart_id];
+    assign if_pc = ((pr_br_en === 1'b1) & (if_hart_id == hart_id))? pr_tar_data : if_pcs[hart_id];
 
     wire [`WORD_DATA_BUS] npc;
-    assign npc = if_pcs[hart_id] + `WORD_DATA_W'd4;
+    assign npc = if_pc + `WORD_DATA_W'd4;
 
     always @(posedge clk) begin
         if (reset == `ENABLE) begin

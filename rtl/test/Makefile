@@ -21,7 +21,8 @@ UNITS_OBJS = ../cpu/if_stage.v ../cpu/if_reg.v ../cpu/bus_if.v               \
 						../cpu/mem_stage.v ../cpu/mem_reg.v ../cpu/mem_ctrl.v            \
 						../cpu/ctrl.v                                                    \
 						../cpu/spm.v ../cpu/dpram_sim.v ../cpu/gpr.v ../cpu/csr.v        \
-						../cpu/hart_ctrl.v ../cpu/hart_state.v ../cpu/hart_switch.v
+						../cpu/hart_ctrl.v ../cpu/hart_state.v ../cpu/hart_switch.v      \
+						../cpu/bra_pred.v ../cpu/ram.v ../cpu/t_buffer.v
 
 CPU_TOP_SRC  = ../cpu/cpu_top.v
 CPU_TOP_OBJS =  cpu_top/cpu_top_test.v $(CPU_TOP_SRC) $(UNITS_OBJS)

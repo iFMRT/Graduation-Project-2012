@@ -56,7 +56,13 @@ module if_stage(
     output wire [`WORD_DATA_BUS] if_npc,         // Next PC in if_reg
     output wire [`WORD_DATA_BUS] if_insn,        // Instruction
     output wire                  if_en,          // Effective mark of pipeline
-    output wire [`HART_ID_B]     if_hart_id      // Hart id
+    output wire [`HART_ID_B]     if_hart_id,     // Hart id
+
+    /* Branch Predict ***************************/
+    input  wire                  pr_br_en,       // the target data is enable
+    input  wire [`WORD_DATA_BUS] pr_tar_data,    // a pc to if stage to jump
+    output wire                  if_pr_br_en,
+    output wire [`WORD_DATA_BUS] if_pr_tar_data 
 );
 
     /********** Inner Signal **********/
@@ -105,13 +111,19 @@ module if_stage(
         .id_hs_id     (id_hs_id),             // Hart start id
         .id_hs_pc     (id_hs_pc),             // Hart start pc
 
+        /******** Branch Predict ********/
+        .pr_br_en     (pr_br_en),
+        .pr_tar_data  (pr_tar_data),
+
         /******** Output ********/
         .if_pc        (if_pc),                // PC
         .pc           (pc),                   // PC in if_reg
         .if_npc       (if_npc),               // Next PC in if_reg
         .if_insn      (if_insn),              // Instruction
         .if_en        (if_en),                // Effective mark of pipeline
-        .if_hart_id   (if_hart_id)            // Hart state to de_stage
+        .if_hart_id   (if_hart_id),           // Hart state to de_stage
+        .if_pr_br_en     (if_pr_br_en),
+        .if_pr_tar_data  (if_pr_tar_data)       
     );
 
 endmodule
