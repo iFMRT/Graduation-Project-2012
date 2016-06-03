@@ -59,10 +59,10 @@ module if_reg (
 );
 
     reg  [`WORD_DATA_BUS] if_pcs [`HART_NUM_B];    // four if_pcs
-    assign if_pc = ((pr_br_en === 1'b1) & (if_hart_id == hart_id))? pr_tar_data : if_pcs[hart_id];
+    assign if_pc = if_pcs[hart_id];
 
     wire [`WORD_DATA_BUS] npc;
-    assign npc = if_pc + `WORD_DATA_W'd4;
+    assign npc = ((pr_br_en === 1'b1) & (if_hart_id == hart_id))? pr_tar_data : (if_pc + `WORD_DATA_W'd4);
 
     always @(posedge clk) begin
         if (reset == `ENABLE) begin
@@ -73,6 +73,8 @@ module if_reg (
             if_insn         <= `OP_NOP;
             if_en           <= `DISABLE;
             if_hart_id      <= `HART_ID_W'h0;
+            if_pr_br_en     <= `DISABLE;
+            if_pr_tar_data  <= `WORD_DATA_W'h0;
         end else begin
             /******** Update pipeline ********/
             if (stall == `DISABLE) begin
@@ -87,6 +89,8 @@ module if_reg (
                     if_insn            <= `OP_NOP;
                     if_en              <= `DISABLE;
                     if_hart_id         <= hart_id;
+                    if_pr_br_en        <= `DISABLE;
+                    if_pr_tar_data     <= `WORD_DATA_W'h0;
                 end else if (cache_miss) begin
                     if_hart_id         <= hart_id;
                     if (cm_hart_id == hart_id) begin
@@ -95,6 +99,8 @@ module if_reg (
                         if_pcs[hart_id] <= cm_addr;
                         if_insn        <= `OP_NOP;
                         if_en          <= `DISABLE;
+                        if_pr_br_en    <= `DISABLE;
+                        if_pr_tar_data <= `WORD_DATA_W'h0;
                     end else begin
                         pc             <= if_pcs[hart_id];
                         if_npc         <= npc;
@@ -102,6 +108,8 @@ module if_reg (
                         if_pcs[cm_hart_id] <= cm_addr;
                         if_insn        <= insn;
                         if_en          <= `ENABLE;
+                        if_pr_br_en    <= pr_br_en;
+                        if_pr_tar_data <= pr_tar_data;
                     end
                 end else if (br_taken == `ENABLE) begin
                     /* Branch taken */
@@ -112,6 +120,8 @@ module if_reg (
                         if_insn        <= `OP_NOP;
                         if_en          <= `DISABLE;
                         if_hart_id     <= `HART_ID_W'h0;
+                        if_pr_br_en    <= `DISABLE;
+                        if_pr_tar_data <= `WORD_DATA_W'h0;
                     end else begin
                         pc             <= if_pcs[hart_id];
                         if_npc         <= npc;
@@ -120,15 +130,18 @@ module if_reg (
                         if_insn        <= insn;
                         if_en          <= `ENABLE;
                         if_hart_id     <= hart_id;
+                        if_pr_br_en    <= pr_br_en;
+                        if_pr_tar_data <= pr_tar_data;
                     end
                 end else begin
-                    /* Next PC */
                     pc                 <= if_pcs[hart_id];
                     if_npc             <= npc;
                     if_pcs[hart_id]    <= npc;
                     if_insn            <= insn;
                     if_en              <= `ENABLE;
                     if_hart_id         <= hart_id;
+                    if_pr_br_en        <= pr_br_en;
+                    if_pr_tar_data     <= pr_tar_data;
                 end
             end
         end

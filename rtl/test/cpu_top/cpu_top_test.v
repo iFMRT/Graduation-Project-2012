@@ -106,6 +106,7 @@ module cpu_top_test;
             if (END === 1) begin
                 $display("use_cycles = %d", USE_CYCLES);
                 $finish;
+                
             end
         end
     end
