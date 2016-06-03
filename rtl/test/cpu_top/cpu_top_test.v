@@ -95,14 +95,15 @@ module cpu_top_test;
         end else if (if_pc === 32'd512 || if_pc === 32'd768) begin
             END = END + 1;
             $display("a hart stop");
-            if (END === 2) begin
+            if (END === 1) begin
                 $finish;
             end
         end
     end
     always @(negedge clk) begin
-        if (mem_hart_id === 2'b01) begin
-            $display("id stage pc: %8d, (%d) : %d", pc, mem_rd_addr, mem_out);
+        if (if_hart_id === 2'b01) begin
+            // $display("id stage pc: %8d, (%d) : %d", pc, mem_rd_addr, mem_out);
+            $display("id stage pc: %h", pc);
         end
     end
     // always @(negedge clk) begin
