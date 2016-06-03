@@ -29,17 +29,29 @@ module cpu_top(
     output wire [`REG_ADDR_BUS]  gpr_rs1_addr, // Read address 0
     output wire [`REG_ADDR_BUS]  gpr_rs2_addr, // Read address 1
     output wire [`REG_ADDR_BUS]  mem_rd_addr,  // General purpose register write address
-    output wire [`WORD_DATA_BUS] mem_out       // Operating result
+    output wire [`WORD_DATA_BUS] mem_out,      // Operating result
+    output wire [`WORD_DATA_BUS] if_pc,
+    output wire [`WORD_DATA_BUS] pc,
+    output wire [`HART_ID_B]     if_hart_id,
+    output wire [`HART_ID_B]     mem_hart_id,
+    output wire [`WORD_DATA_BUS] hk_mem_spm_addr,
+    output wire                  hk_mem_spm_rw,
+    output wire [`WORD_DATA_BUS] hk_mem_spm_wr_data
 );
+    // hock
+    assign hk_mem_spm_addr = {mem_spm_addr, 2'b00};
+    assign hk_mem_spm_rw = mem_spm_rw;
+    assign hk_mem_spm_wr_data = mem_spm_wr_data;
     /********** Clock & Reset **********/
     wire                   clk_;           // Reverse Clock
     /**********  Pipeline  Register **********/
     // IF/ID
-    wire [`WORD_DATA_BUS]  if_pc;          // Next Program count
-    wire [`WORD_DATA_BUS]  pc;             // Current Program count
+    // wire [`WORD_DATA_BUS]  if_pc;       // PC
+    // wire [`WORD_DATA_BUS]  pc;             // PC in if_reg
+    wire [`WORD_DATA_BUS]  if_npc;         // Next PC in if_reg
     wire [`WORD_DATA_BUS]  if_insn;        // Instruction
     wire                   if_en;          // Pipeline data enable
-    wire [`HART_ID_B]      if_hart_id;
+    // wire [`HART_ID_B]      if_hart_id;
 
     // ID/EX Pipeline  Register
     wire                   id_is_jalr;     // is JALR instruction
@@ -83,7 +95,7 @@ module cpu_top(
     wire [`WORD_DATA_BUS]  mem_pc;
     wire                   mem_en;         // If Pipeline data enables
     wire                   mem_gpr_we_;    // General purpose register write enable
-    wire [`HART_ID_B]      mem_hart_id;
+    // wire [`HART_ID_B]      mem_hart_id;
     // Use to CPU TOP ports for test
     // wire [`REG_ADDR_BUS]   mem_rd_addr;    // General purpose register write  address
     // wire [`WORD_DATA_BUS]  mem_out;        // Operating result
@@ -217,8 +229,9 @@ module cpu_top(
         .id_hs_pc       (id_hs_pc),         // Hart start pc
 
         /* IF/ID Pipeline Register ***************/
-        .pc             (pc),               // Current Program count
-        .if_pc          (if_pc),            // Next Program count
+        .if_pc          (if_pc),            // PC
+        .pc             (pc),               // PC in if_reg
+        .if_npc         (if_npc),           // Next PC in if_reg
         .if_insn        (if_insn),          // Instruction
         .if_en          (if_en),            // Pipeline data enable
         .if_hart_id     (if_hart_id)        // Hart state
@@ -250,7 +263,7 @@ module cpu_top(
         .rs2_fwd_ctrl   (rs2_fwd_ctrl),
         /********** IF/ID Pipeline  Register **********/
         .pc             (pc),               // Current Program count
-        .if_pc          (if_pc),            // Next Program count
+        .if_npc         (if_npc),           // Next Program count
         .if_insn        (if_insn),          // Instruction
         .if_en          (if_en),            // Pipeline data enable
         .if_hart_id     (if_hart_id),       // IF stage hart state

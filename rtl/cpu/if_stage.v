@@ -51,8 +51,9 @@ module if_stage(
     input  wire [`WORD_DATA_BUS] id_hs_pc,       // Hart start pc
 
     /* IF/ID Pipeline Register ***************/
-    output wire [`WORD_DATA_BUS] pc,             // Current Program counter
-    output wire [`WORD_DATA_BUS] if_pc,          // Next PC
+    output wire [`WORD_DATA_BUS] if_pc,          // PC
+    output wire [`WORD_DATA_BUS] pc,             // PC in if_reg
+    output wire [`WORD_DATA_BUS] if_npc,         // Next PC in if_reg
     output wire [`WORD_DATA_BUS] if_insn,        // Instruction
     output wire                  if_en,          // Effective mark of pipeline
     output wire [`HART_ID_B]     if_hart_id      // Hart id
@@ -105,8 +106,9 @@ module if_stage(
         .id_hs_pc     (id_hs_pc),             // Hart start pc
 
         /******** Output ********/
-        .pc           (pc),                   // Current Program counter
-        .if_pc        (if_pc),                // Next PC
+        .if_pc        (if_pc),                // PC
+        .pc           (pc),                   // PC in if_reg
+        .if_npc       (if_npc),               // Next PC in if_reg
         .if_insn      (if_insn),              // Instruction
         .if_en        (if_en),                // Effective mark of pipeline
         .if_hart_id   (if_hart_id)            // Hart state to de_stage

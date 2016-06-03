@@ -43,7 +43,7 @@ module id_stage (
     input  wire [`FWD_CTRL_BUS]   rs2_fwd_ctrl,
     /********** IF/ID Pipeline Register **********/
     input  wire [`WORD_DATA_BUS]  pc,             // Current PC
-    input  wire [`WORD_DATA_BUS]  if_pc,          // Next PC
+    input  wire [`WORD_DATA_BUS]  if_npc,         // Next PC
     input  wire [`WORD_DATA_BUS]  if_insn,        // Instruction
     input  wire                   if_en,          // Pipeline data enable
     input  wire [`HART_ID_B]      if_hart_id,     // Hart state
@@ -154,7 +154,7 @@ module id_stage (
     decoder decoder (
         /********** IF/ID Pipeline Register **********/
         .pc             (pc),             // Current PC
-        .if_pc          (if_pc),          // Next PC
+        .if_npc         (if_npc),         // Next PC
         .if_insn        (if_insn),        // Current Instruction
         .if_en          (if_en),          // Pipeline data enable
         /********** Two Operand **********/

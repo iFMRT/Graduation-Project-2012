@@ -43,8 +43,9 @@ module if_reg (
     input  wire [`HART_ID_B]          id_hs_id,  // Hart start id
     input  wire [`WORD_DATA_BUS]      id_hs_pc,  // Hart start pc
 
-    output reg  [`WORD_DATA_BUS]      pc,        // Current Program counter
-    output wire [`WORD_DATA_BUS]      if_pc,     // Next Program counter
+    output wire [`WORD_DATA_BUS]      if_pc,     // PC
+    output reg  [`WORD_DATA_BUS]      pc,        // PC in if_reg
+    output reg  [`WORD_DATA_BUS]      if_npc,    // Next PC in if_reg
     output reg  [`WORD_DATA_BUS]      if_insn,   // Instruction
     output reg                        if_en,     // Effective mark of pipeline
     output reg  [`HART_ID_B]          if_hart_id // Hart id
@@ -53,10 +54,14 @@ module if_reg (
     reg  [`WORD_DATA_BUS] if_pcs [`HART_NUM_B];    // four if_pcs
     assign if_pc = if_pcs[hart_id];
 
+    wire [`WORD_DATA_BUS] npc;
+    assign npc = if_pcs[hart_id] + `WORD_DATA_W'd4;
+
     always @(posedge clk) begin
         if (reset == `ENABLE) begin
             /******** Reset ********/
             pc              <= `WORD_DATA_W'h0;
+            if_npc          <= `WORD_DATA_W'h0;
             if_pcs[hart_id] <= `WORD_DATA_W'h0;
             if_insn         <= `OP_NOP;
             if_en           <= `DISABLE;
@@ -69,36 +74,51 @@ module if_reg (
                 end
                 if (flush == `ENABLE) begin
                     /* Flush */
-                    if_pcs[hart_id]    <= cm_addr;
+                    pc                 <= `WORD_DATA_W'h0;
+                    if_npc             <= `WORD_DATA_W'h0;
+                    if_pcs[hart_id]    <= new_pc;
                     if_insn            <= `OP_NOP;
                     if_en              <= `DISABLE;
                     if_hart_id         <= hart_id;
                 end else if (cache_miss) begin
-                    if_pcs[cm_hart_id] <= new_pc;
                     if_hart_id         <= hart_id;
                     if (cm_hart_id == hart_id) begin
+                        pc             <= `WORD_DATA_W'h0;
+                        if_npc         <= `WORD_DATA_W'h0;
+                        if_pcs[hart_id] <= cm_addr;
                         if_insn        <= `OP_NOP;
                         if_en          <= `DISABLE;
                     end else begin
+                        pc             <= if_pcs[hart_id];
+                        if_npc         <= npc;
+                        if_pcs[hart_id] <= npc;
+                        if_pcs[cm_hart_id] <= cm_addr;
                         if_insn        <= insn;
                         if_en          <= `ENABLE;
                     end
                 end else if (br_taken == `ENABLE) begin
                     /* Branch taken */
                     if (hart_id == br_hart_id) begin
+                        pc             <= `WORD_DATA_W'h0;
+                        if_npc         <= `WORD_DATA_W'h0;
+                        if_pcs[hart_id] <= br_addr;
                         if_insn        <= `OP_NOP;
                         if_en          <= `DISABLE;
                         if_hart_id     <= `HART_ID_W'h0;
                     end else begin
+                        pc             <= if_pcs[hart_id];
+                        if_npc         <= npc;
+                        if_pcs[hart_id] <= npc;
+                        if_pcs[br_hart_id] <= br_addr;
                         if_insn        <= insn;
                         if_en          <= `ENABLE;
                         if_hart_id     <= hart_id;
                     end
-                    if_pcs[br_hart_id] <= br_addr;
                 end else begin
                     /* Next PC */
                     pc                 <= if_pcs[hart_id];
-                    if_pcs[hart_id]    <= if_pcs[hart_id] + `WORD_DATA_W'd4;
+                    if_npc             <= npc;
+                    if_pcs[hart_id]    <= npc;
                     if_insn            <= insn;
                     if_en              <= `ENABLE;
                     if_hart_id         <= hart_id;

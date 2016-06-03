@@ -175,7 +175,7 @@ module ctrl (
             (ex_mem_op[3]    == 1'b1)     &&   // Check LOAD  in MEM, LOAD  Mem Op 1XXX
             (id_mem_op[3:2]  == 2'b01)    &&   // Check STORE in EX, STORE Mem Op 01XX
             (id_rs1_addr      != 1'b0)     &&   // r0 always is 0, no need to forward
-            (ex_hart_id     == if_hart_id) &&
+            (ex_hart_id     == id_hart_id) &&
             (ex_rd_addr     == id_rs1_addr)
         ) begin
             ex_rs1_fwd_en = `ENABLE;
@@ -211,7 +211,7 @@ module ctrl (
             (ex_mem_op[3]    == 1'b1)     &&   // Check LOAD  in MEM, LOAD  Mem Op 1XXX
             (id_mem_op[3:2]  == 2'b01)    &&   // Check STORE in EX, STORE Mem Op 01XX
             (id_rs2_addr     != 1'b0)     &&   // r0 always is 0, no need to forward
-            (ex_hart_id     == if_hart_id) &&
+            (ex_hart_id     == id_hart_id) &&
             (ex_rd_addr     == id_rs2_addr)
         ) begin
             ex_rs2_fwd_en = `ENABLE;

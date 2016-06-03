@@ -23,16 +23,21 @@
 `timescale 1ns/1ps
 
 module cpu_top_test;
-    reg                   clk;          // Clock
-    reg                   reset;        // Asynchronous Reset
-    wire[`WORD_DATA_BUS] gpr_rs1_data; // Read data 0
-    wire[`WORD_DATA_BUS] gpr_rs2_data; // Read data 1
-    wire[`REG_ADDR_BUS]  gpr_rs1_addr; // Read address 0
-    wire[`REG_ADDR_BUS]  gpr_rs2_addr; // Read address 1
-    wire[`REG_ADDR_BUS]  mem_rd_addr;  // General purpose register write address
-    wire[`WORD_DATA_BUS] mem_out       // Operating result
-;
-
+    reg                    clk;          // Clock
+    reg                    reset;        // Asynchronous Reset
+    wire [`WORD_DATA_BUS]  gpr_rs1_data; // Read data 0
+    wire [`WORD_DATA_BUS]  gpr_rs2_data; // Read data 1
+    wire [`REG_ADDR_BUS]   gpr_rs1_addr; // Read address 0
+    wire [`REG_ADDR_BUS]   gpr_rs2_addr; // Read address 1
+    wire [`REG_ADDR_BUS]   mem_rd_addr;  // General purpose register write address
+    wire [`WORD_DATA_BUS]  mem_out;      // Operating result
+    wire [`WORD_DATA_BUS]  if_pc;
+    wire [`WORD_DATA_BUS]  pc;
+    wire [`HART_ID_B]      if_hart_id;
+    wire [`HART_ID_B]      mem_hart_id;
+    wire [`WORD_DATA_BUS]  mem_spm_addr;
+    wire                   mem_spm_rw;
+    wire [`WORD_DATA_BUS]  mem_spm_wr_data;
 
     /******** Define Simulation Loop********/
     parameter             STEP = 10;
@@ -43,367 +48,88 @@ module cpu_top_test;
     end
 
     cpu_top cpu_top (
-        .clk(clk),
-        .reset(reset),
-        .gpr_rs1_data(gpr_rs1_data),
-        .gpr_rs2_data(gpr_rs2_data),
-        .gpr_rs1_addr(gpr_rs1_addr),
-        .gpr_rs2_addr(gpr_rs2_addr),
-        .mem_rd_addr(mem_rd_addr),
-        .mem_out(mem_out)
+        .clk              (clk),
+        .reset            (reset),
+        .gpr_rs1_data     (gpr_rs1_data),
+        .gpr_rs2_data     (gpr_rs2_data),
+        .gpr_rs1_addr     (gpr_rs1_addr),
+        .gpr_rs2_addr     (gpr_rs2_addr),
+        .mem_rd_addr      (mem_rd_addr),
+        .mem_out          (mem_out),
+        .if_pc            (if_pc),
+        .pc               (pc),
+        .if_hart_id       (if_hart_id),
+        .mem_hart_id      (mem_hart_id),
+        .hk_mem_spm_addr      (mem_spm_addr),
+        .hk_mem_spm_rw        (mem_spm_rw),
+        .hk_mem_spm_wr_data   (mem_spm_wr_data)
     );
-
-    task cpu_top_tb;
-        input [`WORD_DATA_BUS] _gpr_rs1_data;
-        input [`WORD_DATA_BUS] _gpr_rs2_data;
-        input [`REG_ADDR_BUS] _gpr_rs1_addr;
-        input [`REG_ADDR_BUS] _gpr_rs2_addr;
-        input [`REG_ADDR_BUS] _mem_rd_addr;
-        input [`WORD_DATA_BUS] _mem_out;
-
-        begin
-            if((gpr_rs1_data  === _gpr_rs1_data)  &&
-               (gpr_rs2_data  === _gpr_rs2_data)  &&
-               (gpr_rs1_addr  === _gpr_rs1_addr)  &&
-               (gpr_rs2_addr  === _gpr_rs2_addr)  &&
-               (mem_rd_addr  === _mem_rd_addr)  &&
-               (mem_out  === _mem_out)
-              ) begin
-                $display("Test Succeeded !");
-            end else begin
-                $display("Test Failed !");
-            end
-        end
-
-    endtask
 
     /******** Test Case ********/
     initial begin
         # 0 begin
             clk      <= 1'h1;
             reset    <= `ENABLE;
-       end
+        end
         # (STEP * 3/4)
         # STEP begin
             reset <= `DISABLE;
         end
-       
-       # STEP begin
-            $display("\n========= Clock 2 ========");
-            cpu_top_tb(
-            	`WORD_DATA_W'h0, // gpr_rs1_data
-            	`WORD_DATA_W'hx, // gpr_rs2_data
-            	`REG_ADDR_W'h0, // gpr_rs1_addr
-            	`REG_ADDR_W'h1, // gpr_rs2_addr
-            	`REG_ADDR_W'h0, // mem_rd_addr
-            	`WORD_DATA_W'h0 // mem_out
-            );
-            end
-        
-       # STEP begin
-            $display("\n========= Clock 3 ========");
-            cpu_top_tb(
-            	`WORD_DATA_W'h0, // gpr_rs1_data
-            	`WORD_DATA_W'hx, // gpr_rs2_data
-            	`REG_ADDR_W'h0, // gpr_rs1_addr
-            	`REG_ADDR_W'd2, // gpr_rs2_addr
-            	`REG_ADDR_W'h0, // mem_rd_addr
-            	`WORD_DATA_W'h0 // mem_out
-            );
-            end
-        
-       # STEP begin
-            $display("\n========= Clock 4 ========");
-            cpu_top_tb(
-            	`WORD_DATA_W'dx, // gpr_rs1_data
-            	`WORD_DATA_W'dx, // gpr_rs2_data
-            	`REG_ADDR_W'd26, // gpr_rs1_addr
-            	`REG_ADDR_W'd27, // gpr_rs2_addr
-            	`REG_ADDR_W'h0, // mem_rd_addr
-            	`WORD_DATA_W'h0 // mem_out
-            );
-            end
-        
-       # STEP begin
-            $display("\n========= Clock 5 ========");
-            cpu_top_tb(
-            	`WORD_DATA_W'd1025, // gpr_rs1_data
-            	`WORD_DATA_W'dx, // gpr_rs2_data
-            	`REG_ADDR_W'd26, // gpr_rs1_addr
-            	`REG_ADDR_W'd4, // gpr_rs2_addr
-            	`REG_ADDR_W'd26, // mem_rd_addr
-            	`WORD_DATA_W'd1025 // mem_out
-            );
-            end
-        
-       # STEP begin
-            $display("\n========= Clock 6 ========");
-            cpu_top_tb(
-            	`WORD_DATA_W'd0, // gpr_rs1_data
-            	`WORD_DATA_W'dx, // gpr_rs2_data
-            	`REG_ADDR_W'd0, // gpr_rs1_addr
-            	`REG_ADDR_W'd20, // gpr_rs2_addr
-            	`REG_ADDR_W'd27, // mem_rd_addr
-            	`WORD_DATA_W'd2 // mem_out
-            );
-            end
-        
-       # STEP begin
-            $display("\n========= Clock 7 ========");
-            cpu_top_tb(
-            	`WORD_DATA_W'd2, // gpr_rs1_data
-            	`WORD_DATA_W'd1025, // gpr_rs2_data
-            	`REG_ADDR_W'd27, // gpr_rs1_addr
-            	`REG_ADDR_W'd26, // gpr_rs2_addr
-            	`REG_ADDR_W'd12, // mem_rd_addr
-            	`WORD_DATA_W'd20 // mem_out
-            );
-            end
-        
-       # STEP begin
-            $display("\n========= Clock 8 ========");
-            cpu_top_tb(
-            	`WORD_DATA_W'd0, // gpr_rs1_data
-            	`WORD_DATA_W'd0, // gpr_rs2_data
-            	`REG_ADDR_W'd0, // gpr_rs1_addr
-            	`REG_ADDR_W'd0, // gpr_rs2_addr
-            	`REG_ADDR_W'd27, // mem_rd_addr
-            	`WORD_DATA_W'd1029 // mem_out
-            );
-            end
-        
-       # STEP begin
-            $display("\n========= Clock 9 ========");
-            cpu_top_tb(
-            	`WORD_DATA_W'd1025, // gpr_rs1_data
-            	`WORD_DATA_W'd1025, // gpr_rs2_data
-            	`REG_ADDR_W'd26, // gpr_rs1_addr
-            	`REG_ADDR_W'd26, // gpr_rs2_addr
-            	`REG_ADDR_W'd0, // mem_rd_addr
-            	`WORD_DATA_W'd20 // mem_out
-            );
-            end
-        
-       # STEP begin
-            $display("\n========= Clock 10 ========");
-            cpu_top_tb(
-            	`WORD_DATA_W'd1025, // gpr_rs1_data
-            	`WORD_DATA_W'dx, // gpr_rs2_data
-            	`REG_ADDR_W'd26, // gpr_rs1_addr
-            	`REG_ADDR_W'd3, // gpr_rs2_addr
-            	`REG_ADDR_W'd0, // mem_rd_addr
-            	`WORD_DATA_W'd0 // mem_out
-            );
-            end
-        
-       # STEP begin
-            $display("\n========= Clock 11 ========");
-            cpu_top_tb(
-            	`WORD_DATA_W'd1025, // gpr_rs1_data
-            	`WORD_DATA_W'dx, // gpr_rs2_data
-            	`REG_ADDR_W'd26, // gpr_rs1_addr
-            	`REG_ADDR_W'd3, // gpr_rs2_addr
-            	`REG_ADDR_W'd0, // mem_rd_addr
-            	`WORD_DATA_W'd0 // mem_out
-            );
-            end
-        
-       # STEP begin
-            $display("\n========= Clock 12 ========");
-            cpu_top_tb(
-            	`WORD_DATA_W'd1025, // gpr_rs1_data
-            	`WORD_DATA_W'd1029, // gpr_rs2_data
-            	`REG_ADDR_W'd26, // gpr_rs1_addr
-            	`REG_ADDR_W'd27, // gpr_rs2_addr
-            	`REG_ADDR_W'd3, // mem_rd_addr
-            	`WORD_DATA_W'd0 // mem_out
-            );
-            end
-        
-       # STEP begin
-            $display("\n========= Clock 13 ========");
-            cpu_top_tb(
-            	`WORD_DATA_W'd0, // gpr_rs1_data
-            	`WORD_DATA_W'hx, // gpr_rs2_data
-            	`REG_ADDR_W'd0, // gpr_rs1_addr
-            	`REG_ADDR_W'd14, // gpr_rs2_addr
-            	`REG_ADDR_W'd27, // mem_rd_addr
-            	`WORD_DATA_W'd1 // mem_out
-            );
-            end
-        
-       # STEP begin
-            $display("\n========= Clock 14 ========");
-            cpu_top_tb(
-            	`WORD_DATA_W'd1025, // gpr_rs1_data
-            	`WORD_DATA_W'hx, // gpr_rs2_data
-            	`REG_ADDR_W'd26, // gpr_rs1_addr
-            	`REG_ADDR_W'd28, // gpr_rs2_addr
-            	`REG_ADDR_W'd30, // mem_rd_addr
-            	`WORD_DATA_W'd1025 // mem_out
-            );
-            end
-        
-       # STEP begin
-            $display("\n========= Clock 15 ========");
-            cpu_top_tb(
-            	`WORD_DATA_W'd1, // gpr_rs1_data
-            	`WORD_DATA_W'd1026, // gpr_rs2_data
-            	`REG_ADDR_W'd27, // gpr_rs1_addr
-            	`REG_ADDR_W'd29, // gpr_rs2_addr
-            	`REG_ADDR_W'd29, // mem_rd_addr
-            	`WORD_DATA_W'd1026 // mem_out
-            );
-            end
-        
-       # STEP begin
-            $display("\n========= Clock 16 ========");
-            cpu_top_tb(
-            	`WORD_DATA_W'h1, // gpr_rs1_data
-            	`WORD_DATA_W'd1025, // gpr_rs2_data
-            	`REG_ADDR_W'd27, // gpr_rs1_addr
-            	`REG_ADDR_W'd30, // gpr_rs2_addr
-            	`REG_ADDR_W'd28, // mem_rd_addr
-            	`WORD_DATA_W'd14 // mem_out
-            );
-            end
-        
-       # STEP begin
-            $display("\n========= Clock 17 ========");
-            cpu_top_tb(
-            	`WORD_DATA_W'd1025, // gpr_rs1_data
-            	`WORD_DATA_W'dx, // gpr_rs2_data
-            	`REG_ADDR_W'd26, // gpr_rs1_addr
-            	`REG_ADDR_W'd3, // gpr_rs2_addr
-            	`REG_ADDR_W'd30, // mem_rd_addr
-            	`WORD_DATA_W'd1039 // mem_out
-            );
-            end
-        
-       # STEP begin
-            $display("\n========= Clock 18 ========");
-            cpu_top_tb(
-            	`WORD_DATA_W'h0, // gpr_rs1_data
-            	`WORD_DATA_W'd0, // gpr_rs2_data
-            	`REG_ADDR_W'd0, // gpr_rs1_addr
-            	`REG_ADDR_W'd0, // gpr_rs2_addr
-            	`REG_ADDR_W'd27, // mem_rd_addr
-            	`WORD_DATA_W'd1027 // mem_out
-            );
-            end
-        
-       # STEP begin
-            $display("\n========= Clock 19 ========");
-            cpu_top_tb(
-            	`WORD_DATA_W'd1027, // gpr_rs1_data
-            	`WORD_DATA_W'd1026, // gpr_rs2_data
-            	`REG_ADDR_W'd27, // gpr_rs1_addr
-            	`REG_ADDR_W'd29, // gpr_rs2_addr
-            	`REG_ADDR_W'd12, // mem_rd_addr
-            	`WORD_DATA_W'd76 // mem_out
-            );
-            end
-        
-       # STEP begin
-            $display("\n========= Clock 20 ========");
-            cpu_top_tb(
-            	`WORD_DATA_W'd1026, // gpr_rs1_data
-            	`WORD_DATA_W'd14, // gpr_rs2_data
-            	`REG_ADDR_W'd29, // gpr_rs1_addr
-            	`REG_ADDR_W'd28, // gpr_rs2_addr
-            	`REG_ADDR_W'd0, // mem_rd_addr
-            	`WORD_DATA_W'd0 // mem_out
-            );
-            end
-        
-       # STEP begin
-            $display("\n========= Clock 21 ========");
-            cpu_top_tb(
-            	`WORD_DATA_W'd1027, // gpr_rs1_data
-            	`WORD_DATA_W'd1026, // gpr_rs2_data
-            	`REG_ADDR_W'd27, // gpr_rs1_addr
-            	`REG_ADDR_W'd29, // gpr_rs2_addr
-            	`REG_ADDR_W'd0, // mem_rd_addr
-            	`WORD_DATA_W'd0 // mem_out
-            );
-            end
-        
-       # STEP begin
-            $display("\n========= Clock 22 ========");
-            cpu_top_tb(
-            	`WORD_DATA_W'd0, // gpr_rs1_data
-            	`WORD_DATA_W'd0, // gpr_rs2_data
-            	`REG_ADDR_W'd0, // gpr_rs1_addr
-            	`REG_ADDR_W'd0, // gpr_rs2_addr
-            	`REG_ADDR_W'd27, // mem_rd_addr
-            	`WORD_DATA_W'd2053 // mem_out
-            );
-            end
-        
-       # STEP begin
-            $display("\n========= Clock 23 ========");
-            cpu_top_tb(
-            	`WORD_DATA_W'd1026, // gpr_rs1_data
-            	`WORD_DATA_W'd14, // gpr_rs2_data
-            	`REG_ADDR_W'd29, // gpr_rs1_addr
-            	`REG_ADDR_W'd28, // gpr_rs2_addr
-            	`REG_ADDR_W'd12, // mem_rd_addr
-            	`WORD_DATA_W'd92 // mem_out
-            );
-            end
-        
-       # STEP begin
-            $display("\n========= Clock 24 ========");
-            cpu_top_tb(
-            	`WORD_DATA_W'd1026, // gpr_rs1_data
-            	`WORD_DATA_W'd14, // gpr_rs2_data
-            	`REG_ADDR_W'd29, // gpr_rs1_addr
-            	`REG_ADDR_W'd28, // gpr_rs2_addr
-            	`REG_ADDR_W'd0, // mem_rd_addr
-            	`WORD_DATA_W'd0 // mem_out
-            );
-            end
-        
-       # STEP begin
-            $display("\n========= Clock 25 ========");
-            cpu_top_tb(
-            	`WORD_DATA_W'd1025, // gpr_rs1_data
-            	`WORD_DATA_W'd14, // gpr_rs2_data
-            	`REG_ADDR_W'd26, // gpr_rs1_addr
-            	`REG_ADDR_W'd28, // gpr_rs2_addr
-            	`REG_ADDR_W'd0, // mem_rd_addr
-            	`WORD_DATA_W'd0 // mem_out
-            );
-            end
-        
-       # STEP begin
-            $display("\n========= Clock 26 ========");
-            cpu_top_tb(
-            	`WORD_DATA_W'h0, // gpr_rs1_data
-            	`WORD_DATA_W'h0, // gpr_rs2_data
-            	`REG_ADDR_W'h0, // gpr_rs1_addr
-            	`REG_ADDR_W'h0, // gpr_rs2_addr
-            	`REG_ADDR_W'd12, // mem_rd_addr
-            	`WORD_DATA_W'd104 // mem_out
-            );
-            end
-        
-       # STEP begin
-            $display("\n========= Clock 27 ========");
-            cpu_top_tb(
-            	`WORD_DATA_W'd2053, // gpr_rs1_data
-            	`WORD_DATA_W'd1026, // gpr_rs2_data
-            	`REG_ADDR_W'd27, // gpr_rs1_addr
-            	`REG_ADDR_W'd29, // gpr_rs2_addr
-            	`REG_ADDR_W'd12, // mem_rd_addr
-            	`WORD_DATA_W'd108 // mem_out
-            );
-            end
-        
-       # STEP begin
-           $finish;
-       end                      // 
+
     end
+
+    integer END = 0;
+    integer TOTAL = 4000;
+    always @(negedge clk) begin
+        TOTAL = TOTAL - 1;
+        if (TOTAL === 0)
+            $finish;
+        else if (mem_spm_addr === 32'd2560 || mem_spm_addr === 32'd5632) begin
+            if (mem_spm_rw == `WRITE) begin
+                if (mem_spm_wr_data === 32'd1) begin
+                    $display("success");
+                end else begin
+                    $display("failed");
+                end
+            end
+        end else if (if_pc === 32'd512 || if_pc === 32'd768) begin
+            END = END + 1;
+            $display("a hart stop");
+            if (END === 2) begin
+                $finish;
+            end
+        end
+    end
+    always @(negedge clk) begin
+        if (mem_hart_id === 2'b01) begin
+            $display("id stage pc: %8d, (%d) : %d", pc, mem_rd_addr, mem_out);
+        end
+    end
+    // always @(negedge clk) begin
+    //     if (!reset) begin
+    //         if (if_pc === 32'b0) begin
+    //             END = END + 1;
+    //             $display("END = %d.", END);
+    //             if (END === 2) begin
+    //                 $display("Failed");
+    //                 $finish;
+    //             end
+    //         end else if (if_pc === 32'd768) begin
+    //             $display("END = %d.", END);
+    //             $display("Success.");
+    //             $finish;
+    //             // end
+    //         end
+    //     end
+    // end
+    // always @(negedge clk) begin
+    //     if (if_spm_rw == `WRITE) begin
+    //         if (if_spm_addr === ) begin
+    //             $display("%d.write_mem[%h] = %d", i, if_spm_addr, if_spm_wr_data);
+    //         end
+    //     end
+    // end
+ 
 	/******** Output Waveform ********/
     initial begin
        $dumpfile("cpu_top.vcd");

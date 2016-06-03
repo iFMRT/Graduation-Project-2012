@@ -95,6 +95,7 @@ module hart_switch (
     end
 
     reg                  issue_minor;
+    reg                  issue_twice;
     wire                 issue_two_ins;
     assign issue_two_ins = acti_hstate == `HART_STATE_W'b0111
                          | acti_hstate == `HART_STATE_W'b1011
@@ -107,8 +108,6 @@ module hart_switch (
             issue_minor <= 1;
         else issue_minor <= 0;
     end
-
-    reg                  issue_twice;
     always @(posedge clk) begin
         if (rst) issue_twice <= 1'b0;
         else if (is_load & (minor_hstate == `HART_STATE_W'b0001

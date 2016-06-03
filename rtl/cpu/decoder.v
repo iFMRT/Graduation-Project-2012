@@ -21,7 +21,7 @@
 module decoder (
     /********** IF/ID Pipeline Register **********/
     input  wire [`WORD_DATA_BUS]  pc,            // Current PC
-    input  wire [`WORD_DATA_BUS]  if_pc,         // Next PC
+    input  wire [`WORD_DATA_BUS]  if_npc,         // Next PC
     input  wire [`WORD_DATA_BUS]  if_insn,       // Current Instruction
     input  wire                   if_en,         // Pipeline data enable
     /********** Two Operand **********/
@@ -88,8 +88,8 @@ module decoder (
     assign csr_addr               = if_insn[`INSN_CSR];  // CSRs address
 
     /********** To Hart Control Unit **********/
-    assign is_branch = (op == `OP_LD) ? 1'b1 : 1'b0;
-    assign is_load   = (op == `OP_BR) ? 1'b1 : 1'b0;
+    assign is_branch = (op == `OP_BR) ? 1'b1 : 1'b0;
+    assign is_load   = (op == `OP_LD) ? 1'b1 : 1'b0;
 
     /********** Source Register Used State **********/
     assign mem_wr_data  = rs2_data;
@@ -131,7 +131,7 @@ module decoder (
         gpr_we_      = `DISABLE_;
         is_jalr      = `DISABLE;
         ex_out_sel   = `EX_OUT_ALU;
-        gpr_wr_data  = if_pc;
+        gpr_wr_data  = if_npc;
 
         exp_code     = `EXP_NO_EXP;
         is_eret      = `DISABLE;
@@ -172,7 +172,7 @@ module decoder (
                         `OP_LD_LHU: mem_op = `MEM_OP_LHU; // Load half word unsigned
                         default   : begin                 // Undefined LD type instruction
                             exp_code = `EXP_ILLEGAL_INSN;
-                            $display("ISA LD OP error");
+                            // $display("ISA LD OP error");
                         end
                     endcase
                 end
@@ -188,7 +188,7 @@ module decoder (
                         `OP_ST_SW: mem_op = `MEM_OP_SW;
                         default      : begin      // Undefined instruction
                             exp_code = `EXP_ILLEGAL_INSN;
-                            $display("OP_ST error");
+                            // $display("OP_ST error");
                         end
                     endcase
                 end
@@ -212,7 +212,7 @@ module decoder (
                     is_jalr      = `ENABLE;
                     jump_taken   = `ENABLE;
                     ex_out_sel   = `EX_OUT_PCN; // pc + 4
-                    gpr_wr_data  = if_pc;
+                    gpr_wr_data  = if_npc;   // !!! if_npc
                 end
 
                 /******** Jump and Link ********/
@@ -224,7 +224,7 @@ module decoder (
                     jump_taken   = `ENABLE;
                     gpr_we_      = `ENABLE_;
                     ex_out_sel   = `EX_OUT_PCN;
-                    gpr_wr_data  = if_pc;
+                    gpr_wr_data  = if_npc;
                 end
 
                 /******** Branch ********/
@@ -242,7 +242,7 @@ module decoder (
                         `OP_BR_BGEU: cmp_op = `CMP_OP_GEU;
                         default    : begin      // Undefined instruction
                             exp_code = `EXP_ILLEGAL_INSN;
-                            $display("error");
+                            // $display("error");
                         end
                     endcase
                 end
@@ -299,14 +299,14 @@ module decoder (
                                 // Undefined instruction
                                 default          : begin
                                     exp_code = `EXP_ILLEGAL_INSN;
-                                    $display("SRI error");
+                                    // $display("SRI error");
                                 end
                             endcase
                         end
                         // undefined instruction
                         default       : begin
                             exp_code = `EXP_ILLEGAL_INSN;
-                            $display("OP_ALSI error");
+                            // $display("OP_ALSI error");
                         end
                     endcase
                 end
@@ -325,7 +325,7 @@ module decoder (
                                 // Undefined instruction
                                 default       : begin
                                     exp_code = `EXP_ILLEGAL_INSN;
-                                    $display("AS error");
+                                    // $display("AS error");
                                 end
                             endcase
                         end
@@ -346,7 +346,7 @@ module decoder (
                                 // Undefined instruction
                                 default       : begin
                                     exp_code = `EXP_ILLEGAL_INSN;
-                                    $display("SR error");
+                                    // $display("SR error");
                                 end
                             endcase
                         end
@@ -355,7 +355,7 @@ module decoder (
                         // Undefined instruction
                         default     : begin
                             exp_code = `EXP_ILLEGAL_INSN;
-                            $display("AS error");
+                            // $display("AS error");
                         end
                     endcase
                 end
@@ -394,7 +394,7 @@ module decoder (
                             `OP_ERET : is_eret = `ENABLE;
                             default  : begin
                                 exp_code = `EXP_ILLEGAL_INSN;
-                                $display("system instruction error");
+                                // $display("system instruction error");
                             end
                         endcase
                     end else begin
@@ -413,7 +413,7 @@ module decoder (
 
                         if (funct3[1:0] == 2'b00) begin
                             exp_code = `EXP_ILLEGAL_INSN;
-                            $display("CSR OP error");
+                            // $display("CSR OP error");
                         end else begin
                             csr_op   = funct3[1:0];
                         end
@@ -490,7 +490,7 @@ module decoder (
 
                 default: begin // Undefined instruction
                     exp_code = `EXP_ILLEGAL_INSN;
-                    $display("OP error, %b", op);
+                    // $display("OP error, %b", op);
                 end
             endcase
         end

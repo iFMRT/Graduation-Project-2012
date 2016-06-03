@@ -10,12 +10,14 @@ CSR_SRC = csr.S
 J_B_HAZARD_SRC = j_b_hazard.S
 J_B_NO_HAZARD_SRC = j_b_no_hazard.S
 HCU_SRC = hcu_test.s
+SORT_SRC = sort.s
 
 ALU_OBJ = alu.o
 CSR_OBJ = csr.o
 J_B_HAZARD_OBJ = j_b_hazard.out
 J_B_NO_HAZARD_OBJ = j_b_no_hazard.out
 HCU_OBJ = hcu_test.o
+SORT_OBJ = sort.o
 
 alu: $(ALU_SRC)
 	$(CC) -m32 $(ALU_SRC) -o $(ALU_OBJ)
@@ -37,3 +39,7 @@ j_b_no_hazard: $(J_B_NO_HAZARD_SRC)
 hcu: $(HCU_SRC)
 	$(CC) -m32 $(HCU_SRC) -o $(HCU_OBJ)
 	$(OBJCOPY) $(HCU_OBJ) -O verilog ../test.dat
+
+sort: $(SORT_SRC)
+	$(CC) -m32 $(SORT_SRC) -o $(SORT_OBJ)
+	$(OBJCOPY) $(SORT_OBJ) -O verilog ../test.dat
