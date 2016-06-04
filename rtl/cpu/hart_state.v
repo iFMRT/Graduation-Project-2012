@@ -80,7 +80,8 @@ module hart_state (
     //_ acti_hstate ______________________________________________________//
     reg [`HART_STATE_B] next_acti_hstate;
     always @(i_cache_fin, d_cache_fin, i_cache_miss, d_cache_miss,
-             issue_hid, ex_hart_id, id_hstart, id_set_hid) begin
+             issue_hid, ex_hart_id, id_hkill, id_hstart, id_hidle, id_set_hid, 
+             ic_fin_hstate, dc_fin_hstate) begin
         if (i_cache_fin)  next_acti_hstate =      acti_hstate | ic_fin_hstate;
         else              next_acti_hstate =      acti_hstate;
         if (d_cache_fin)  next_acti_hstate = next_acti_hstate | dc_fin_hstate;
