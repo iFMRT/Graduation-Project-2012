@@ -33,12 +33,19 @@ module cpu_top_test;
     wire [`WORD_DATA_BUS]  mem_out;      // Operating result
     wire [`WORD_DATA_BUS]  if_pc;
     wire [`WORD_DATA_BUS]  pc;
+    wire [`HART_ID_B]      hart_hid;
     wire [`HART_ID_B]      if_hart_id;
     wire [`HART_ID_B]      mem_hart_id;
     wire [`WORD_DATA_BUS]  mem_spm_addr;
     wire                   mem_spm_rw;
     wire [`WORD_DATA_BUS]  mem_spm_wr_data;
 
+    reg                    i_cache_miss;
+    reg                    i_cache_fin;
+    reg  [`HART_ID_B]      i_cache_fin_hid;
+    reg                    d_cache_miss;
+    reg                    d_cache_fin;
+    reg  [`HART_ID_B]      d_cache_fin_hid;
     /******** Define Simulation Loop********/
     parameter             STEP = 10;
 
@@ -58,11 +65,19 @@ module cpu_top_test;
         .mem_out          (mem_out),
         .if_pc            (if_pc),
         .pc               (pc),
+        .hart_issue_hid   (hart_hid),
         .if_hart_id       (if_hart_id),
         .mem_hart_id      (mem_hart_id),
         .hk_mem_spm_addr      (mem_spm_addr),
         .hk_mem_spm_rw        (mem_spm_rw),
-        .hk_mem_spm_wr_data   (mem_spm_wr_data)
+        .hk_mem_spm_wr_data   (mem_spm_wr_data),
+
+        .i_cache_miss         (i_cache_miss),
+        .i_cache_fin          (i_cache_fin),
+        .i_cache_fin_hid      (i_cache_fin_hid),
+        .d_cache_miss         (d_cache_miss),
+        .d_cache_fin          (d_cache_fin),
+        .d_cache_fin_hid      (d_cache_fin_hid) 
     );
 
     /******** Test Case ********/
@@ -79,33 +94,64 @@ module cpu_top_test;
     end
 
     integer END = 0;
-    integer TOTAL = 4000;
+    integer MAX = 10000;
+    integer CYCLES = 0;
     always @(negedge clk) begin
-        TOTAL = TOTAL - 1;
-        if (TOTAL === 0)
+        CYCLES = CYCLES + 1;
+        MAX = MAX - 1;
+        if (MAX === 0) begin
+            $display("MAX!!!");
             $finish;
-        else if (mem_spm_addr === 32'd2560 || mem_spm_addr === 32'd5632) begin
+        end
+        else if (mem_spm_addr === 32'd768) begin
             if (mem_spm_rw == `WRITE) begin
-                if (mem_spm_wr_data === 32'd1) begin
-                    $display("success");
-                end else begin
-                    $display("failed");
-                end
+                if (mem_spm_wr_data === 32'd1)
+                    $display("Hart[%d]: success. At cycles: %d", mem_hart_id, CYCLES);
+                else
+                    $display("Hart[%d]: failing !!! At cycles: %d", mem_hart_id, CYCLES);
             end
-        end else if (if_pc === 32'd512 || if_pc === 32'd768) begin
+        end else if (if_pc === 32'd512) begin
             END = END + 1;
-            $display("a hart stop");
-            if (END === 1) begin
+            $display("Hart[%d]: stop. At cycles: %d", hart_hid, CYCLES);
+            if (END === 4) begin
+                $display("Take cycles: %d", CYCLES);
                 $finish;
             end
         end
     end
+
+    // Test Cache Miss
+    integer MISSED = 0;
+    always @(negedge clk) begin
+        if (reset) begin
+            i_cache_miss    <= `DISABLE;
+            d_cache_miss    <= `DISABLE;
+            i_cache_fin     <= `DISABLE;
+            d_cache_fin     <= `DISABLE;
+            i_cache_fin_hid <= 2'b0;
+            d_cache_fin_hid <= 2'b0;
+        end 
+        else if ((hart_hid === 2'b10)) begin
+            if (CYCLES > 1000 && !MISSED) begin
+                i_cache_miss <= `ENABLE;
+                MISSED = 1;
+            end
+        end else if (CYCLES > 2000 && MISSED) begin
+                i_cache_miss    <= `DISABLE;
+                i_cache_fin     <= `ENABLE;
+                i_cache_fin_hid <= 2'b10;
+        end else begin
+            i_cache_miss <= `DISABLE;
+        end
+    end
+/*    
     always @(negedge clk) begin
         if (if_hart_id === 2'b01) begin
-            // $display("id stage pc: %8d, (%d) : %d", pc, mem_rd_addr, mem_out);
+            $display("id stage pc: %8d, (%d) : %d", pc, mem_rd_addr, mem_out);
             $display("id stage pc: %h", pc);
         end
     end
+*/
     // always @(negedge clk) begin
     //     if (!reset) begin
     //         if (if_pc === 32'b0) begin

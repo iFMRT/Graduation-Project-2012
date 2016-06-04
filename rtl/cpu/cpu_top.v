@@ -32,11 +32,19 @@ module cpu_top(
     output wire [`WORD_DATA_BUS] mem_out,      // Operating result
     output wire [`WORD_DATA_BUS] if_pc,
     output wire [`WORD_DATA_BUS] pc,
+    output wire [`HART_ID_B]     hart_issue_hid,
     output wire [`HART_ID_B]     if_hart_id,
     output wire [`HART_ID_B]     mem_hart_id,
     output wire [`WORD_DATA_BUS] hk_mem_spm_addr,
     output wire                  hk_mem_spm_rw,
-    output wire [`WORD_DATA_BUS] hk_mem_spm_wr_data
+    output wire [`WORD_DATA_BUS] hk_mem_spm_wr_data,
+    // Cache Miss Test
+    input  wire                  i_cache_miss,
+    input  wire                  i_cache_fin,
+    input  wire [`HART_ID_B]     i_cache_fin_hid,
+    input  wire                  d_cache_miss,
+    input  wire                  d_cache_fin,
+    input  wire [`HART_ID_B]     d_cache_fin_hid 
 );
     // hock
     assign hk_mem_spm_addr = {mem_spm_addr, 2'b00};
@@ -175,25 +183,25 @@ module cpu_top(
     wire [`WORD_DATA_BUS]  id_hs_pc;
     wire [`HART_ID_B]      id_set_hid;
     // to IF stage
-    wire [`HART_ID_B]      hart_issue_hid;
+    // wire [`HART_ID_B]      hart_issue_hid;
     wire [`HART_STATE_B]   hart_issue_hstate;
     wire                   hidle;
     wire [`HART_ID_B]      hs_id;          // Hart start id
     wire [`WORD_DATA_BUS]  hs_pc;          // Hart start pc
-    wire                   i_cache_miss;
-    wire                   i_cache_fin;
-    wire [`HART_ID_B]      i_cache_fin_hid;
-    wire                   d_cache_miss;
-    wire                   d_cache_fin;
-    wire [`HART_ID_B]      d_cache_fin_hid;
+    // wire                   i_cache_miss;
+    // wire                   i_cache_fin;
+    // wire [`HART_ID_B]      i_cache_fin_hid;
+    // wire                   d_cache_miss;
+    // wire                   d_cache_fin;
+    // wire [`HART_ID_B]      d_cache_fin_hid;
 
     // on DEV
-    assign i_cache_miss = `DISABLE;
-    assign d_cache_miss = `DISABLE;
-    assign i_cache_fin = `DISABLE;
-    assign d_cache_fin = `DISABLE;
-    assign i_cache_fin_hid = 2'b0;
-    assign d_cache_fin_hid = 2'b0;
+    // assign i_cache_miss = `DISABLE;
+    // assign d_cache_miss = `DISABLE;
+    // assign i_cache_fin = `DISABLE;
+    // assign d_cache_fin = `DISABLE;
+    // assign i_cache_fin_hid = 2'b0;
+    // assign d_cache_fin_hid = 2'b0;
 
     assign clk_ = ~clk;
 
