@@ -121,7 +121,10 @@ module cpu_top_test;
     end
 
     // Test Cache Miss
-    integer MISSED = 0;
+    integer hart_0_miss_ed = 0;
+    integer hart_1_miss_ed = 0;
+    integer hart_0_fin_ed = 0;
+    integer hart_1_fin_ed = 0;
     always @(negedge clk) begin
         if (reset) begin
             i_cache_miss    <= `DISABLE;
@@ -130,18 +133,27 @@ module cpu_top_test;
             d_cache_fin     <= `DISABLE;
             i_cache_fin_hid <= 2'b0;
             d_cache_fin_hid <= 2'b0;
-        end 
-        else if ((hart_hid === 2'b10)) begin
-            if (CYCLES > 1000 && !MISSED) begin
-                i_cache_miss <= `ENABLE;
-                MISSED = 1;
-            end
-        end else if (CYCLES > 2000 && MISSED) begin
-                i_cache_miss    <= `DISABLE;
-                i_cache_fin     <= `ENABLE;
-                i_cache_fin_hid <= 2'b10;
+        end else if (!hart_0_miss_ed && CYCLES > 1000 && hart_hid == 2'd0) begin
+            hart_0_miss_ed = 1;
+            i_cache_miss    <= `ENABLE;
+        end else if (!hart_1_miss_ed && CYCLES > 1300 && hart_hid == 2'd2) begin
+            hart_1_miss_ed = 1;
+            i_cache_miss    <= `ENABLE;
+        end else if (hart_1_miss_ed && !hart_1_fin_ed && CYCLES > 2000) begin
+            i_cache_fin     <= `ENABLE;
+            i_cache_fin_hid <= 2'd2;
+            hart_1_fin_ed   = 1;
+        end else if (hart_0_miss_ed && !hart_0_fin_ed && CYCLES > 2100) begin
+            i_cache_fin     <= `ENABLE;
+            i_cache_fin_hid <= 2'd0;
+            hart_0_fin_ed   = 1;
         end else begin
-            i_cache_miss <= `DISABLE;
+            i_cache_miss    <= `DISABLE;
+            d_cache_miss    <= `DISABLE;
+            i_cache_fin     <= `DISABLE;
+            d_cache_fin     <= `DISABLE;
+            i_cache_fin_hid <= 2'b0;
+            d_cache_fin_hid <= 2'b0;
         end
     end
 /*    
