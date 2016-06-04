@@ -111,16 +111,16 @@ module bra_pred(
         br_num = 0;
         miss_num = 0;
     end
-    always @(negedge clk)begin
+  /*  always @(negedge clk)begin
         if(is_branch)begin
             br_num = br_num + 1;
-            // $display("branch number = %d",br_num);
+             $display("branch number = %d",br_num);
             if(pr_pip_flush)begin
                 miss_num = miss_num + 1;
-                // $display("miss number = %d",miss_num);
+                 $display("miss number = %d",miss_num);
             end
         end
-    end
+    end */
     
     ram12x3 block0(                     // predictor block0 ram
         .clk            (clk),
@@ -840,14 +840,14 @@ module reg_flush(
 
     always @(*) begin
         if (bran_en ) begin
-            if(pre_pc_id !== tar_pc) begin
+            if(tr_bran_id !== 1'b1 || pre_pc_id !== tar_pc) begin
                 pr_pip_flush = `ENABLE;    // predict succesful, needn't flush pipeline
             end else begin
                 pr_pip_flush = `DISABLE;
             end
         end else begin
 
-            if(tr_bran_id) begin
+            if(tr_bran_id === 1'b1) begin
                 pr_pip_flush = `ENABLE;     // false predict, and flush pipeline 
             end else begin
                 pr_pip_flush = `DISABLE;

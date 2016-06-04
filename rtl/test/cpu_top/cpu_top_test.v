@@ -92,7 +92,7 @@ module cpu_top_test;
             $display("MAX!!!");
             $finish;
         end
-        else if (mem_spm_addr === 32'd2560 || mem_spm_addr === 32'd5632) begin
+        else if (mem_spm_addr === 32'd768) begin
             if (mem_spm_rw == `WRITE) begin
                 if (mem_spm_wr_data === 32'd1) begin
                     $display("success");
@@ -100,13 +100,12 @@ module cpu_top_test;
                     $display("failed");
                 end
             end
-        end else if (if_pc === 32'd512 || if_pc === 32'd768) begin
+        end else if (if_pc === 32'd512) begin
             END = END + 1;
             $display("a hart stop");
-            if (END === 1) begin
+            if (END === 2) begin
                 $display("use_cycles = %d", USE_CYCLES);
                 $finish;
-                
             end
         end
     end
