@@ -35,6 +35,7 @@ module cpu_top_test;
     wire [`WORD_DATA_BUS]  pc;
     wire [`HART_ID_B]      hart_hid;
     wire [`HART_ID_B]      if_hart_id;
+    wire [`HART_ID_B]      ex_hart_id;
     wire [`HART_ID_B]      mem_hart_id;
     wire [`WORD_DATA_BUS]  mem_spm_addr;
     wire                   mem_spm_rw;
@@ -67,6 +68,7 @@ module cpu_top_test;
         .pc               (pc),
         .hart_issue_hid   (hart_hid),
         .if_hart_id       (if_hart_id),
+        .ex_hart_id       (ex_hart_id),
         .mem_hart_id      (mem_hart_id),
         .hk_mem_spm_addr      (mem_spm_addr),
         .hk_mem_spm_rw        (mem_spm_rw),
@@ -125,6 +127,8 @@ module cpu_top_test;
     integer hart_1_miss_ed = 0;
     integer hart_0_fin_ed = 0;
     integer hart_1_fin_ed = 0;
+    integer hart_1_dcm_ed = 0;
+    integer hart_1_dcf_ed = 0;
     always @(negedge clk) begin
         if (reset) begin
             i_cache_miss    <= `DISABLE;
@@ -147,6 +151,13 @@ module cpu_top_test;
             i_cache_fin     <= `ENABLE;
             i_cache_fin_hid <= 2'd0;
             hart_0_fin_ed   = 1;
+        end else if (!hart_1_dcm_ed && ex_hart_id == 2'd2 && CYCLES > 2200) begin
+            d_cache_miss    <= `ENABLE;
+            hart_1_dcm_ed   = 1;
+        end else if(hart_1_dcm_ed && !hart_1_dcf_ed && CYCLES > 2400) begin
+            d_cache_fin     <= `ENABLE;
+            d_cache_fin_hid <= 2'd2;
+            hart_1_dcf_ed   = 1;
         end else begin
             i_cache_miss    <= `DISABLE;
             d_cache_miss    <= `DISABLE;

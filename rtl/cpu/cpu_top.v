@@ -34,6 +34,7 @@ module cpu_top(
     output wire [`WORD_DATA_BUS] pc,
     output wire [`HART_ID_B]     hart_issue_hid,
     output wire [`HART_ID_B]     if_hart_id,
+    output wire [`HART_ID_B]     ex_hart_id,
     output wire [`HART_ID_B]     mem_hart_id,
     output wire [`WORD_DATA_BUS] hk_mem_spm_addr,
     output wire                  hk_mem_spm_rw,
@@ -97,7 +98,7 @@ module cpu_top(
     wire [`REG_ADDR_BUS]   ex_rd_addr;    // General purpose RegisterWrite  address
     wire                   ex_gpr_we_;     // General purpose RegisterWrite enable
     wire [`WORD_DATA_BUS]  ex_out;         // Operating result
-    wire [`HART_ID_B]      ex_hart_id;
+    // wire [`HART_ID_B]      ex_hart_id;
     // MEM/WB Pipeline  Register
     wire [`EXP_CODE_BUS]   mem_exp_code;   // Exception code
     wire [`WORD_DATA_BUS]  mem_pc;
