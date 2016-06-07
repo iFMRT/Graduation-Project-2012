@@ -1,10 +1,10 @@
 `timescale 1ns/1ps
 
 /******** Head files ********/
-`include "stddef.h"
+`include "common_defines.v"
 `include "cpu.h"
 `include "mem.h"
-`include "dcache.h"
+`include "l1_cache.h"
 
 /********** Memory Access Control Module **********/
 module mem_ctrl (
@@ -12,29 +12,18 @@ module mem_ctrl (
     input  wire                   ex_en,          // If Pipeline data enable
     input  wire  [`MEM_OP_BUS]    ex_mem_op,      // Memory operation
     input  wire  [`WORD_DATA_BUS] ex_mem_wr_data, // Memory write data
-    input  wire  [1:0]            offset,         // EX stage operating result
+    input  wire  [`OFFSET_BUS]    offset,         // EX stage operating result
     input  wire  [`WORD_DATA_BUS] ex_out,
     /***** Memory Access Interface ******/
     input  wire  [`WORD_DATA_BUS] read_data_m,    // Read data
-    // output wire  [`WORD_DATA_BUS] addr,           // address
     output reg                    rw,             // Read/Write
     output reg   [`WORD_DATA_BUS] wr_data,        // Write data
-    input  wire                   hitway,         // path hit mark           
-    input  wire  [127:0]          data0_rd,       // read data of data cache'path0     
-    input  wire  [127:0]          data1_rd,       // read data of data cache'path1     
+    input  wire  [`WORD_DATA_BUS] rd_to_write_m,         
     /********** Memory Access  **********/
-    output reg  [`WORD_DATA_BUS]  out,            // Memory access result
+    output reg   [`WORD_DATA_BUS] out,            // Memory access result
     output reg                    load_rdy,
     output reg                    miss_align      // miss align
 );
-
-    /********* Internal Signal **********/
-    // wire [`BYTE_OFFSET_BUS]      offset;          // Byte offset
-
-    /******** Output Assignment *********/
-    // assign addr    = ex_out;
-    // assign offset  = ex_out[`BYTE_OFFSET_LOC];
-
     /****** Memory Access Control *******/
     always @(*) begin
         /* Default Value */
@@ -126,61 +115,30 @@ module mem_ctrl (
                 `MEM_OP_SH : begin                              // Write a half word
                     /* Check offset */
                     if (offset[0] == 1'b0) begin // Align
-                        case (hitway)
-                            `WAY0:begin
-                                if (offset[1] == 1'b0) begin
-                                    wr_data     = { data0_rd[31:16], ex_mem_wr_data[15:0]};
-                                end else begin
-                                    wr_data     = { ex_mem_wr_data[15:0],data0_rd[15:0] };
-                                end 
-                            end // hitway == 0
-                            `WAY1:begin 
-                                if (offset[1] == 1'b0) begin
-                                    wr_data     = { data1_rd[31:16], ex_mem_wr_data[15:0]};  
-                                end else begin
-                                    wr_data     = { ex_mem_wr_data[15:0],data1_rd[15:0] };
-                                end 
-                            end // hitway == 1
-                        endcase
+                        if (offset[1] == 1'b0) begin
+                            wr_data     = { rd_to_write_m[31:16], ex_mem_wr_data[15:0]};
+                        end else begin
+                            wr_data     = { ex_mem_wr_data[15:0],rd_to_write_m[15:0] };
+                        end 
                         rw          = `WRITE;
                     end else begin                              // Miss align
                         miss_align  = `ENABLE;
                     end
                 end
                 `MEM_OP_SB : begin                              // Write a byte
-                    case (hitway)
-                        `WAY0:begin
-                            case (offset)
-                                `BYTE0:begin
-                                    wr_data     = { data0_rd[31:8], ex_mem_wr_data[7:0]};
-                                end
-                                `BYTE1:begin
-                                    wr_data     = { data0_rd[31:16], ex_mem_wr_data[7:0],data0_rd[7:0]};
-                                end
-                                `BYTE2:begin
-                                    wr_data     = { data0_rd[31:24], ex_mem_wr_data[7:0],data0_rd[15:0]};
-                                end
-                                `BYTE3:begin
-                                    wr_data     = { ex_mem_wr_data[7:0],data0_rd[23:0]};
-                                end
-                            endcase
-                        end // hitway == 0
-                        `WAY1:begin 
-                            case (offset)
-                                `BYTE0:begin
-                                    wr_data     = { data1_rd[31:8], ex_mem_wr_data[7:0]};
-                                end
-                                `BYTE1:begin
-                                    wr_data     = { data1_rd[31:16], ex_mem_wr_data[7:0],data1_rd[7:0]};
-                                end
-                                `BYTE2:begin
-                                    wr_data     = { data1_rd[31:24], ex_mem_wr_data[7:0],data1_rd[15:0]};
-                                end
-                                `BYTE3:begin
-                                    wr_data     = { ex_mem_wr_data[7:0],data1_rd[23:0]};
-                                end
-                            endcase 
-                        end // hitway == 1
+                    case (offset)
+                        `BYTE0:begin
+                            wr_data     = { rd_to_write_m[31:8], ex_mem_wr_data[7:0]};
+                        end
+                        `BYTE1:begin
+                            wr_data     = { rd_to_write_m[31:16], ex_mem_wr_data[7:0],rd_to_write_m[7:0]};
+                        end
+                        `BYTE2:begin
+                            wr_data     = { rd_to_write_m[31:24], ex_mem_wr_data[7:0],rd_to_write_m[15:0]};
+                        end
+                        `BYTE3:begin
+                            wr_data     = { ex_mem_wr_data[7:0],rd_to_write_m[23:0]};
+                        end
                     endcase
                     rw   = `WRITE;
                 end
